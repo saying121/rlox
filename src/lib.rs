@@ -9,5 +9,8 @@ pub mod lox;
 mod tests {
 
     #[test]
-    fn test_name() {}
+    fn test_name() {
+        let a  = &123;
+        dbg!(a);
+    }
 }

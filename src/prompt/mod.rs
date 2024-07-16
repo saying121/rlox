@@ -1,7 +1,7 @@
 use anyhow::Result;
 use rustyline::{error::ReadlineError, DefaultEditor};
 
-use crate::run;
+use crate::lox::Lox;
 
 pub fn run_prompt() -> Result<()> {
     let mut rl = DefaultEditor::new()?;
@@ -10,7 +10,8 @@ pub fn run_prompt() -> Result<()> {
         match readline {
             Ok(line) => {
                 rl.add_history_entry(line.as_str())?;
-                run(line)?;
+                Lox::run(line) ?;
+                // run(line)?;
                 // println!("Line: {}", line);
             },
             Err(ReadlineError::Interrupted) => {

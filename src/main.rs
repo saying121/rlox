@@ -1,6 +1,5 @@
 use clap::Parser;
-use rlox::lox::Lox;
-use rlox::{cli, prompt, run_file};
+use rlox::{cli, lox::Lox, prompt};
 
 fn main() -> anyhow::Result<()> {
     let cli = cli::Cli::parse();
