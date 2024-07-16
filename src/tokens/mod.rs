@@ -40,7 +40,7 @@ impl TokenInner {
 // multiple cursor magic moment
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, PartialOrd)]
 #[derive(EnumString, Display)]
 pub enum MyTokenType {
     // Single_character tokens
@@ -69,7 +69,7 @@ pub enum MyTokenType {
     // Literals
     Identifier { inner: TokenInner },
     String { inner: TokenInner },
-    Number { inner: TokenInner },
+    Number { double: f64, inner: TokenInner },
 
     // Keywords
     And { inner: TokenInner },

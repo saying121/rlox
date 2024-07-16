@@ -13,7 +13,7 @@ pub struct Scanner {
 
 impl Scanner {
     pub fn new(source: String) -> Self {
-        let mut sour_chars = source.char_indices().peekable();
+        let mut sour_chars = itertools::peek_nth(source.char_indices());
 
         let mut tokens = Vec::new();
         while let Some((idx, ch)) = sour_chars.next() {
@@ -48,46 +48,38 @@ impl Scanner {
                 star @ '*' => MyTokenType::Star {
                     inner: TokenInner::new(star.to_string(), idx),
                 },
-                bang @ '!' => sour_chars
-                    .next_if_eq(&(idx + 1, '='))
-                    .map_or_else(
-                        || MyTokenType::Bang {
-                            inner: TokenInner::new(bang.to_string(), idx),
-                        },
-                        |_eq| MyTokenType::BangEqual {
-                            inner: TokenInner::new("!=".to_owned(), idx),
-                        },
-                    ),
-                eq @ '=' => sour_chars
-                    .next_if_eq(&(idx + 1, eq))
-                    .map_or_else(
-                        || MyTokenType::Equal {
-                            inner: TokenInner::new(eq.to_string(), idx),
-                        },
-                        |_eq| MyTokenType::EqualEqual {
-                            inner: TokenInner::new("==".to_owned(), idx),
-                        },
-                    ),
-                less @ '<' => sour_chars
-                    .next_if_eq(&(idx + 1, '='))
-                    .map_or_else(
-                        || MyTokenType::Less {
-                            inner: TokenInner::new(less.to_string(), idx),
-                        },
-                        |_eq| MyTokenType::LessEqual {
-                            inner: TokenInner::new("<=".to_owned(), idx),
-                        },
-                    ),
-                greater @ '>' => sour_chars
-                    .next_if_eq(&(idx + 1, '='))
-                    .map_or_else(
-                        || MyTokenType::Greater {
-                            inner: TokenInner::new(greater.to_string(), idx),
-                        },
-                        |_eq| MyTokenType::GreaterEqual {
-                            inner: TokenInner::new(">=".to_owned(), idx),
-                        },
-                    ),
+                bang @ '!' => sour_chars.next_if_eq(&(idx + 1, '=')).map_or_else(
+                    || MyTokenType::Bang {
+                        inner: TokenInner::new(bang.to_string(), idx),
+                    },
+                    |_eq| MyTokenType::BangEqual {
+                        inner: TokenInner::new("!=".to_owned(), idx),
+                    },
+                ),
+                eq @ '=' => sour_chars.next_if_eq(&(idx + 1, eq)).map_or_else(
+                    || MyTokenType::Equal {
+                        inner: TokenInner::new(eq.to_string(), idx),
+                    },
+                    |_eq| MyTokenType::EqualEqual {
+                        inner: TokenInner::new("==".to_owned(), idx),
+                    },
+                ),
+                less @ '<' => sour_chars.next_if_eq(&(idx + 1, '=')).map_or_else(
+                    || MyTokenType::Less {
+                        inner: TokenInner::new(less.to_string(), idx),
+                    },
+                    |_eq| MyTokenType::LessEqual {
+                        inner: TokenInner::new("<=".to_owned(), idx),
+                    },
+                ),
+                greater @ '>' => sour_chars.next_if_eq(&(idx + 1, '=')).map_or_else(
+                    || MyTokenType::Greater {
+                        inner: TokenInner::new(greater.to_string(), idx),
+                    },
+                    |_eq| MyTokenType::GreaterEqual {
+                        inner: TokenInner::new(">=".to_owned(), idx),
+                    },
+                ),
                 slash @ '/' => match sour_chars.next_if_eq(&(idx + 1, '/')) {
                     Some(_next) => {
                         let mut last = '\0';
@@ -108,64 +100,43 @@ impl Scanner {
                             },
                         }
                     },
-                    None => sour_chars
-                        .next_if_eq(&(idx + 1, '*'))
-                        .map_or_else(
-                            || MyTokenType::Slash {
-                                inner: TokenInner::new(slash.to_string(), idx),
-                            },
-                            |_next| {
-                                let (mut last_pre, mut last) = ('\0', '\0');
+                    None => sour_chars.next_if_eq(&(idx + 1, '*')).map_or_else(
+                        || MyTokenType::Slash {
+                            inner: TokenInner::new(slash.to_string(), idx),
+                        },
+                        |_next| {
+                            let (mut last_pre, mut last) = ('\0', '\0');
 
-                                let mut chs = sour_chars.clone();
-                                let mut count = 0;
-                                while let Some((i, c)) = chs.next() {
-                                    last_pre = c;
-                                    let mut flag = false;
-                                    if let Some((_, ch)) = chs.next_if_eq(&(i + 1, '/')) {
-                                        flag = true;
-                                        last = ch;
-                                        count += 1;
-                                    }
+                            let mut count = 0;
+                            while let Some(&(_, next)) = sour_chars.peek_nth(count)
+                                && let Some(&(_, next_next)) = sour_chars.peek_nth(count + 1)
+                            {
+                                (last_pre, last) = (next, next_next);
+                                if next == '*' && next_next == '/' {
+                                    break;
+                                }
+                                count += 1;
+                            }
 
-                                    if c == '*' && flag {
-                                        break;
-                                    }
-                                    count += 1;
+                            let b_comment: String =
+                                sour_chars.by_ref().take(count).map(|(_, c)| c).collect();
+                            if last_pre == '*' && last == '/' {
+                                sour_chars.next();
+                                sour_chars.next();
+                                MyTokenType::BlockComment {
+                                    inner: TokenInner::new(b_comment, idx),
                                 }
-
-                                let b_comment: String = sour_chars
-                                    .by_ref()
-                                    .take(count)
-                                    .map(|(_, c)| c)
-                                    .collect();
-                                if last == '/' && last_pre == '*' {
-                                    MyTokenType::BlockComment {
-                                        inner: TokenInner::new(b_comment, idx),
-                                    }
+                            }
+                            else {
+                                MyTokenType::Invalid {
+                                    inner: TokenInner::new("Invalid block comment".to_owned(), idx),
                                 }
-                                else {
-                                    MyTokenType::Invalid {
-                                        inner: TokenInner::new(
-                                            "Invalid block comment".to_owned(),
-                                            idx,
-                                        ),
-                                    }
-                                }
-                                // while let Some((i, c)) = sour_chars.next() {
-                                //     if c == '*'
-                                //         && sour_chars
-                                //             .next_if_eq(&(i + 1, '/'))
-                                //             .is_some()
-                                //     {
-                                //         continue;
-                                //     }
-                                // }
-                                // continue;
-                            },
-                        ),
+                            }
+                        },
+                    ),
                 },
-                ' ' | '\r' | '\t' | '\n' => continue,
+                white if white.is_whitespace() => continue,
+                // ' ' | '\r' | '\t' | '\n' => continue,
                 '"' => {
                     let mut last_matched = '\0';
                     let string = sour_chars
@@ -177,32 +148,54 @@ impl Scanner {
                         .map(|(_, c)| c)
                         .collect();
                     match last_matched {
-                        '"' => MyTokenType::String { inner: TokenInner::new(string, idx) },
+                        '"' => MyTokenType::String {
+                            inner: TokenInner::new(string, idx),
+                        },
                         _ => MyTokenType::Invalid {
                             inner: TokenInner::new("Invalid string token".to_owned(), idx),
                         },
                     }
                 },
                 digit if digit.is_ascii_digit() => {
-                    // let mut last = '\0';
-                    // let mut dot_count = 0;
+                    let mut its = Vec::with_capacity(4);
+                    its.push(digit.to_string());
 
-                    // let dig_integer: String = sour_chars
-                    //     .by_ref()
-                    //     .take_while(|&(_, c)| c.is_ascii_digit())
-                    //     .map(|(_, c)| c)
-                    //     .collect();
-                    //
-                    // if last == '.' && dot_count == 2 {
-                    //     MyTokenType::Invalid {
-                    //         inner: TokenInner::new("Number Can't end of '.'".to_owned(), idx),
-                    //     }
-                    // }
-                    // else {
-                    //     MyTokenType::Number {
-                    //         inner: TokenInner::new(format!("{digit}{dig_integer}"), idx),
-                    //     }
-                    // }
+                    let mut count = 0;
+                    while let Some(&(_, ch)) = sour_chars.peek_nth(count)
+                        && ch.is_ascii_digit()
+                    {
+                        count += 1;
+                    }
+
+                    let dig_integer = sour_chars.by_ref().take(count).map(|(_, c)| c).collect();
+                    its.push(dig_integer);
+
+                    if let Some(&(_, next)) = sour_chars.peek_nth(0)
+                        && let Some(&(_, next_next)) = sour_chars.peek_nth(1)
+                        && next == '.'
+                        && next_next.is_ascii_digit()
+                    {
+                        #[allow(clippy::unwrap_used)]
+                        let (_, dot) = sour_chars.next().unwrap();
+                        its.push(dot.to_string());
+
+                        let mut count = 0;
+
+                        while let Some(&(_, ch)) = sour_chars.peek_nth(count)
+                            && ch.is_ascii_digit()
+                        {
+                            count += 1;
+                        }
+
+                        let small = sour_chars.by_ref().take(count).map(|(_, c)| c).collect();
+                        its.push(small);
+                    }
+
+                    let lexeme = its.join("");
+                    MyTokenType::Number {
+                        double: lexeme.parse().expect("parse double failed"),
+                        inner:  TokenInner::new(lexeme, idx),
+                    }
                 },
                 other => MyTokenType::Invalid {
                     inner: TokenInner::new(other.to_string(), idx),
