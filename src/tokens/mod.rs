@@ -6,13 +6,26 @@ use strum::{Display, EnumString};
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TokenInner {
     lexeme: String,
+    len:    usize,
     /// start char offset
     offset: usize,
 }
 
 impl TokenInner {
-    pub const fn new(lexeme: String, offset: usize) -> Self {
-        Self { lexeme, offset }
+    pub fn new(lexeme: String, offset: usize) -> Self {
+        let len = lexeme.len();
+        Self {
+            lexeme,
+            len,
+            offset,
+        }
+    }
+    pub const fn new_invalid(lexeme: String, len: usize, offset: usize) -> Self {
+        Self {
+            lexeme,
+            len,
+            offset,
+        }
     }
     pub fn get_col(&self, origin: &str) -> (usize, usize) {
         let mut line = 1;

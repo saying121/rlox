@@ -118,8 +118,9 @@ impl Scanner {
                             }
                             else {
                                 TokenType::Invalid {
-                                    inner: TokenInner::new(
+                                    inner: TokenInner::new_invalid(
                                         "Invalid block comment, not end with `*/`".to_owned(),
+                                        source.len() - idx,
                                         idx,
                                     ),
                                 }
@@ -144,8 +145,9 @@ impl Scanner {
                             inner: TokenInner::new(string, idx),
                         },
                         _ => TokenType::Invalid {
-                            inner: TokenInner::new(
+                            inner: TokenInner::new_invalid(
                                 r#"Invalid string token, not end with `"`"#.to_owned(),
+                                source.len() - idx,
                                 idx,
                             ),
                         },
@@ -199,7 +201,7 @@ impl Scanner {
                         inner:  TokenInner::new(lexeme, idx),
                     }
                 },
-                ident0 if ident0.is_ascii_alphanumeric() => {
+                ident_start if ident_start.is_ascii_alphanumeric() => {
                     let mut count = 0;
                     while let Some(&(_, c)) = source_chars.peek_nth(count)
                         && c.is_ascii_alphanumeric()
@@ -208,34 +210,26 @@ impl Scanner {
                     }
                     let lexeme: String =
                         source_chars.by_ref().take(count).map(|(_, c)| c).collect();
-                    let inner = TokenInner::new(format!("{ident0}{lexeme}"), idx);
+                    let inner = TokenInner::new(format!("{ident_start}{lexeme}"), idx);
 
-                    use TokenType::{
-                        And, Class, Else, False, For, Fun, Identifier, If, Nil, Or, Print, Return,
-                        Super, This, True, Var, While,
-                    };
-                    match inner.lexeme() {
-                        "and" => And { inner },
-                        "or" => Or { inner },
-                        "class" => Class { inner },
-                        "super" => Super { inner },
-                        "this" => This { inner },
-                        "true" => True { inner },
-                        "false" => False { inner },
-                        "while" => While { inner },
-                        "for" => For { inner },
-                        "if" => If { inner },
-                        "else" => Else { inner },
-                        "print" => Print { inner },
-                        "fun" => Fun { inner },
-                        "return" => Return { inner },
-                        "var" => Var { inner },
-                        "nil" => Nil { inner },
-                        _ => Identifier { inner },
-                    }
+                    Self::keyword_or_ident(inner)
                 },
-                other => TokenType::Invalid {
-                    inner: TokenInner::new(format!("Unknown: {}",other), idx),
+                other => {
+                    let mut count = 0;
+                    while let Some(&(_, c)) = source_chars.peek_nth(count) {
+                        if c.is_ascii_alphanumeric() || c.is_whitespace() {
+                            break;
+                        }
+                        count += 1;
+                    }
+                    let ot: String = source_chars.by_ref().take(count).map(|(_, c)| c).collect();
+                    TokenType::Invalid {
+                        inner: TokenInner::new_invalid(
+                            format!("Unknown: {}{}", other, ot),
+                            count + 1, // add the `other` len
+                            idx,
+                        ),
+                    }
                 },
             };
 
@@ -251,6 +245,32 @@ impl Scanner {
 
     pub fn source(&self) -> &str {
         &self.source
+    }
+
+    fn keyword_or_ident(inner: TokenInner) -> TokenType {
+        use TokenType::{
+            And, Class, Else, False, For, Fun, Identifier, If, Nil, Or, Print, Return, Super, This,
+            True, Var, While,
+        };
+        match inner.lexeme() {
+            "and" => And { inner },
+            "or" => Or { inner },
+            "class" => Class { inner },
+            "super" => Super { inner },
+            "this" => This { inner },
+            "true" => True { inner },
+            "false" => False { inner },
+            "while" => While { inner },
+            "for" => For { inner },
+            "if" => If { inner },
+            "else" => Else { inner },
+            "print" => Print { inner },
+            "fun" => Fun { inner },
+            "return" => Return { inner },
+            "var" => Var { inner },
+            "nil" => Nil { inner },
+            _ => Identifier { inner },
+        }
     }
 }
 
@@ -288,6 +308,30 @@ mod tests {
     }
 
     #[test]
+    fn test_maximal_munch() {
+        let correct = vec![
+            TokenType::Var {
+                inner: TokenInner::new("var".to_owned(), 0),
+            },
+            TokenType::Identifier {
+                inner: TokenInner::new("vara".to_owned(), 4),
+            },
+        ];
+        let sc = Scanner::new("var vara".to_owned());
+        assert_eq!(sc.tokens, correct);
+
+        let correct = vec![
+            TokenType::Class {
+                inner: TokenInner::new("class".to_owned(), 0),
+            },
+            TokenType::Identifier {
+                inner: TokenInner::new("classa".to_owned(), 6),
+            },
+        ];
+        let sc = Scanner::new("class classa".to_owned());
+        assert_eq!(sc.tokens, correct);
+    }
+    #[test]
     fn other_char() {
         let correct = vec![
             TokenType::Var {
@@ -300,17 +344,40 @@ mod tests {
                 inner: TokenInner::new("=".to_owned(), 6),
             },
             TokenType::Invalid {
-                inner: TokenInner::new("Unknown: #".to_owned(), 7),
+                inner: TokenInner::new_invalid("Unknown: ##".to_owned(), 2, 7),
             },
             TokenType::Number {
                 double: 1.8,
-                inner:  TokenInner::new("1.8".to_owned(), 9),
+                inner:  TokenInner::new("1.8".to_owned(), 10),
             },
             TokenType::Semicolon {
-                inner: TokenInner::new(";".to_owned(), 12),
+                inner: TokenInner::new(";".to_owned(), 13),
             },
         ];
-        let sc = Scanner::new("var a =# 1.8;".to_owned());
+        let sc = Scanner::new("var a =## 1.8;".to_owned());
+        assert_eq!(sc.tokens, correct);
+        let correct = vec![
+            TokenType::Var {
+                inner: TokenInner::new("var".to_owned(), 0),
+            },
+            TokenType::Identifier {
+                inner: TokenInner::new("a".to_owned(), 4),
+            },
+            TokenType::Equal {
+                inner: TokenInner::new("=".to_owned(), 6),
+            },
+            TokenType::Invalid {
+                inner: TokenInner::new_invalid("Unknown: #".to_owned(), 1, 7),
+            },
+            TokenType::Number {
+                double: 1.8,
+                inner:  TokenInner::new("1.8".to_owned(), 10),
+            },
+            TokenType::Semicolon {
+                inner: TokenInner::new(";".to_owned(), 13),
+            },
+        ];
+        let sc = Scanner::new("var a =#  1.8;".to_owned());
         assert_eq!(sc.tokens, correct);
     }
 
@@ -453,7 +520,11 @@ mod tests {
                 inner: TokenInner::new("=".to_owned(), 6),
             },
             TokenType::Invalid {
-                inner: TokenInner::new(r#"Invalid string token, not end with `"`"#.to_owned(), 8),
+                inner: TokenInner::new_invalid(
+                    r#"Invalid string token, not end with `"`"#.to_owned(),
+                    9,
+                    8,
+                ),
             },
         ];
         let sc = Scanner::new(r#"var a = "abcdefg;"#.to_owned());
@@ -563,7 +634,11 @@ mod tests {
 
         let correct = vec![
             TokenType::Invalid {
-                inner: TokenInner::new("Invalid block comment, not end with `*/`".to_owned(), 0),
+                inner: TokenInner::new_invalid(
+                    "Invalid block comment, not end with `*/`".to_owned(),
+                    32,
+                    0,
+                ),
             },
             TokenType::Number {
                 double: 0.0,
