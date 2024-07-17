@@ -321,6 +321,43 @@ mod tests {
                 inner: TokenInner::new("=".to_owned(), 6),
             },
             TokenType::Number {
+                double: 1.8,
+                inner:  TokenInner::new("1.8".to_owned(), 8),
+            },
+            TokenType::Dot {
+                inner: TokenInner::new(".".to_owned(), 11),
+            },
+            TokenType::Identifier {
+                inner: TokenInner::new("pow".to_owned(), 12),
+            },
+            TokenType::LeftParen {
+                inner: TokenInner::new("(".to_owned(), 15),
+            },
+            TokenType::Number {
+                double: 1.,
+                inner:  TokenInner::new("1".to_owned(), 16),
+            },
+            TokenType::RightParen {
+                inner: TokenInner::new(")".to_owned(), 17),
+            },
+            TokenType::Semicolon {
+                inner: TokenInner::new(";".to_owned(), 18),
+            },
+        ];
+        let sc = Scanner::new("var a = 1.8.pow(1);".to_owned());
+        assert_eq!(sc.tokens, correct);
+
+        let correct = vec![
+            TokenType::Var {
+                inner: TokenInner::new("var".to_owned(), 0),
+            },
+            TokenType::Identifier {
+                inner: TokenInner::new("a".to_owned(), 4),
+            },
+            TokenType::Equal {
+                inner: TokenInner::new("=".to_owned(), 6),
+            },
+            TokenType::Number {
                 double: 1.0,
                 inner:  TokenInner::new("1.0".to_owned(), 8),
             },
