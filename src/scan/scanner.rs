@@ -321,6 +321,27 @@ mod tests {
                 inner: TokenInner::new("=".to_owned(), 6),
             },
             TokenType::Number {
+                double: 1.0,
+                inner:  TokenInner::new("1.0".to_owned(), 8),
+            },
+            TokenType::Semicolon {
+                inner: TokenInner::new(";".to_owned(), 11),
+            },
+        ];
+        let sc = Scanner::new("var a = 1.0;".to_owned());
+        assert_eq!(sc.tokens, correct);
+
+        let correct = vec![
+            TokenType::Var {
+                inner: TokenInner::new("var".to_owned(), 0),
+            },
+            TokenType::Identifier {
+                inner: TokenInner::new("a".to_owned(), 4),
+            },
+            TokenType::Equal {
+                inner: TokenInner::new("=".to_owned(), 6),
+            },
+            TokenType::Number {
                 double: 19.0,
                 inner:  TokenInner::new("19".to_owned(), 8),
             },
@@ -399,6 +420,34 @@ mod tests {
             // },
         ];
         let sc = Scanner::new("// this is a comment\nvar a = 10".to_owned());
+        assert_eq!(sc.tokens, correct);
+
+        let correct = vec![
+            TokenType::Var {
+                inner: TokenInner::new("var".to_owned(), 0),
+            },
+            TokenType::Identifier {
+                inner: TokenInner::new("a".to_owned(), 4),
+            },
+            TokenType::Equal {
+                inner: TokenInner::new("=".to_owned(), 6),
+            },
+            TokenType::Number {
+                double: 10.0,
+                inner:  TokenInner::new("10".to_owned(), 8),
+            },
+            TokenType::Slash {
+                inner: TokenInner::new("/".to_owned(), 11),
+            },
+            TokenType::Number {
+                double: 4.0,
+                inner:  TokenInner::new("4".to_owned(), 13),
+            },
+            TokenType::Semicolon {
+                inner: TokenInner::new(";".to_owned(), 14),
+            },
+        ];
+        let sc = Scanner::new("var a = 10 / 4;".to_owned());
         assert_eq!(sc.tokens, correct);
     }
 
@@ -619,6 +668,7 @@ mod tests {
                 inner: TokenInner::new(";".to_owned(), 128),
             },
         ];
+
         #[expect(clippy::needless_raw_strings, reason = "need")]
         let sc = Scanner::new(
             r#"var one = a != b;
