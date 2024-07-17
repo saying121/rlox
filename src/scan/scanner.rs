@@ -235,7 +235,7 @@ impl Scanner {
                     }
                 },
                 other => TokenType::Invalid {
-                    inner: TokenInner::new(other.to_string(), idx),
+                    inner: TokenInner::new(format!("Unknown: {}",other), idx),
                 },
             };
 
@@ -285,6 +285,33 @@ mod tests {
             assert_eq!(a, (4, 3));
             assert_eq!("[Line: 4, Column: 3], text: data", inner.show(source));
         }
+    }
+
+    #[test]
+    fn other_char() {
+        let correct = vec![
+            TokenType::Var {
+                inner: TokenInner::new("var".to_owned(), 0),
+            },
+            TokenType::Identifier {
+                inner: TokenInner::new("a".to_owned(), 4),
+            },
+            TokenType::Equal {
+                inner: TokenInner::new("=".to_owned(), 6),
+            },
+            TokenType::Invalid {
+                inner: TokenInner::new("Unknown: #".to_owned(), 7),
+            },
+            TokenType::Number {
+                double: 1.8,
+                inner:  TokenInner::new("1.8".to_owned(), 9),
+            },
+            TokenType::Semicolon {
+                inner: TokenInner::new(";".to_owned(), 12),
+            },
+        ];
+        let sc = Scanner::new("var a =# 1.8;".to_owned());
+        assert_eq!(sc.tokens, correct);
     }
 
     #[test]
