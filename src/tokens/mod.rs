@@ -1,8 +1,5 @@
 use strum::{Display, EnumString};
 
-pub mod token;
-pub mod token_type;
-
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
@@ -14,16 +11,16 @@ pub struct TokenInner {
 }
 
 impl TokenInner {
-    pub fn new(lexeme: String, offset: usize) -> Self {
+    pub const fn new(lexeme: String, offset: usize) -> Self {
         Self { lexeme, offset }
     }
-    fn get_col(&self, origin: &str) -> (usize, usize) {
+    pub fn get_col(&self, origin: &str) -> (usize, usize) {
         let mut line = 1;
         let mut col = 1;
         for ch in origin.chars().take(self.offset) {
             if ch == '\n' {
                 line += 1;
-                col = 1
+                col = 1;
             }
             else {
                 col += 1;
@@ -35,6 +32,10 @@ impl TokenInner {
         let (line, col) = self.get_col(origin);
         format!("[Line: {line}, Column: {col}], text: {}", self.lexeme)
     }
+
+    pub fn lexeme(&self) -> &str {
+        &self.lexeme
+    }
 }
 
 // multiple cursor magic moment
@@ -42,7 +43,7 @@ impl TokenInner {
 #[derive(Debug)]
 #[derive(PartialEq, PartialOrd)]
 #[derive(EnumString, Display)]
-pub enum MyTokenType {
+pub enum TokenType {
     // Single_character tokens
     LeftParen { inner: TokenInner },
     RightParen { inner: TokenInner },

@@ -11,6 +11,9 @@ strum = { version = "0.26.3", features = ["derive"] }
 itertools = { version = "^0.13" }
 # regex = { version = "^1" }
 
+[dev-dependencies]
+pretty_assertions = { version = "^1" }
+
 [lints.rust]
 temporary_cstring_as_ptr = "deny"
 
