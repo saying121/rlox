@@ -104,14 +104,18 @@ impl Scanner {
                                 if next == '*' && next_next == '/' {
                                     break;
                                 }
+                                // Count the number of character before "*/"
                                 count += 1;
                             }
 
                             let b_comment: String =
                                 source_chars.by_ref().take(count).map(|(_, c)| c).collect();
+
+                            // consume the next two characters regardless, even not ('*','/')
+                            source_chars.next();
+                            source_chars.next();
+
                             if last_pre == '*' && last == '/' {
-                                source_chars.next();
-                                source_chars.next();
                                 TokenType::BlockComment {
                                     inner: TokenInner::new(b_comment, idx),
                                 }
@@ -640,10 +644,10 @@ mod tests {
                     0,
                 ),
             },
-            TokenType::Number {
-                double: 0.0,
-                inner:  TokenInner::new("0".to_owned(), 31),
-            },
+            // TokenType::Number {
+            //     double: 0.0,
+            //     inner:  TokenInner::new("0".to_owned(), 31),
+            // },
         ];
         let sc = Scanner::new("/* this is a comment/\nvar a = 10".to_owned());
         assert_eq!(sc.tokens, correct);
