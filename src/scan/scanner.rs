@@ -210,41 +210,33 @@ impl Scanner {
     // "...", "..., "...\"...\\..."
     fn parse_string(chars: &mut PeekNth<CharIndices>, idx: usize, source: &str) -> TokenType {
         let mut res_str = String::new();
+
         let mut last_matched = '\0';
         let mut need_escape = false;
+        let mut str_end = false;
 
         loop {
-            let mut end_flag = false;
-
             let string: String = chars
                 .by_ref()
                 .take_while(|&(_, c)| {
                     last_matched = c;
                     if c == '"' {
-                        if need_escape {
-                            end_flag = false;
-                            need_escape = false;
-                            true
-                        }
-                        else {
-                            end_flag = true;
-                            false
-                        }
+                        str_end = !need_escape; // If need to escape, don't terminate the string.
+                        let need_take = need_escape; // If need to escape, take the char
+                        need_escape = false;
+                        need_take
                     }
                     else if c == '\\' {
-                        end_flag = false;
-                        if need_escape {
-                            need_escape = false;
-                            true
-                        }
-                        else {
-                            need_escape = true;
-                            false
-                        }
+                        str_end = false;
+                        let need_take = need_escape; // If need to escape, take the char
+
+                        // If current char escape, the next char does not
+                        need_escape = !need_escape;
+                        need_take
                     }
                     else {
                         need_escape = false;
-                        end_flag = false;
+                        str_end = false;
                         true
                     }
                 })
@@ -252,7 +244,7 @@ impl Scanner {
                 .collect();
 
             res_str.push_str(&string);
-            if last_matched == '"' && end_flag || chars.peek().is_none() {
+            if last_matched == '"' && str_end || chars.peek().is_none() {
                 break;
             }
         }

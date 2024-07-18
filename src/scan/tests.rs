@@ -7,6 +7,17 @@ use crate::tokens::{TokenInner, TokenType};
 fn test_scan_string_escape() {
     let correct = vec![
         TokenType::String {
+            inner: TokenInner::new(r#"abcd""efg"#.to_owned(), 0),
+        },
+        TokenType::Semicolon {
+            inner: TokenInner::new(";".to_owned(), 13),
+        },
+    ];
+    let sc = Scanner::new(r#""abcd\"\"efg";"#.to_owned());
+    assert_eq!(sc.tokens(), correct);
+
+    let correct = vec![
+        TokenType::String {
             inner: TokenInner::new(r#"abcd"efg"#.to_owned(), 0),
         },
         TokenType::Semicolon {
