@@ -71,14 +71,14 @@ pub enum TokenType {
     Star { inner: TokenInner },
 
     // One or two character tokens.
-    Bang { inner: TokenInner },
-    BangEqual { inner: TokenInner },
-    Equal { inner: TokenInner },
-    EqualEqual { inner: TokenInner },
-    Greater { inner: TokenInner },
-    GreaterEqual { inner: TokenInner },
-    Less { inner: TokenInner },
-    LessEqual { inner: TokenInner },
+    Bang { inner: TokenInner },         // !
+    BangEqual { inner: TokenInner },    // !=
+    Equal { inner: TokenInner },        // =
+    EqualEqual { inner: TokenInner },   // ==
+    Greater { inner: TokenInner },      // >
+    GreaterEqual { inner: TokenInner }, // >=
+    Less { inner: TokenInner },         // <
+    LessEqual { inner: TokenInner },    // <=
 
     // Literals
     Identifier { inner: TokenInner },
