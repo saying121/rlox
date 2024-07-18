@@ -26,10 +26,41 @@ fn test_scan_string_escape() {
     ];
     let sc = Scanner::new(r#""abcd\\\"efg";"#.to_owned());
     assert_eq!(sc.tokens(), correct);
+
+    let correct = vec![
+        TokenType::String {
+            inner: TokenInner::new(r#"abcd\#efg"#.to_owned(), 0),
+        },
+        TokenType::Semicolon {
+            inner: TokenInner::new(";".to_owned(), 12),
+        },
+    ];
+    let sc = Scanner::new(r#""abcd\\#efg";"#.to_owned());
+    assert_eq!(sc.tokens(), correct);
 }
 
 #[test]
 fn test_scan_string() {
+    let correct = vec![
+        TokenType::Var {
+            inner: TokenInner::new("var".to_owned(), 0),
+        },
+        TokenType::Identifier {
+            inner: TokenInner::new("a".to_owned(), 4),
+        },
+        TokenType::Equal {
+            inner: TokenInner::new("=".to_owned(), 6),
+        },
+        TokenType::String {
+            inner: TokenInner::new("ab()cdefg".to_owned(), 8),
+        },
+        TokenType::Semicolon {
+            inner: TokenInner::new(";".to_owned(), 19),
+        },
+    ];
+    let sc = Scanner::new(r#"var a = "ab()cdefg";"#.to_owned());
+    assert_eq!(sc.tokens(), correct);
+
     let correct = vec![
         TokenType::Var {
             inner: TokenInner::new("var".to_owned(), 0),
