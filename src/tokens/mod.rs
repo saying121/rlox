@@ -1,3 +1,5 @@
+#![allow(unfulfilled_lint_expectations, reason = "allow it")]
+
 use strum::{Display, EnumString};
 
 #[derive(Clone)]
@@ -109,4 +111,34 @@ pub enum TokenType {
     BlockComment { inner: TokenInner },
 
     Invalid { inner: TokenInner },
+}
+
+impl TokenType {
+    pub const fn is_keyword(&self) -> bool {
+        #[expect(clippy::enum_glob_use, reason = "just in function")]
+        use TokenType::*;
+
+        match self {
+            And { inner }
+            | Class { inner }
+            | Else { inner }
+            | Fun { inner }
+            | For { inner }
+            | If { inner }
+            | Nil { inner }
+            | Or { inner }
+            | Print { inner }
+            | Return { inner }
+            | Super { inner }
+            | This { inner }
+            | True { inner }
+            | False { inner }
+            | Var { inner }
+            | While { inner } => {
+                _ = inner;
+                true
+            },
+            _ => false,
+        }
+    }
 }
