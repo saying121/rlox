@@ -1,6 +1,6 @@
 use pretty_assertions::assert_eq;
 
-use super::scanner::*;
+use crate::scan::scanner::Scanner;
 use crate::tokens::{TokenInner, TokenType};
 
 #[test]

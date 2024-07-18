@@ -58,7 +58,7 @@ impl Scanner {
                 '>' => Self::parse_greater(&mut source_chars, idx),
                 '/' => Self::parse_slash(&mut source_chars, idx, &source),
                 // > multi char tokens
-                '"' => Self::parse_quote(&mut source_chars, idx, &source),
+                '"' => Self::parse_string(&mut source_chars, idx, &source),
                 digit if digit.is_ascii_digit() => {
                     Self::parse_number(digit, &mut source_chars, idx)
                 },
@@ -208,7 +208,7 @@ impl Scanner {
     }
 
     // "...", "..., "...\"...\\..."
-    fn parse_quote(chars: &mut PeekNth<CharIndices>, idx: usize, source: &str) -> TokenType {
+    fn parse_string(chars: &mut PeekNth<CharIndices>, idx: usize, source: &str) -> TokenType {
         let mut res_str = String::new();
         let mut last_matched = '\0';
         let mut need_escape = false;
@@ -271,9 +271,9 @@ impl Scanner {
         }
     }
 
-    fn parse_number(digit: char, chars: &mut PeekNth<CharIndices>, idx: usize) -> TokenType {
+    fn parse_number(first: char, chars: &mut PeekNth<CharIndices>, idx: usize) -> TokenType {
         let mut its = Vec::with_capacity(4);
-        its.push(digit.to_string());
+        its.push(first.to_string());
 
         let mut count = 0;
         while let Some(&(_, ch)) = chars.peek_nth(count)
