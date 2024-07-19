@@ -1,10 +1,34 @@
 use pretty_assertions::assert_eq;
 
-use crate::scan::scanner::Scanner;
-use crate::tokens::{TokenInner, TokenType};
+use crate::{
+    scan::scanner::Scanner,
+    tokens::{TokenInner, TokenType},
+};
 
 #[test]
 fn test_scan_string_escape() {
+    let correct = vec![
+        TokenType::String {
+            inner: TokenInner::new("abcd\"\"\n\t\refg".to_owned(), 0),
+        },
+        TokenType::Semicolon {
+            inner: TokenInner::new(";".to_owned(), 16),
+        },
+    ];
+    let sc = Scanner::new("\"abcd\\\"\\\"\n\t\refg\";".to_owned());
+    assert_eq!(sc.tokens(), correct);
+
+    let correct = vec![
+        TokenType::String {
+            inner: TokenInner::new("abcd\"\"\nefg".to_owned(), 0),
+        },
+        TokenType::Semicolon {
+            inner: TokenInner::new(";".to_owned(), 14),
+        },
+    ];
+    let sc = Scanner::new("\"abcd\\\"\\\"\nefg\";".to_owned());
+    assert_eq!(sc.tokens(), correct);
+
     let correct = vec![
         TokenType::String {
             inner: TokenInner::new(r#"abcd""efg"#.to_owned(), 0),
