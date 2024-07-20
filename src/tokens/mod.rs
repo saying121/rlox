@@ -114,6 +114,55 @@ pub enum Token {
 }
 
 impl Token {
+    pub const fn inner(&self) -> &TokenInner {
+        match self {
+            Self::LeftParen { inner }
+            | Self::RightParen { inner }
+            | Self::LeftBrace { inner }
+            | Self::RightBrace { inner }
+            | Self::Comma { inner }
+            | Self::Dot { inner }
+            | Self::Minus { inner }
+            | Self::Plus { inner }
+            | Self::Semicolon { inner }
+            | Self::Slash { inner }
+            | Self::Star { inner }
+            | Self::Bang { inner }
+            | Self::BangEqual { inner }
+            | Self::Equal { inner }
+            | Self::EqualEqual { inner }
+            | Self::Greater { inner }
+            | Self::GreaterEqual { inner }
+            | Self::Less { inner }
+            | Self::LessEqual { inner }
+            | Self::Identifier { inner }
+            | Self::String { inner }
+            | Self::Number { inner, .. }
+            | Self::And { inner }
+            | Self::Class { inner }
+            | Self::Else { inner }
+            | Self::Fun { inner }
+            | Self::For { inner }
+            | Self::If { inner }
+            | Self::Nil { inner }
+            | Self::Or { inner }
+            | Self::Print { inner }
+            | Self::Return { inner }
+            | Self::Super { inner }
+            | Self::This { inner }
+            | Self::True { inner }
+            | Self::False { inner }
+            | Self::Var { inner }
+            | Self::While { inner }
+            | Self::Eof { inner }
+            | Self::Comment { inner }
+            | Self::BlockComment { inner }
+            | Self::Invalid { inner } => inner,
+        }
+    }
+}
+
+impl Token {
     pub const fn is_keyword(&self) -> bool {
         #[expect(clippy::enum_glob_use, reason = "just in function")]
         use Token::*;

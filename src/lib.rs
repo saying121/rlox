@@ -1,5 +1,6 @@
 #![feature(let_chains)]
 
+pub mod ast_printer;
 pub mod cli;
 pub mod expr;
 pub mod lox;
