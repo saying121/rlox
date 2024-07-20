@@ -58,7 +58,7 @@ impl TokenInner {
 #[derive(Debug)]
 #[derive(PartialEq, PartialOrd)]
 #[derive(EnumString, Display)]
-pub enum TokenType {
+pub enum Token {
     // Single_character tokens
     LeftParen { inner: TokenInner },
     RightParen { inner: TokenInner },
@@ -113,10 +113,10 @@ pub enum TokenType {
     Invalid { inner: TokenInner },
 }
 
-impl TokenType {
+impl Token {
     pub const fn is_keyword(&self) -> bool {
         #[expect(clippy::enum_glob_use, reason = "just in function")]
-        use TokenType::*;
+        use Token::*;
 
         match self {
             And { inner }

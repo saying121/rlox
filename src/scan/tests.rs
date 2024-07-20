@@ -2,16 +2,16 @@ use pretty_assertions::assert_eq;
 
 use crate::{
     scan::scanner::Scanner,
-    tokens::{TokenInner, TokenType},
+    tokens::{TokenInner, Token},
 };
 
 #[test]
 fn test_scan_string_escape() {
     let correct = vec![
-        TokenType::String {
+        Token::String {
             inner: TokenInner::new("abcd\"\"\n\t\refg".to_owned(), 0),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 16),
         },
     ];
@@ -19,10 +19,10 @@ fn test_scan_string_escape() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::String {
+        Token::String {
             inner: TokenInner::new("abcd\"\"\nefg".to_owned(), 0),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 14),
         },
     ];
@@ -30,10 +30,10 @@ fn test_scan_string_escape() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::String {
+        Token::String {
             inner: TokenInner::new(r#"abcd""efg"#.to_owned(), 0),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 13),
         },
     ];
@@ -41,10 +41,10 @@ fn test_scan_string_escape() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::String {
+        Token::String {
             inner: TokenInner::new(r#"abcd"efg"#.to_owned(), 0),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 11),
         },
     ];
@@ -52,10 +52,10 @@ fn test_scan_string_escape() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::String {
+        Token::String {
             inner: TokenInner::new(r#"abcd\"efg"#.to_owned(), 0),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 13),
         },
     ];
@@ -63,10 +63,10 @@ fn test_scan_string_escape() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::String {
+        Token::String {
             inner: TokenInner::new(r#"abcd\#efg"#.to_owned(), 0),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 12),
         },
     ];
@@ -77,19 +77,19 @@ fn test_scan_string_escape() {
 #[test]
 fn test_scan_string() {
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::String {
+        Token::String {
             inner: TokenInner::new("ab()cdefg".to_owned(), 8),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 19),
         },
     ];
@@ -97,19 +97,19 @@ fn test_scan_string() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::String {
+        Token::String {
             inner: TokenInner::new("abcdefg".to_owned(), 8),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 17),
         },
     ];
@@ -117,16 +117,16 @@ fn test_scan_string() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::Invalid {
+        Token::Invalid {
             inner: TokenInner::new_invalid(
                 r#"Invalid string token, not end with `"`"#.to_owned(),
                 9,
@@ -142,7 +142,7 @@ fn test_scan_string() {
 fn test_line_col() {
     let source = "\n\n\nvar\n\n";
     let sc = Scanner::new(source.to_owned());
-    if let TokenType::Var { inner } = &sc.tokens()[0] {
+    if let Token::Var { inner } = &sc.tokens()[0] {
         let a = inner.get_col(source);
         assert_eq!("[Line: 4, Column: 1], text: var", inner.show(source));
         assert_eq!(a, (4, 1));
@@ -150,7 +150,15 @@ fn test_line_col() {
 
     let source = "\n\n\n   var\n\n";
     let sc = Scanner::new(source.to_owned());
-    if let TokenType::Var { inner } = &sc.tokens()[0] {
+    if let Token::Var { inner } = &sc.tokens()[0] {
+        let a = inner.get_col(source);
+        assert_eq!(a, (4, 4));
+        assert_eq!("[Line: 4, Column: 4], text: var", inner.show(source));
+    }
+
+    let source = "\"\"\"\n\n\n   var\n\n\"";
+    let sc = Scanner::new(source.to_owned());
+    if let Token::Var { inner } = &sc.tokens()[0] {
         let a = inner.get_col(source);
         assert_eq!(a, (4, 4));
         assert_eq!("[Line: 4, Column: 4], text: var", inner.show(source));
@@ -158,7 +166,7 @@ fn test_line_col() {
 
     let source = "\n\n\n  data\n\n";
     let sc = Scanner::new(source.to_owned());
-    if let TokenType::Identifier { inner } = &sc.tokens()[0] {
+    if let Token::Identifier { inner } = &sc.tokens()[0] {
         let a = inner.get_col(source);
         assert_eq!(a, (4, 3));
         assert_eq!("[Line: 4, Column: 3], text: data", inner.show(source));
@@ -168,10 +176,10 @@ fn test_line_col() {
 #[test]
 fn test_maximal_munch() {
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("vara".to_owned(), 4),
         },
     ];
@@ -179,10 +187,10 @@ fn test_maximal_munch() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::Class {
+        Token::Class {
             inner: TokenInner::new("class".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("classa".to_owned(), 6),
         },
     ];
@@ -192,46 +200,46 @@ fn test_maximal_munch() {
 #[test]
 fn other_char() {
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::Invalid {
+        Token::Invalid {
             inner: TokenInner::new_invalid("Unknown: ##".to_owned(), 2, 7),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.8,
             inner:  TokenInner::new("1.8".to_owned(), 10),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 13),
         },
     ];
     let sc = Scanner::new("var a =## 1.8;".to_owned());
     assert_eq!(sc.tokens(), correct);
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::Invalid {
+        Token::Invalid {
             inner: TokenInner::new_invalid("Unknown: #".to_owned(), 1, 7),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.8,
             inner:  TokenInner::new("1.8".to_owned(), 10),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 13),
         },
     ];
@@ -242,20 +250,20 @@ fn other_char() {
 #[test]
 fn test_scan_number() {
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.8,
             inner:  TokenInner::new("1.8".to_owned(), 8),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 11),
         },
     ];
@@ -263,36 +271,36 @@ fn test_scan_number() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.8,
             inner:  TokenInner::new("1.8".to_owned(), 8),
         },
-        TokenType::Dot {
+        Token::Dot {
             inner: TokenInner::new(".".to_owned(), 11),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("pow".to_owned(), 12),
         },
-        TokenType::LeftParen {
+        Token::LeftParen {
             inner: TokenInner::new("(".to_owned(), 15),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.,
             inner:  TokenInner::new("1".to_owned(), 16),
         },
-        TokenType::RightParen {
+        Token::RightParen {
             inner: TokenInner::new(")".to_owned(), 17),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 18),
         },
     ];
@@ -300,20 +308,20 @@ fn test_scan_number() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.0,
             inner:  TokenInner::new("1.0".to_owned(), 8),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 11),
         },
     ];
@@ -321,23 +329,23 @@ fn test_scan_number() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::Number {
+        Token::Number {
             double: 19.0,
             inner:  TokenInner::new("19".to_owned(), 8),
         },
-        TokenType::Dot {
+        Token::Dot {
             inner: TokenInner::new(".".to_owned(), 10),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 11),
         },
     ];
@@ -348,19 +356,19 @@ fn test_scan_number() {
 #[test]
 fn test_scan_comment() {
     let correct = vec![
-        TokenType::Comment {
+        Token::Comment {
             inner: TokenInner::new(" this is a comment".to_owned(), 0),
         },
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 21),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4 + 21),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6 + 21),
         },
-        TokenType::Number {
+        Token::Number {
             double: 10.0,
             inner:  TokenInner::new("10".to_owned(), 8 + 21),
         },
@@ -372,27 +380,27 @@ fn test_scan_comment() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6),
         },
-        TokenType::Number {
+        Token::Number {
             double: 10.0,
             inner:  TokenInner::new("10".to_owned(), 8),
         },
-        TokenType::Slash {
+        Token::Slash {
             inner: TokenInner::new("/".to_owned(), 11),
         },
-        TokenType::Number {
+        Token::Number {
             double: 4.0,
             inner:  TokenInner::new("4".to_owned(), 13),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 14),
         },
     ];
@@ -404,19 +412,19 @@ fn test_scan_comment() {
 fn test_scan_block_comment() {
     let offset = 23;
     let correct = vec![
-        TokenType::BlockComment {
+        Token::BlockComment {
             inner: TokenInner::new(" this is a comment".to_owned(), 0),
         },
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), offset),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4 + offset),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6 + offset),
         },
-        TokenType::Number {
+        Token::Number {
             double: 10.0,
             inner:  TokenInner::new("10".to_owned(), 8 + offset),
         },
@@ -426,19 +434,19 @@ fn test_scan_block_comment() {
 
     let offset = 24;
     let correct = vec![
-        TokenType::BlockComment {
+        Token::BlockComment {
             inner: TokenInner::new(" this is a comment ".to_owned(), 0),
         },
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), offset),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 4 + offset),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 6 + offset),
         },
-        TokenType::Number {
+        Token::Number {
             double: 10.0,
             inner:  TokenInner::new("10".to_owned(), 8 + offset),
         },
@@ -447,7 +455,7 @@ fn test_scan_block_comment() {
     assert_eq!(sc.tokens(), correct);
 
     let correct = vec![
-        TokenType::Invalid {
+        Token::Invalid {
             inner: TokenInner::new_invalid(
                 "Invalid block comment, not end with `*/`".to_owned(),
                 32,
@@ -466,158 +474,158 @@ fn test_scan_block_comment() {
 #[test]
 fn test_scan_double_token() {
     let correct = vec![
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 0),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("one".to_owned(), 4),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 8),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("a".to_owned(), 10),
         },
-        TokenType::BangEqual {
+        Token::BangEqual {
             inner: TokenInner::new("!=".to_owned(), 12),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("b".to_owned(), 15),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 16),
         },
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 18),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("two".to_owned(), 22),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 26),
         },
-        TokenType::Bang {
+        Token::Bang {
             inner: TokenInner::new("!".to_owned(), 28),
         },
-        TokenType::True {
+        Token::True {
             inner: TokenInner::new("true".to_owned(), 30),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 34),
         },
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 36),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("three".to_owned(), 40),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 46),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.0,
             inner:  TokenInner::new("1".to_owned(), 48),
         },
-        TokenType::EqualEqual {
+        Token::EqualEqual {
             inner: TokenInner::new("==".to_owned(), 50),
         },
-        TokenType::Number {
+        Token::Number {
             double: 2.0,
             inner:  TokenInner::new("2".to_owned(), 53),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 54),
         },
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 56),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("four".to_owned(), 60),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 65),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.0,
             inner:  TokenInner::new("1".to_owned(), 67),
         },
-        TokenType::Less {
+        Token::Less {
             inner: TokenInner::new("<".to_owned(), 69),
         },
-        TokenType::Number {
+        Token::Number {
             double: 2.0,
             inner:  TokenInner::new("2".to_owned(), 71),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 72),
         },
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 74),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("five".to_owned(), 78),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 83),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.0,
             inner:  TokenInner::new("1".to_owned(), 85),
         },
-        TokenType::LessEqual {
+        Token::LessEqual {
             inner: TokenInner::new("<=".to_owned(), 87),
         },
-        TokenType::Number {
+        Token::Number {
             double: 2.0,
             inner:  TokenInner::new("2".to_owned(), 90),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 91),
         },
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 93),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("six".to_owned(), 97),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 101),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.0,
             inner:  TokenInner::new("1".to_owned(), 103),
         },
-        TokenType::Greater {
+        Token::Greater {
             inner: TokenInner::new(">".to_owned(), 105),
         },
-        TokenType::Number {
+        Token::Number {
             double: 2.0,
             inner:  TokenInner::new("2".to_owned(), 107),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 108),
         },
-        TokenType::Var {
+        Token::Var {
             inner: TokenInner::new("var".to_owned(), 110),
         },
-        TokenType::Identifier {
+        Token::Identifier {
             inner: TokenInner::new("seven".to_owned(), 114),
         },
-        TokenType::Equal {
+        Token::Equal {
             inner: TokenInner::new("=".to_owned(), 120),
         },
-        TokenType::Number {
+        Token::Number {
             double: 1.0,
             inner:  TokenInner::new("1".to_owned(), 122),
         },
-        TokenType::GreaterEqual {
+        Token::GreaterEqual {
             inner: TokenInner::new(">=".to_owned(), 124),
         },
-        TokenType::Number {
+        Token::Number {
             double: 2.0,
             inner:  TokenInner::new("2".to_owned(), 127),
         },
-        TokenType::Semicolon {
+        Token::Semicolon {
             inner: TokenInner::new(";".to_owned(), 128),
         },
     ];

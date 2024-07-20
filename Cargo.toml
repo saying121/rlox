@@ -1,14 +1,16 @@
 [package]
-name = "rlox"
+name    = "rlox"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "^4", features = ["derive"] }
-rustyline = { version = "^14" }
-anyhow = { version = "^1" }
-strum = { version = "0.26.3", features = ["derive"] }
-itertools = { version = "^0.13" }
+clap          = { version = "^4", features = ["derive"] }
+rustyline     = { version = "^14" }
+anyhow        = { version = "^1" }
+strum         = { version = "0.26.3", features = ["derive"] }
+itertools     = { version = "^0.13" }
+enum_dispatch = { version = "^0.3" }
+paste         = { version = "^1" }
 # regex = { version = "^1" }
 
 [dev-dependencies]
@@ -24,8 +26,8 @@ empty_enum_variants_with_brackets = "warn"
 match_same_arms                   = "warn"
 missing_asserts_for_indexing      = "warn"
 # multiple_unsafe_ops_per_block     = "warn"
-uninhabited_references            = "warn"
-wildcard_dependencies             = "warn"
+uninhabited_references = "warn"
+wildcard_dependencies  = "warn"
 
 # missing_errors_doc                        = "warn"
 # missing_panics_doc                        = "warn"
