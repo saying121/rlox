@@ -2,7 +2,7 @@ use std::str::CharIndices;
 
 use itertools::PeekNth;
 
-use crate::tokens::{TokenInner, Token};
+use crate::tokens::{Token, TokenInner};
 
 // #[derive(Clone)]
 #[derive(Debug)]
@@ -220,23 +220,20 @@ impl Scanner {
                 .by_ref()
                 .take_while(|&(_, c)| {
                     last_matched = c;
-                    if c == '"' {
-                        str_end = !need_escape; // If need to escape, don't terminate the string.
-                        let need_take = need_escape; // If need to escape, take the char
+                    if need_escape {
                         need_escape = false;
-                        need_take
+                        return true;
+                    }
+
+                    if c == '"' {
+                        str_end = true;
+                        false
                     }
                     else if c == '\\' {
-                        str_end = false;
-                        let need_take = need_escape; // If need to escape, take the char
-
-                        // If current char escape, the next char does not
-                        need_escape = !need_escape;
-                        need_take
+                        need_escape = true;
+                        false
                     }
                     else {
-                        need_escape = false;
-                        str_end = false;
                         true
                     }
                 })
@@ -253,6 +250,7 @@ impl Scanner {
             '"' => Token::String {
                 inner: TokenInner::new(res_str, idx),
             },
+            // When does not end with '"' that may indicate EOF
             _ => Token::Invalid {
                 inner: TokenInner::new_invalid(
                     r#"Invalid string token, not end with `"`"#.to_owned(),

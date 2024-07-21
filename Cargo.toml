@@ -10,6 +10,7 @@ anyhow        = { version = "^1" }
 strum         = { version = "0.26.3", features = ["derive"] }
 itertools     = { version = "^0.13" }
 enum_dispatch = { version = "^0.3" }
+# enum_delegate = "0.2.0"
 paste         = { version = "^1" }
 # regex = { version = "^1" }
 
