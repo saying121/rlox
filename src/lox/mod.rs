@@ -28,11 +28,11 @@ impl Lox {
         Ok(())
     }
 
-    pub fn error(line: usize, message: String) {
-        Self::report(line, "".to_owned(), message);
+    pub fn error(line: usize, message: &str) {
+        Self::report(line, "", message);
     }
 
-    fn report(line: usize, where_: String, message: String) {
+    fn report(line: usize, where_: &str, message: &str) {
         eprintln!("[line {line}] {where_}: {message}");
     }
 }

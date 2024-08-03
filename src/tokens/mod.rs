@@ -32,7 +32,7 @@ impl TokenInner {
     pub fn get_col(&self, origin: &str) -> (usize, usize) {
         let mut line = 1;
         let mut col = 1;
-        for ch in origin.chars().take(self.offset) {
+        for (_, ch) in origin.char_indices().take(self.offset) {
             if ch == '\n' {
                 line += 1;
                 col = 1;

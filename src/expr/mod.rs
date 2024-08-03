@@ -60,8 +60,7 @@ macro_rules! impl_expr {
     };
 }
 
-impl_expr!(
-    Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable
+impl_expr!(Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable
 );
 
 // #[derive(Debug)]
