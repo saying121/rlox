@@ -128,49 +128,51 @@ pub enum Token {
 
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[expect(clippy::enum_glob_use, reason = "just in this block")]
+        use Token::*;
         match self {
-            Self::LeftParen { inner }
-            | Self::RightParen { inner }
-            | Self::LeftBrace { inner }
-            | Self::RightBrace { inner }
-            | Self::Comma { inner }
-            | Self::Dot { inner }
-            | Self::Minus { inner }
-            | Self::Plus { inner }
-            | Self::Semicolon { inner }
-            | Self::Slash { inner }
-            | Self::Star { inner }
-            | Self::Bang { inner }
-            | Self::BangEqual { inner }
-            | Self::Equal { inner }
-            | Self::EqualEqual { inner }
-            | Self::Greater { inner }
-            | Self::GreaterEqual { inner }
-            | Self::Less { inner }
-            | Self::LessEqual { inner }
-            | Self::Identifier { inner }
-            | Self::String { inner }
-            | Self::And { inner }
-            | Self::Class { inner }
-            | Self::Else { inner }
-            | Self::Fun { inner }
-            | Self::For { inner }
-            | Self::If { inner }
-            | Self::Nil { inner }
-            | Self::Or { inner }
-            | Self::Print { inner }
-            | Self::Return { inner }
-            | Self::Super { inner }
-            | Self::This { inner }
-            | Self::True { inner }
-            | Self::False { inner }
-            | Self::Var { inner }
-            | Self::While { inner }
-            | Self::Eof { inner }
-            | Self::Comment { inner }
-            | Self::BlockComment { inner }
-            | Self::Invalid { inner }
-            | Self::Number { inner, .. } => f.write_str(&inner.to_string()),
+            LeftParen { inner }
+            | RightParen { inner }
+            | LeftBrace { inner }
+            | RightBrace { inner }
+            | Comma { inner }
+            | Dot { inner }
+            | Minus { inner }
+            | Plus { inner }
+            | Semicolon { inner }
+            | Slash { inner }
+            | Star { inner }
+            | Bang { inner }
+            | BangEqual { inner }
+            | Equal { inner }
+            | EqualEqual { inner }
+            | Greater { inner }
+            | GreaterEqual { inner }
+            | Less { inner }
+            | LessEqual { inner }
+            | Identifier { inner }
+            | String { inner }
+            | And { inner }
+            | Class { inner }
+            | Else { inner }
+            | Fun { inner }
+            | For { inner }
+            | If { inner }
+            | Nil { inner }
+            | Or { inner }
+            | Print { inner }
+            | Return { inner }
+            | Super { inner }
+            | This { inner }
+            | True { inner }
+            | False { inner }
+            | Var { inner }
+            | While { inner }
+            | Eof { inner }
+            | Comment { inner }
+            | BlockComment { inner }
+            | Invalid { inner }
+            | Number { inner, .. } => f.write_str(&inner.to_string()),
         }
     }
 }
@@ -187,60 +189,31 @@ impl Display for TokenInner {
 
 impl Token {
     pub const fn inner(&self) -> &TokenInner {
-        match self {
-            Self::LeftParen { inner }
-            | Self::RightParen { inner }
-            | Self::LeftBrace { inner }
-            | Self::RightBrace { inner }
-            | Self::Comma { inner }
-            | Self::Dot { inner }
-            | Self::Minus { inner }
-            | Self::Plus { inner }
-            | Self::Semicolon { inner }
-            | Self::Slash { inner }
-            | Self::Star { inner }
-            | Self::Bang { inner }
-            | Self::BangEqual { inner }
-            | Self::Equal { inner }
-            | Self::EqualEqual { inner }
-            | Self::Greater { inner }
-            | Self::GreaterEqual { inner }
-            | Self::Less { inner }
-            | Self::LessEqual { inner }
-            | Self::Identifier { inner }
-            | Self::String { inner }
-            | Self::Number { inner, .. }
-            | Self::And { inner }
-            | Self::Class { inner }
-            | Self::Else { inner }
-            | Self::Fun { inner }
-            | Self::For { inner }
-            | Self::If { inner }
-            | Self::Nil { inner }
-            | Self::Or { inner }
-            | Self::Print { inner }
-            | Self::Return { inner }
-            | Self::Super { inner }
-            | Self::This { inner }
-            | Self::True { inner }
-            | Self::False { inner }
-            | Self::Var { inner }
-            | Self::While { inner }
-            | Self::Eof { inner }
-            | Self::Comment { inner }
-            | Self::BlockComment { inner }
-            | Self::Invalid { inner } => inner,
-        }
-    }
-}
-
-impl Token {
-    pub const fn is_keyword(&self) -> bool {
-        #[expect(clippy::enum_glob_use, reason = "just in function")]
+        #[expect(clippy::enum_glob_use, reason = "just in this block")]
         use Token::*;
-
         match self {
-            And { inner }
+            LeftParen { inner }
+            | RightParen { inner }
+            | LeftBrace { inner }
+            | RightBrace { inner }
+            | Comma { inner }
+            | Dot { inner }
+            | Minus { inner }
+            | Plus { inner }
+            | Semicolon { inner }
+            | Slash { inner }
+            | Star { inner }
+            | Bang { inner }
+            | BangEqual { inner }
+            | Equal { inner }
+            | EqualEqual { inner }
+            | Greater { inner }
+            | GreaterEqual { inner }
+            | Less { inner }
+            | LessEqual { inner }
+            | Identifier { inner }
+            | String { inner }
+            | And { inner }
             | Class { inner }
             | Else { inner }
             | Fun { inner }
@@ -255,11 +228,39 @@ impl Token {
             | True { inner }
             | False { inner }
             | Var { inner }
-            | While { inner } => {
-                _ = inner;
-                true
-            },
-            _ => false,
+            | While { inner }
+            | Eof { inner }
+            | Comment { inner }
+            | BlockComment { inner }
+            | Invalid { inner }
+            | Number { inner, .. } => inner,
         }
+    }
+}
+
+impl Token {
+    pub const fn is_keyword(&self) -> bool {
+        #[expect(clippy::enum_glob_use, reason = "just in this block")]
+        use Token::*;
+
+        matches!(
+            self,
+            And { .. }
+                | Class { .. }
+                | Else { .. }
+                | Fun { .. }
+                | For { .. }
+                | If { .. }
+                | Nil { .. }
+                | Or { .. }
+                | Print { .. }
+                | Return { .. }
+                | Super { .. }
+                | This { .. }
+                | True { .. }
+                | False { .. }
+                | Var { .. }
+                | While { .. }
+        )
     }
 }
