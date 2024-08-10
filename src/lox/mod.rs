@@ -2,9 +2,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::ast_printer::AstPrinter;
-use crate::parser::Parser;
-use crate::scan::scanner::Scanner;
+use crate::{ast_printer::AstPrinter, parser::Parser, scan::scanner::Scanner};
 
 #[derive(Clone, Copy)]
 #[derive(Debug)]
@@ -17,22 +15,26 @@ pub struct Lox {
 impl Lox {
     pub fn run_file<T: AsRef<Path>>(path: T) -> Result<()> {
         let content = std::fs::read_to_string(path)?;
-        Self::run(content)?;
+        Self::run(content);
 
         Ok(())
     }
 
-    pub fn run(source: String) -> Result<()> {
+    pub fn run(source: String) {
         let scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens();
 
         let mut parser = Parser::new(tokens);
-        let expression = parser.parse()?;
+        let expression = match parser.parse() {
+            Ok(it) => it,
+            Err(e) => {
+                tracing::error!("{e}");
+                return;
+            },
+        };
 
         let ast = AstPrinter.print(&expression);
         println!("{ast}");
-
-        Ok(())
     }
 
     pub fn error(line: usize, message: &str) {
