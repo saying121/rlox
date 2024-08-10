@@ -1,38 +1,55 @@
 #![allow(unfulfilled_lint_expectations, reason = "allow it")]
 
-use strum::{Display, EnumString};
+use std::{fmt::Display, sync::Arc};
+
+use strum::EnumString;
+
+#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub struct Nil;
+
+impl Display for Nil {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("nil")
+    }
+}
 
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TokenInner {
+    origin: Arc<str>,
     lexeme: String,
-    len:    usize,
+    len: usize,
     /// start char offset
     offset: usize,
 }
 
 impl TokenInner {
-    pub fn new(lexeme: String, offset: usize) -> Self {
+    pub fn new(origin: Arc<str>, lexeme: String, offset: usize) -> Self {
         let len = lexeme.len();
         Self {
+            origin,
             lexeme,
             len,
             offset,
         }
     }
-    pub const fn new_invalid(lexeme: String, len: usize, offset: usize) -> Self {
+    pub const fn new_invalid(origin: Arc<str>, lexeme: String, len: usize, offset: usize) -> Self {
         Self {
+            origin,
             lexeme,
             len,
             offset,
         }
     }
-    pub fn get_col(&self, origin: &str) -> (usize, usize) {
+    pub fn get_col(&self) -> (usize, usize) {
         let mut line = 1;
         let mut col = 1;
-        for (_, ch) in origin.char_indices().take(self.offset) {
+        for (_, ch) in self.origin.char_indices().take(self.offset) {
             if ch == '\n' {
                 line += 1;
                 col = 1;
@@ -42,10 +59,6 @@ impl TokenInner {
             }
         }
         (line, col)
-    }
-    pub fn show(&self, origin: &str) -> String {
-        let (line, col) = self.get_col(origin);
-        format!("[Line: {line}, Column: {col}], text: {}", self.lexeme)
     }
 
     pub fn lexeme(&self) -> &str {
@@ -57,7 +70,7 @@ impl TokenInner {
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(PartialEq, PartialOrd)]
-#[derive(EnumString, Display)]
+#[derive(EnumString)]
 pub enum Token {
     // Single_character tokens
     LeftParen { inner: TokenInner },
@@ -111,6 +124,65 @@ pub enum Token {
     BlockComment { inner: TokenInner },
 
     Invalid { inner: TokenInner },
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::LeftParen { inner }
+            | Self::RightParen { inner }
+            | Self::LeftBrace { inner }
+            | Self::RightBrace { inner }
+            | Self::Comma { inner }
+            | Self::Dot { inner }
+            | Self::Minus { inner }
+            | Self::Plus { inner }
+            | Self::Semicolon { inner }
+            | Self::Slash { inner }
+            | Self::Star { inner }
+            | Self::Bang { inner }
+            | Self::BangEqual { inner }
+            | Self::Equal { inner }
+            | Self::EqualEqual { inner }
+            | Self::Greater { inner }
+            | Self::GreaterEqual { inner }
+            | Self::Less { inner }
+            | Self::LessEqual { inner }
+            | Self::Identifier { inner }
+            | Self::String { inner }
+            | Self::And { inner }
+            | Self::Class { inner }
+            | Self::Else { inner }
+            | Self::Fun { inner }
+            | Self::For { inner }
+            | Self::If { inner }
+            | Self::Nil { inner }
+            | Self::Or { inner }
+            | Self::Print { inner }
+            | Self::Return { inner }
+            | Self::Super { inner }
+            | Self::This { inner }
+            | Self::True { inner }
+            | Self::False { inner }
+            | Self::Var { inner }
+            | Self::While { inner }
+            | Self::Eof { inner }
+            | Self::Comment { inner }
+            | Self::BlockComment { inner }
+            | Self::Invalid { inner }
+            | Self::Number { inner, .. } => f.write_str(&inner.to_string()),
+        }
+    }
+}
+
+impl Display for TokenInner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (line, col) = self.get_col();
+        f.write_fmt(format_args!(
+            "[Line: {line}, Column: {col}], code: {}",
+            self.lexeme
+        ))
+    }
 }
 
 impl Token {

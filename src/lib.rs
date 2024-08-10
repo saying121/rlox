@@ -7,3 +7,4 @@ pub mod lox;
 pub mod prompt;
 pub mod scan;
 pub mod tokens;
+pub mod parser;

@@ -1,4 +1,4 @@
-use std::str::CharIndices;
+use std::{str::CharIndices, sync::Arc};
 
 use itertools::PeekNth;
 
@@ -8,70 +8,81 @@ use crate::tokens::{Token, TokenInner};
 #[derive(Debug)]
 #[derive(Default)]
 pub struct Scanner {
-    source: String,
-    tokens: Vec<Token>,
+    source: Arc<str>,
+    // tokens: Vec<Token>,
 }
 
 impl Scanner {
     pub fn new(source: String) -> Self {
-        let mut source_chars = itertools::peek_nth(source.char_indices());
+        // let mut source_chars = itertools::peek_nth(source.char_indices());
 
+        // let tokens = Self::scan(source_chars, &source);
+
+        Self {
+            source: Arc::from(source),
+        }
+    }
+
+    pub fn source_code(&self) -> Arc<str> {
+        Arc::clone(&self.source)
+    }
+
+    pub fn scan_tokens(&self) -> Vec<Token> {
+        let mut source_chars = itertools::peek_nth(self.source.char_indices());
         let mut tokens = Vec::new();
         while let Some((idx, ch)) = source_chars.next() {
             let token = match ch {
                 white if white.is_whitespace() => continue,
                 // > one char tokens
                 '(' => Token::LeftParen {
-                    inner: TokenInner::new('('.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), '('.to_string(), idx),
                 },
                 ')' => Token::RightParen {
-                    inner: TokenInner::new(')'.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), ')'.to_string(), idx),
                 },
                 '{' => Token::LeftBrace {
-                    inner: TokenInner::new('{'.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), '{'.to_string(), idx),
                 },
                 '}' => Token::RightBrace {
-                    inner: TokenInner::new('}'.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), '}'.to_string(), idx),
                 },
                 ',' => Token::Comma {
-                    inner: TokenInner::new(','.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), ','.to_string(), idx),
                 },
                 '.' => Token::Dot {
-                    inner: TokenInner::new('.'.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), '.'.to_string(), idx),
                 },
                 '-' => Token::Minus {
-                    inner: TokenInner::new('-'.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), '-'.to_string(), idx),
                 },
                 '+' => Token::Plus {
-                    inner: TokenInner::new('+'.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), '+'.to_string(), idx),
                 },
                 ';' => Token::Semicolon {
-                    inner: TokenInner::new(';'.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), ';'.to_string(), idx),
                 },
                 '*' => Token::Star {
-                    inner: TokenInner::new('*'.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), '*'.to_string(), idx),
                 },
                 // > two char tokens
-                '!' => Self::parse_bang(&mut source_chars, idx),
-                '=' => Self::parse_equal(&mut source_chars, idx),
-                '<' => Self::parse_less(&mut source_chars, idx),
-                '>' => Self::parse_greater(&mut source_chars, idx),
-                '/' => Self::parse_slash(&mut source_chars, idx, &source),
+                '!' => self.parse_bang(&mut source_chars, idx),
+                '=' => self.parse_equal(&mut source_chars, idx),
+                '<' => self.parse_less(&mut source_chars, idx),
+                '>' => self.parse_greater(&mut source_chars, idx),
+                '/' => self.parse_slash(&mut source_chars, idx, &self.source),
                 // > multi char tokens
-                '"' => Self::parse_string(&mut source_chars, idx, &source),
-                digit if digit.is_ascii_digit() => {
-                    Self::parse_number(digit, &mut source_chars, idx)
-                },
+                '"' => self.parse_string(&mut source_chars, idx, &self.source),
+                digit if digit.is_ascii_digit() => self.parse_number(digit, &mut source_chars, idx),
                 ident_start if ident_start.is_ascii_alphanumeric() => {
-                    Self::parse_ident(&mut source_chars, idx, ident_start)
+                    self.parse_ident(&mut source_chars, idx, ident_start)
                 },
-                other => Self::parse_other(&mut source_chars, other, idx),
+                other => self.parse_other(&mut source_chars, other, idx),
             };
 
             tokens.push(token);
         }
 
-        Self { source, tokens }
+        tokens
     }
 
     fn keyword_or_ident(inner: TokenInner) -> Token {
@@ -101,56 +112,56 @@ impl Scanner {
     }
 
     /// !, !=
-    fn parse_bang(chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
+    fn parse_bang(&self, chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
         let bang = '!';
         chars.next_if_eq(&(idx + 1, '=')).map_or_else(
             || Token::Bang {
-                inner: TokenInner::new(bang.to_string(), idx),
+                inner: TokenInner::new(self.source_code(), bang.to_string(), idx),
             },
             |_eq| Token::BangEqual {
-                inner: TokenInner::new("!=".to_owned(), idx),
+                inner: TokenInner::new(self.source_code(), "!=".to_owned(), idx),
             },
         )
     }
     /// =, ==
-    fn parse_equal(chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
+    fn parse_equal(&self, chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
         let eq = '=';
         chars.next_if_eq(&(idx + 1, eq)).map_or_else(
             || Token::Equal {
-                inner: TokenInner::new(eq.to_string(), idx),
+                inner: TokenInner::new(self.source_code(), eq.to_string(), idx),
             },
             |_eq| Token::EqualEqual {
-                inner: TokenInner::new("==".to_owned(), idx),
+                inner: TokenInner::new(self.source_code(), "==".to_owned(), idx),
             },
         )
     }
     /// <, <=
-    fn parse_less(chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
+    fn parse_less(&self, chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
         let less = '<';
         chars.next_if_eq(&(idx + 1, '=')).map_or_else(
             || Token::Less {
-                inner: TokenInner::new(less.to_string(), idx),
+                inner: TokenInner::new(self.source_code(), less.to_string(), idx),
             },
             |_eq| Token::LessEqual {
-                inner: TokenInner::new("<=".to_owned(), idx),
+                inner: TokenInner::new(self.source_code(), "<=".to_owned(), idx),
             },
         )
     }
     /// >, >=
-    fn parse_greater(chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
+    fn parse_greater(&self, chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
         let greater = &'>';
         chars.next_if_eq(&(idx + 1, '=')).map_or_else(
             || Token::Greater {
-                inner: TokenInner::new(greater.to_string(), idx),
+                inner: TokenInner::new(self.source_code(), greater.to_string(), idx),
             },
             |_eq| Token::GreaterEqual {
-                inner: TokenInner::new(">=".to_owned(), idx),
+                inner: TokenInner::new(self.source_code(), ">=".to_owned(), idx),
             },
         )
     }
 
     // /, //, /* ... */
-    fn parse_slash(chars: &mut PeekNth<CharIndices>, idx: usize, source: &str) -> Token {
+    fn parse_slash(&self, chars: &mut PeekNth<CharIndices>, idx: usize, source: &str) -> Token {
         let slash = '/';
         match chars.next_if_eq(&(idx + 1, slash)) {
             Some(_next) => {
@@ -160,12 +171,12 @@ impl Scanner {
                     .map(|(_, c)| c)
                     .collect();
                 Token::Comment {
-                    inner: TokenInner::new(comment, idx),
+                    inner: TokenInner::new(self.source_code(), comment, idx),
                 }
             },
             None => chars.next_if_eq(&(idx + 1, '*')).map_or_else(
                 || Token::Slash {
-                    inner: TokenInner::new(slash.to_string(), idx),
+                    inner: TokenInner::new(self.source_code(), slash.to_string(), idx),
                 },
                 |_next| {
                     let (mut last_pre, mut last) = ('\0', '\0');
@@ -190,12 +201,13 @@ impl Scanner {
 
                     if last_pre == '*' && last == '/' {
                         Token::BlockComment {
-                            inner: TokenInner::new(b_comment, idx),
+                            inner: TokenInner::new(self.source_code(), b_comment, idx),
                         }
                     }
                     else {
                         Token::Invalid {
                             inner: TokenInner::new_invalid(
+                                self.source_code(),
                                 "Invalid block comment, not end with `*/`".to_owned(),
                                 source.len() - idx,
                                 idx,
@@ -208,7 +220,7 @@ impl Scanner {
     }
 
     /// `"..."`, `"...`, `"...\"...\\\n..."`
-    fn parse_string(chars: &mut PeekNth<CharIndices>, idx: usize, source: &str) -> Token {
+    fn parse_string(&self, chars: &mut PeekNth<CharIndices>, idx: usize, source: &str) -> Token {
         let mut res_str = String::new();
 
         let mut last_matched = '\0';
@@ -248,11 +260,12 @@ impl Scanner {
 
         match last_matched {
             '"' => Token::String {
-                inner: TokenInner::new(res_str, idx),
+                inner: TokenInner::new(self.source_code(), res_str, idx),
             },
             // When does not end with '"' that may indicate EOF
             _ => Token::Invalid {
                 inner: TokenInner::new_invalid(
+                    self.source_code(),
                     r#"Invalid string token, not end with `"`"#.to_owned(),
                     source.len() - idx,
                     idx,
@@ -261,7 +274,7 @@ impl Scanner {
         }
     }
 
-    fn parse_number(first: char, chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
+    fn parse_number(&self, first: char, chars: &mut PeekNth<CharIndices>, idx: usize) -> Token {
         let mut its = Vec::with_capacity(4);
         its.push(first.to_string());
 
@@ -306,11 +319,12 @@ impl Scanner {
         let lexeme = its.join("");
         Token::Number {
             double: lexeme.parse().expect("parse double failed"),
-            inner:  TokenInner::new(lexeme, idx),
+            inner: TokenInner::new(self.source_code(), lexeme, idx),
         }
     }
 
     fn parse_ident(
+        &self,
         source_chars: &mut PeekNth<CharIndices>,
         idx: usize,
         ident_start: char,
@@ -322,12 +336,17 @@ impl Scanner {
             count += 1;
         }
         let lexeme: String = source_chars.by_ref().take(count).map(|(_, c)| c).collect();
-        let inner = TokenInner::new(format!("{ident_start}{lexeme}"), idx);
+        let inner = TokenInner::new(self.source_code(), format!("{ident_start}{lexeme}"), idx);
 
         Self::keyword_or_ident(inner)
     }
 
-    fn parse_other(source_chars: &mut PeekNth<CharIndices>, other: char, idx: usize) -> Token {
+    fn parse_other(
+        &self,
+        source_chars: &mut PeekNth<CharIndices>,
+        other: char,
+        idx: usize,
+    ) -> Token {
         let mut count = 0;
         while let Some(&(_, c)) = source_chars.peek_nth(count) {
             if c.is_ascii_alphanumeric() || c.is_whitespace() {
@@ -338,6 +357,7 @@ impl Scanner {
         let ot: String = source_chars.by_ref().take(count).map(|(_, c)| c).collect();
         Token::Invalid {
             inner: TokenInner::new_invalid(
+                self.source_code(),
                 format!("Unknown: {}{}", other, ot),
                 count + 1, // add the `other` len
                 idx,
@@ -345,9 +365,9 @@ impl Scanner {
         }
     }
 
-    pub fn tokens(&self) -> &[Token] {
-        &self.tokens
-    }
+    // pub fn tokens(&self) -> &[Token] {
+    //     &self.tokens
+    // }
 
     pub fn source(&self) -> &str {
         &self.source

@@ -60,12 +60,13 @@ macro_rules! impl_expr {
     };
 }
 
-impl_expr!(Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable
+impl_expr!(
+    Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable
 );
 
 // #[derive(Debug)]
 pub struct Assign {
-    pub name:  Token,
+    pub name: Token,
     pub value: Box<Exprs>,
 }
 
@@ -80,9 +81,9 @@ impl Assign {
 
 // #[derive(Debug)]
 pub struct Binary {
-    pub left:     Box<Exprs>,
+    pub left: Box<Exprs>,
     pub operator: Token,
-    pub right:    Box<Exprs>,
+    pub right: Box<Exprs>,
 }
 
 impl Binary {
@@ -97,8 +98,8 @@ impl Binary {
 
 // #[derive(Debug)]
 pub struct Call {
-    pub callee:    Box<Exprs>,
-    pub paren:     Token,
+    pub callee: Box<Exprs>,
+    pub paren: Token,
     pub arguments: Vec<Exprs>,
 }
 
@@ -115,7 +116,7 @@ impl Call {
 // #[derive(Debug)]
 pub struct Get {
     pub object: Box<Exprs>,
-    pub name:   Token,
+    pub name: Token,
 }
 
 impl Get {
@@ -158,9 +159,9 @@ impl Literal {
 
 // #[derive(Debug)]
 pub struct Logical {
-    pub left:     Box<Exprs>,
+    pub left: Box<Exprs>,
     pub operator: Token,
-    pub right:    Box<Exprs>,
+    pub right: Box<Exprs>,
 }
 
 impl Logical {
@@ -176,8 +177,8 @@ impl Logical {
 // #[derive(Debug)]
 pub struct Set {
     pub object: Box<Exprs>,
-    pub name:   Token,
-    pub value:  Box<Exprs>,
+    pub name: Token,
+    pub value: Box<Exprs>,
 }
 
 impl Set {
@@ -193,7 +194,7 @@ impl Set {
 // #[derive(Debug)]
 pub struct Super {
     pub keyword: Token,
-    pub method:  Token,
+    pub method: Token,
 }
 
 impl Super {
@@ -216,7 +217,7 @@ impl This {
 // #[derive(Debug)]
 pub struct Unary {
     pub operator: Token,
-    pub right:    Box<Exprs>,
+    pub right: Box<Exprs>,
 }
 
 impl Unary {

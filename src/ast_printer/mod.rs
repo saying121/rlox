@@ -79,6 +79,8 @@ impl Visitor<String> for AstPrinter {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
     use crate::{
         expr::{Binary, Grouping, Literal, Unary},
@@ -87,16 +89,17 @@ mod tests {
 
     #[test]
     fn print_test() {
+        let source = Arc::from("");
         let expression: Exprs = Binary::new(
             Unary::new(
                 Token::Minus {
-                    inner: TokenInner::new('-'.to_string(), 1),
+                    inner: TokenInner::new(Arc::clone(&source), '-'.to_string(), 1),
                 },
                 Literal::new(123).into(),
             )
             .into(),
             Token::Star {
-                inner: TokenInner::new('*'.to_string(), 1),
+                inner: TokenInner::new(Arc::clone(&source), '*'.to_string(), 1),
             },
             Grouping::new(Literal::new(45.67).into()).into(),
         )

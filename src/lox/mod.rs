@@ -2,6 +2,8 @@ use std::path::Path;
 
 use anyhow::Result;
 
+use crate::ast_printer::AstPrinter;
+use crate::parser::Parser;
 use crate::scan::scanner::Scanner;
 
 #[derive(Clone, Copy)]
@@ -22,8 +24,13 @@ impl Lox {
 
     pub fn run(source: String) -> Result<()> {
         let scanner = Scanner::new(source);
-        // let tokens = scanner.scan_tokens();
-        unimplemented!();
+        let tokens = scanner.scan_tokens();
+
+        let mut parser = Parser::new(tokens);
+        let expression = parser.parse()?;
+
+        let ast = AstPrinter.print(&expression);
+        println!("{ast}");
 
         Ok(())
     }
