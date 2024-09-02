@@ -90,20 +90,18 @@ mod tests {
     #[test]
     fn print_test() {
         let source = Arc::from("");
-        let expression: Exprs = Binary::new(
-            Unary::new(
+        let expression: Exprs = Exprs::Binary(Binary::new(
+            Exprs::Unary(Unary::new(
                 Token::Minus {
                     inner: TokenInner::new(Arc::clone(&source), '-'.to_string(), 1),
                 },
-                Literal::new(123).into(),
-            )
-            .into(),
+                Exprs::Literal(Literal::new(123)),
+            )),
             Token::Star {
                 inner: TokenInner::new(Arc::clone(&source), '*'.to_string(), 1),
             },
-            Grouping::new(Literal::new(45.67).into()).into(),
-        )
-        .into();
+            Exprs::Grouping(Grouping::new(Exprs::Literal(Literal::new(45.67)))),
+        ));
         let asp = AstPrinter;
         let res = asp.print(&expression);
         assert_eq!("(* (- 123) (group 45.67))", res);

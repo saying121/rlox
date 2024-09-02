@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use enum_dispatch::enum_dispatch;
-
 use crate::tokens::Token;
 
 pub trait Visitor<R> {
@@ -19,28 +17,49 @@ pub trait Visitor<R> {
     fn visit_variable_expr(&self, expr: &Variable) -> R;
 }
 
-#[enum_dispatch]
 pub trait Expr {
     fn accept<R, V>(&self, visitor: &V) -> R
     where
         V: Visitor<R>;
 }
 
-// #[derive(Debug)]
-#[enum_dispatch(Expr)]
 pub enum Exprs {
-    Assign,
-    Binary,
-    Call,
-    Get,
-    Grouping,
-    Literal,
-    Logical,
-    Set,
-    Super,
-    This,
-    Unary,
-    Variable,
+    Assign(Assign),
+    Binary(Binary),
+    Call(Call),
+    Get(Get),
+    Grouping(Grouping),
+    Literal(Literal),
+    Logical(Logical),
+    Set(Set),
+    Super(Super),
+    This(This),
+    Unary(Unary),
+    Variable(Variable),
+}
+impl Expr for Exprs {
+    #[inline]
+    fn accept<R, V>(&self, visitor: &V) -> R
+    where
+        V: Visitor<R>,
+    {
+        #[expect(clippy::enum_glob_use, reason = "happy")]
+        use Exprs::*;
+        match self {
+            Assign(inner) => inner.accept(visitor),
+            Binary(inner) => inner.accept(visitor),
+            Call(inner) => inner.accept(visitor),
+            Get(inner) => inner.accept(visitor),
+            Grouping(inner) => inner.accept(visitor),
+            Literal(inner) => inner.accept(visitor),
+            Logical(inner) => inner.accept(visitor),
+            Set(inner) => inner.accept(visitor),
+            Super(inner) => inner.accept(visitor),
+            This(inner) => inner.accept(visitor),
+            Unary(inner) => inner.accept(visitor),
+            Variable(inner) => inner.accept(visitor),
+        }
+    }
 }
 
 macro_rules! impl_expr {

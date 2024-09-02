@@ -10,9 +10,10 @@ anyhow = { version = "^1" }
 thiserror = { version = "^1" }
 strum = { version = "0.26", features = ["derive"] }
 itertools = { version = "^0.13" }
-enum_dispatch = { version = "^0.3" }
+dyn-clone = "1"
 paste = { version = "^1" }
 tracing = { version = "^0.1" }
+tracing-subscriber = { version = "0.3" }
 # enum_delegate = "0.2.0"
 # regex = { version = "^1" }
 

@@ -1,5 +1,3 @@
-#![allow(unfulfilled_lint_expectations, reason = "allow it")]
-
 use std::{fmt::Display, sync::Arc};
 
 use strum::EnumString;
