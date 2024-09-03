@@ -10,7 +10,8 @@ pub fn run_prompt() -> Result<()> {
         match readline {
             Ok(line) => {
                 rl.add_history_entry(line.as_str())?;
-                Lox::run(line);
+                let lox = Lox::default();
+                lox.run(line);
                 // run(line)?;
                 // println!("Line: {}", line);
             },

@@ -95,12 +95,16 @@ mod tests {
                 Token::Minus {
                     inner: TokenInner::new(Arc::clone(&source), '-'.to_string(), 1),
                 },
-                Exprs::Literal(Literal::new(123)),
+                Exprs::Literal(Literal {
+                    value: crate::expr::LiteralType::Number(123.),
+                }),
             )),
             Token::Star {
                 inner: TokenInner::new(Arc::clone(&source), '*'.to_string(), 1),
             },
-            Exprs::Grouping(Grouping::new(Exprs::Literal(Literal::new(45.67)))),
+            Exprs::Grouping(Grouping::new(Exprs::Literal(Literal {
+                value: crate::expr::LiteralType::Number(45.67),
+            }))),
         ));
         let asp = AstPrinter;
         let res = asp.print(&expression);

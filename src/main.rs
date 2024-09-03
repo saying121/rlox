@@ -13,7 +13,8 @@ fn main() -> anyhow::Result<()> {
         prompt::run_prompt()?;
     }
     else if let Some(fp) = cli.file_path {
-        Lox::run(fp);
+        let lox = Lox::default();
+        lox.run(fp);
     }
 
     Ok(())

@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::tokens::Token;
+use crate::tokens::{Nil, Token};
 
 pub trait Visitor<R> {
     fn visit_assign_expr(&self, expr: &Assign) -> R;
@@ -18,11 +18,11 @@ pub trait Visitor<R> {
 }
 
 pub trait Expr {
-    fn accept<R, V>(&self, visitor: &V) -> R
-    where
-        V: Visitor<R>;
+    fn accept<R>(&self, visitor: &dyn Visitor<R>) -> R;
 }
 
+#[derive(Debug)]
+#[derive(Clone)]
 pub enum Exprs {
     Assign(Assign),
     Binary(Binary),
@@ -39,10 +39,7 @@ pub enum Exprs {
 }
 impl Expr for Exprs {
     #[inline]
-    fn accept<R, V>(&self, visitor: &V) -> R
-    where
-        V: Visitor<R>,
-    {
+    fn accept<R>(&self, visitor: &dyn Visitor<R>) -> R {
         #[expect(clippy::enum_glob_use, reason = "happy")]
         use Exprs::*;
         match self {
@@ -66,9 +63,7 @@ macro_rules! impl_expr {
     ($($expr:ident), *) => {
         $(
             impl Expr for $expr {
-                fn accept<R, V>(&self, visitor: &V) -> R
-                where
-                    V: Visitor<R>,
+                fn accept<R>(&self, visitor: &dyn Visitor<R>) -> R
                 {
                     paste::paste! {
                         visitor.[<visit_ $expr:lower _expr>](self)
@@ -83,7 +78,8 @@ impl_expr!(
     Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable
 );
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Assign {
     pub name: Token,
     pub value: Box<Exprs>,
@@ -98,7 +94,8 @@ impl Assign {
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Binary {
     pub left: Box<Exprs>,
     pub operator: Token,
@@ -115,7 +112,8 @@ impl Binary {
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Call {
     pub callee: Box<Exprs>,
     pub paren: Token,
@@ -132,7 +130,8 @@ impl Call {
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Get {
     pub object: Box<Exprs>,
     pub name: Token,
@@ -147,7 +146,8 @@ impl Get {
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Grouping {
     pub expression: Box<Exprs>,
 }
@@ -160,23 +160,37 @@ impl Grouping {
     }
 }
 
-// #[derive(Debug)]
-pub struct Literal {
-    pub value: Box<dyn Display>,
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(PartialEq, PartialOrd)]
+pub enum LiteralType {
+    String(String),
+    Number(f64),
+    Bool(bool),
+    Nil(Nil), // CallAble(Callable),
 }
 
-impl Literal {
-    pub fn new<T>(value: T) -> Self
-    where
-        T: Display + 'static,
-    {
-        Self {
-            value: Box::new(value),
+impl Display for LiteralType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #![expect(clippy::enum_glob_use, reason = "happy")]
+        use LiteralType::*;
+        match self {
+            String(s) => f.write_str(s),
+            Number(n) => f.write_fmt(format_args!("{n}")),
+            Bool(b) => f.write_fmt(format_args!("{b}")),
+            Nil(n) => f.write_fmt(format_args!("{n}")),
         }
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
+pub struct Literal {
+    pub value: LiteralType,
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Logical {
     pub left: Box<Exprs>,
     pub operator: Token,
@@ -193,7 +207,8 @@ impl Logical {
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Set {
     pub object: Box<Exprs>,
     pub name: Token,
@@ -210,7 +225,8 @@ impl Set {
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Super {
     pub keyword: Token,
     pub method: Token,
@@ -222,7 +238,8 @@ impl Super {
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct This {
     pub keyword: Token,
 }
@@ -233,7 +250,8 @@ impl This {
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Unary {
     pub operator: Token,
     pub right: Box<Exprs>,
@@ -248,7 +266,8 @@ impl Unary {
     }
 }
 
-// #[derive(Debug)]
+#[derive(Debug)]
+#[derive(Clone)]
 pub struct Variable {
     pub name: Token,
 }

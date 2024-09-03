@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::vec::IntoIter;
 
 use anyhow::{bail, Result};
@@ -14,7 +17,7 @@ use crate::{
 enum ParserError {
     #[error("missing ')' after expression: {0}")]
     RightParen(Token),
-    #[error("at file end")]
+    #[error("End of file, no next token.")]
     Eof,
     #[error("invalid Primary: {0}")]
     Primary(Token),
@@ -125,32 +128,41 @@ impl Parser {
             Some(pk) => match pk {
                 Token::False { .. } => {
                     self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal::new(false)))
+                    Ok(Exprs::Literal(Literal {
+                        value: crate::expr::LiteralType::Bool(false),
+                    }))
                 },
                 Token::True { .. } => {
                     self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal::new(true)))
+                    Ok(Exprs::Literal(Literal {
+                        value: crate::expr::LiteralType::Bool(true),
+                    }))
                 },
                 Token::Nil { .. } => {
                     self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal::new(Nil)))
+                    Ok(Exprs::Literal(Literal {
+                        value: crate::expr::LiteralType::Nil(Nil),
+                    }))
                 },
                 Token::Number { .. } => {
                     let next = self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal::new(
-                        next.inner()
-                            .lexeme()
-                            .parse::<f64>()
-                            .expect("parse number failed"),
-                    )))
+                    Ok(Exprs::Literal(Literal {
+                        value: crate::expr::LiteralType::Number(
+                            next.inner()
+                                .lexeme()
+                                .parse::<f64>()
+                                .expect("parse number failed"),
+                        ),
+                    }))
                 },
                 Token::String { .. } => {
                     let next = self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal::new(
-                        next.inner().lexeme().to_owned(),
-                    )))
+                    Ok(Exprs::Literal(Literal {
+                        value: crate::expr::LiteralType::String(next.inner().lexeme().to_owned()),
+                    }))
                 },
                 Token::LeftParen { .. } => {
+                    self.peeks.next().expect("Should not panic");
                     let expr = self.expression()?;
                     self.consume_rignt_paren()?;
                     Ok(Exprs::Grouping(Grouping::new(expr)))
@@ -161,7 +173,7 @@ impl Parser {
                 },
             },
             None => {
-                tracing::error!("End of file, no next token.");
+                // tracing::error!("End of file, no next token.");
                 bail!(ParserError::Eof)
             },
         }
@@ -179,7 +191,6 @@ impl Parser {
                 },
             },
             None => {
-                tracing::error!("End of file, no next token.");
                 bail!(ParserError::Eof)
             },
         }

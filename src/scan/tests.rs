@@ -156,7 +156,7 @@ fn test_line_col() {
     let sc = Scanner::new(source.to_owned());
     if let Token::Var { inner } = &sc.scan_tokens()[0] {
         let a = inner.get_col();
-        assert_eq!("[Line: 4, Column: 1], code: var", inner.to_string());
+        assert_eq!("[Line: 4, Column: 1], code: `var`", inner.to_string());
         assert_eq!(a, (4, 1));
     }
 
@@ -165,7 +165,7 @@ fn test_line_col() {
     if let Token::Var { inner } = &sc.scan_tokens()[0] {
         let a = inner.get_col();
         assert_eq!(a, (4, 4));
-        assert_eq!("[Line: 4, Column: 4], code: var", inner.to_string());
+        assert_eq!("[Line: 4, Column: 4], code: `var`", inner.to_string());
     }
 
     let source = "\"\"\"\n\n\n   var\n\n\"";
@@ -173,7 +173,7 @@ fn test_line_col() {
     if let Token::Var { inner } = &sc.scan_tokens()[0] {
         let a = inner.get_col();
         assert_eq!(a, (4, 4));
-        assert_eq!("[Line: 4, Column: 4], code: var", inner.to_string());
+        assert_eq!("[Line: 4, Column: 4], code: `var`", inner.to_string());
     }
 
     let source = "\n\n\n  data\n\n";
@@ -181,7 +181,7 @@ fn test_line_col() {
     if let Token::Identifier { inner } = &sc.scan_tokens()[0] {
         let a = inner.get_col();
         assert_eq!(a, (4, 3));
-        assert_eq!("[Line: 4, Column: 3], code: data", inner.to_string());
+        assert_eq!("[Line: 4, Column: 3], code: `data`", inner.to_string());
     }
 }
 

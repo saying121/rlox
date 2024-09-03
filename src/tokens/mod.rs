@@ -179,7 +179,7 @@ impl Display for TokenInner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (line, col) = self.get_col();
         f.write_fmt(format_args!(
-            "[Line: {line}, Column: {col}], code: {}",
+            "[Line: {line}, Column: {col}], code: `{}`",
             self.lexeme
         ))
     }
