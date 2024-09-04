@@ -2,9 +2,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::{
-    ast_printer::AstPrinter, interpreter::Interpreter, parser::Parser, scan::scanner::Scanner,
-};
+use crate::{interpreter::Interpreter, parser::Parser, scan::scanner::Scanner};
 
 #[derive(Clone, Copy)]
 #[derive(Debug)]
@@ -41,7 +39,10 @@ impl Lox {
         // println!("{ast}");
 
         match self.interpreter.interpret(&expression) {
-            _ => {},
+            Ok(res) => {
+                println!("{}", res);
+            },
+            Err(e) => tracing::error!("{e}"),
         }
     }
 

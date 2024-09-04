@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::tokens::{Nil, Token};
+use crate::tokens::Token;
 
 pub trait Visitor<R> {
     fn visit_assign_expr(&self, expr: &Assign) -> R;
@@ -23,6 +23,7 @@ pub trait Expr {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub enum Exprs {
     Assign(Assign),
     Binary(Binary),
@@ -80,6 +81,7 @@ impl_expr!(
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Assign {
     pub name: Token,
     pub value: Box<Exprs>,
@@ -96,6 +98,7 @@ impl Assign {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Binary {
     pub left: Box<Exprs>,
     pub operator: Token,
@@ -114,6 +117,7 @@ impl Binary {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Call {
     pub callee: Box<Exprs>,
     pub paren: Token,
@@ -132,6 +136,7 @@ impl Call {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Get {
     pub object: Box<Exprs>,
     pub name: Token,
@@ -148,6 +153,7 @@ impl Get {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Grouping {
     pub expression: Box<Exprs>,
 }
@@ -167,7 +173,7 @@ pub enum LiteralType {
     String(String),
     Number(f64),
     Bool(bool),
-    Nil(Nil), // CallAble(Callable),
+    Nil, // CallAble(Callable),
 }
 
 impl Display for LiteralType {
@@ -178,19 +184,21 @@ impl Display for LiteralType {
             String(s) => f.write_str(s),
             Number(n) => f.write_fmt(format_args!("{n}")),
             Bool(b) => f.write_fmt(format_args!("{b}")),
-            Nil(n) => f.write_fmt(format_args!("{n}")),
+            Nil => f.write_fmt(format_args!("nil")),
         }
     }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Literal {
     pub value: LiteralType,
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Logical {
     pub left: Box<Exprs>,
     pub operator: Token,
@@ -207,6 +215,7 @@ impl Logical {
     }
 }
 
+#[derive(PartialEq, PartialOrd)]
 #[derive(Debug)]
 #[derive(Clone)]
 pub struct Set {
@@ -227,6 +236,7 @@ impl Set {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Super {
     pub keyword: Token,
     pub method: Token,
@@ -240,6 +250,7 @@ impl Super {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct This {
     pub keyword: Token,
 }
@@ -252,6 +263,7 @@ impl This {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Unary {
     pub operator: Token,
     pub right: Box<Exprs>,
@@ -268,6 +280,7 @@ impl Unary {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Variable {
     pub name: Token,
 }

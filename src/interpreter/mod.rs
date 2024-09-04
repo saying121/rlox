@@ -10,7 +10,7 @@ use crate::{
 #[derive(Debug)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[derive(thiserror::Error)]
-enum InterError {
+pub enum InterError {
     #[error("{0}\nhelp: Operand must be numbers.")]
     Number(TokenInner),
     #[error("{0}\nhelp: Operand must be a number.")]
@@ -30,21 +30,21 @@ pub type Result<T, E = InterError> = core::result::Result<T, E>;
 pub struct Interpreter;
 
 impl Interpreter {
-    pub fn interpret(self, expr: &Exprs) {
-        match self.evaluate(expr) {
-            Ok(i) => {
-                println!("{}", i);
-            },
-            Err(e) => tracing::error!("{e}"),
-        }
+    pub fn interpret(self, expr: &Exprs) -> Result<LiteralType> {
+        self.evaluate(expr)
     }
+    #[expect(clippy::trivially_copy_pass_by_ref, reason = "method")]
     fn evaluate(&self, expr: &Exprs) -> Result<LiteralType> {
         expr.accept(self)
     }
-    fn is_truthy(literal: &LiteralType) -> bool {
-        !matches!(literal, LiteralType::Nil(_))
+    const fn is_truthy(literal: &LiteralType) -> bool {
+        match literal {
+            LiteralType::Nil => false,
+            LiteralType::Bool(v) => *v,
+            _ => true,
+        }
     }
-    fn is_equal(a: LiteralType, b: LiteralType) -> bool {
+    fn is_equal(a: &LiteralType, b: &LiteralType) -> bool {
         a == b
     }
 }
@@ -120,12 +120,12 @@ impl Visitor<Result<LiteralType>> for Interpreter {
                 Err(InterError::Number(inner.clone()))
             },
             Token::BangEqual { .. } => {
-                let b = !Self::is_equal(left, right);
-                return Ok(LiteralType::Bool(b));
+                let b = !Self::is_equal(&left, &right);
+                Ok(LiteralType::Bool(b))
             },
             Token::EqualEqual { .. } => {
-                let b = Self::is_equal(left, right);
-                return Ok(LiteralType::Bool(b));
+                let b = Self::is_equal(&left, &right);
+                Ok(LiteralType::Bool(b))
             },
             _ => Err(InterError::NotMatch("unreachable binary expr".to_owned())),
         }

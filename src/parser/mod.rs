@@ -3,29 +3,30 @@ mod tests;
 
 use std::vec::IntoIter;
 
-use anyhow::{bail, Result};
 use itertools::PeekNth;
 use thiserror::Error;
 
 use crate::{
     expr::{Binary, Exprs, Grouping, Literal, Unary},
-    tokens::{Nil, Token},
+    tokens::Token,
 };
 
 #[derive(Clone)]
 #[derive(Debug, Error)]
-enum ParserError {
+pub enum ParserError {
     #[error("missing ')' after expression: {0}")]
     RightParen(Token),
-    #[error("End of file, no next token.")]
+    #[error("End of source code, no next token.")]
     Eof,
     #[error("invalid Primary: {0}")]
     Primary(Token),
 }
+pub type Result<T, E = ParserError> = core::result::Result<T, E>;
 
 #[derive(Clone)]
 #[derive(Debug)]
 pub struct Parser {
+    #[expect(dead_code, reason = "todo")]
     tokens: Vec<Token>,
     peeks: PeekNth<IntoIter<Token>>,
 }
@@ -141,7 +142,7 @@ impl Parser {
                 Token::Nil { .. } => {
                     self.peeks.next().expect("Should not panic");
                     Ok(Exprs::Literal(Literal {
-                        value: crate::expr::LiteralType::Nil(Nil),
+                        value: crate::expr::LiteralType::Nil,
                     }))
                 },
                 Token::Number { .. } => {
@@ -167,15 +168,9 @@ impl Parser {
                     self.consume_rignt_paren()?;
                     Ok(Exprs::Grouping(Grouping::new(expr)))
                 },
-                other => {
-                    tracing::error!("{}", other);
-                    bail!(ParserError::Primary(other.clone()))
-                },
+                other => Err(ParserError::Primary(other.clone())),
             },
-            None => {
-                // tracing::error!("End of file, no next token.");
-                bail!(ParserError::Eof)
-            },
+            None => Err(ParserError::Eof),
         }
     }
 
@@ -185,17 +180,13 @@ impl Parser {
         match self.peeks.peek() {
             Some(pk) => match pk {
                 Token::RightParen { .. } => Ok(self.peeks.next().expect("Should not panic")),
-                other => {
-                    tracing::error!("{}", other);
-                    bail!(ParserError::RightParen(other.clone()))
-                },
+                other => Err(ParserError::RightParen(other.clone())),
             },
-            None => {
-                bail!(ParserError::Eof)
-            },
+            None => Err(ParserError::Eof),
         }
     }
 
+    #[expect(dead_code, reason = "todo")]
     /// when want discard tokens until we're right at the beginning of the next statment
     fn synchronize(&mut self) {
         self.peeks.next();
@@ -209,10 +200,8 @@ impl Parser {
                 | Token::While { .. }
                 | Token::Print { .. }
                 | Token::Return { .. } => return,
-                _ => {
-                    self.peeks.next();
-                },
-            }
+                _ => self.peeks.next(),
+            };
         }
     }
 }

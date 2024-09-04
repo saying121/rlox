@@ -2,18 +2,6 @@ use std::{fmt::Display, sync::Arc};
 
 use strum::EnumString;
 
-#[derive(Clone, Copy)]
-#[derive(Debug)]
-#[derive(Default)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-pub struct Nil;
-
-impl Display for Nil {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("nil")
-    }
-}
-
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
@@ -67,8 +55,8 @@ impl TokenInner {
 // multiple cursor magic moment
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
 #[derive(EnumString)]
+#[derive(PartialEq, PartialOrd)]
 pub enum Token {
     // Single_character tokens
     LeftParen { inner: TokenInner },

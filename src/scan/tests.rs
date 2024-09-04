@@ -8,6 +8,16 @@ use crate::{
 };
 
 #[test]
+fn test_scan_missing_paren() {
+    let source = Arc::from("(");
+    let correct = vec![Token::LeftParen {
+        inner: TokenInner::new(Arc::clone(&source), "(".to_owned(), 0),
+    }];
+    let sc = Scanner::new(source.to_string());
+    assert_eq!(sc.scan_tokens(), correct);
+}
+
+#[test]
 fn test_scan_string_escape() {
     let source = Arc::from("\"abcd\\\"\\\"\n\t\refg\";");
     let correct = vec![
