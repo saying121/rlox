@@ -1,4 +1,4 @@
-use std::{fmt::Display, sync::Arc};
+use std::{fmt::Display, mem, sync::Arc};
 
 use strum::EnumString;
 
@@ -49,6 +49,10 @@ impl TokenInner {
 
     pub fn lexeme(&self) -> &str {
         &self.lexeme
+    }
+
+    pub fn lexeme_take(&mut self) -> String {
+        mem::take(&mut self.lexeme)
     }
 }
 

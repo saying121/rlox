@@ -95,14 +95,14 @@ fn test_precedence() {
             inner: TokenInner::new(Arc::clone(&source), "+".to_owned(), 3),
         },
         Token::Number {
-            double: 1.0,
+            double: 16.0,
             inner: TokenInner::new(Arc::clone(&source), "16".to_owned(), 4),
         },
         Token::Slash {
             inner: TokenInner::new(Arc::clone(&source), "/".to_owned(), 5),
         },
         Token::Number {
-            double: 1.0,
+            double: 2.0,
             inner: TokenInner::new(Arc::clone(&source), "2".to_owned(), 6),
         },
     ];
@@ -156,14 +156,14 @@ fn test_precedence() {
             inner: TokenInner::new(Arc::clone(&source), "-".to_owned(), 3),
         },
         Token::Number {
-            double: 1.0,
+            double: 16.0,
             inner: TokenInner::new(Arc::clone(&source), "16".to_owned(), 4),
         },
         Token::Slash {
             inner: TokenInner::new(Arc::clone(&source), "*".to_owned(), 5),
         },
         Token::Number {
-            double: 1.0,
+            double: 2.0,
             inner: TokenInner::new(Arc::clone(&source), "2".to_owned(), 6),
         },
     ];
@@ -217,7 +217,7 @@ fn test_precedence() {
             inner: TokenInner::new(Arc::clone(&source), "-".to_owned(), 3),
         },
         Token::Number {
-            double: 1.0,
+            double: 16.0,
             inner: TokenInner::new(Arc::clone(&source), "16".to_owned(), 4),
         },
         Token::Slash {

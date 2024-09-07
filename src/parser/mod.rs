@@ -7,7 +7,7 @@ use itertools::PeekNth;
 use thiserror::Error;
 
 use crate::{
-    expr::{Binary, Exprs, Grouping, Literal, Unary},
+    expr::{Binary, Exprs, Grouping, Literal, LiteralType, Unary},
     tokens::Token,
 };
 
@@ -44,16 +44,14 @@ impl Parser {
         self.equality()
     }
 
-    #[expect(clippy::unwrap_in_result, reason = "had checked previous")]
     fn equality(&mut self) -> Result<Exprs> {
         let mut expr = self.comparison()?;
 
-        while let Some(pk) = self.peeks.peek()
-            && matches!(pk, Token::BangEqual { .. } | Token::EqualEqual { .. })
+        while let Some(op) = self.peeks.next()
+            && matches!(op, Token::BangEqual { .. } | Token::EqualEqual { .. })
         {
-            let operator = self.peeks.next().expect("Should not panic");
             let right = self.comparison()?;
-            expr = Exprs::Binary(Binary::new(expr, operator, right));
+            expr = Exprs::Binary(Binary::new(expr, op, right));
         }
 
         Ok(expr)
@@ -63,18 +61,18 @@ impl Parser {
     fn comparison(&mut self) -> Result<Exprs> {
         let mut expr = self.term()?;
 
-        while let Some(pk) = self.peeks.peek()
+        while let Some(op) = self.peeks.peek()
             && matches!(
-                pk,
+                op,
                 Token::Greater { .. }
                     | Token::GreaterEqual { .. }
                     | Token::Less { .. }
                     | Token::LessEqual { .. }
             )
         {
-            let operator = self.peeks.next().expect("Should not panic");
+            let op = unsafe { self.peeks.next().unwrap_unchecked() };
             let right = self.term()?;
-            expr = Exprs::Binary(Binary::new(expr, operator, right));
+            expr = Exprs::Binary(Binary::new(expr, op, right));
         }
 
         Ok(expr)
@@ -87,7 +85,7 @@ impl Parser {
         while let Some(pk) = self.peeks.peek()
             && matches!(pk, Token::Minus { .. } | Token::Plus { .. })
         {
-            let operator = self.peeks.next().expect("Should not panic");
+            let operator = unsafe { self.peeks.next().unwrap_unchecked() };
             let right = self.factor()?;
             expr = Exprs::Binary(Binary::new(expr, operator, right));
         }
@@ -102,7 +100,7 @@ impl Parser {
         while let Some(pk) = self.peeks.peek()
             && matches!(pk, Token::Slash { .. } | Token::Star { .. })
         {
-            let operator = self.peeks.next().expect("Should not panic");
+            let operator = unsafe { self.peeks.next().unwrap_unchecked() };
             let right = self.unary()?;
             expr = Exprs::Binary(Binary::new(expr, operator, right));
         }
@@ -115,7 +113,7 @@ impl Parser {
         if let Some(pk) = self.peeks.peek()
             && matches!(pk, Token::Bang { .. } | Token::Minus { .. })
         {
-            let operator = self.peeks.next().expect("Should not panic");
+            let operator = unsafe { self.peeks.next().unwrap_unchecked() };
             let right = self.unary()?;
             return Ok(Exprs::Unary(Unary::new(operator, right)));
         }
@@ -123,67 +121,44 @@ impl Parser {
         self.primary()
     }
 
-    #[expect(clippy::unwrap_in_result, reason = "had checked previous")]
     fn primary(&mut self) -> Result<Exprs> {
-        match self.peeks.peek() {
+        match self.peeks.next() {
             Some(pk) => match pk {
-                Token::False { .. } => {
-                    self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal {
-                        value: crate::expr::LiteralType::Bool(false),
-                    }))
-                },
-                Token::True { .. } => {
-                    self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal {
-                        value: crate::expr::LiteralType::Bool(true),
-                    }))
-                },
-                Token::Nil { .. } => {
-                    self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal {
-                        value: crate::expr::LiteralType::Nil,
-                    }))
-                },
-                Token::Number { .. } => {
-                    let next = self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal {
-                        value: crate::expr::LiteralType::Number(
-                            next.inner()
-                                .lexeme()
-                                .parse::<f64>()
-                                .expect("parse number failed"),
-                        ),
-                    }))
-                },
-                Token::String { .. } => {
-                    let next = self.peeks.next().expect("Should not panic");
-                    Ok(Exprs::Literal(Literal {
-                        value: crate::expr::LiteralType::String(next.inner().lexeme().to_owned()),
-                    }))
-                },
+                Token::False { .. } => Ok(Exprs::Literal(Literal {
+                    value: LiteralType::Bool(false),
+                })),
+                Token::True { .. } => Ok(Exprs::Literal(Literal {
+                    value: LiteralType::Bool(true),
+                })),
+                Token::Nil { .. } => Ok(Exprs::Literal(Literal {
+                    value: LiteralType::Nil,
+                })),
+                Token::Number { double, .. } => Ok(Exprs::Literal(Literal {
+                    value: LiteralType::Number(double),
+                })),
+                Token::String { mut inner } => Ok(Exprs::Literal(Literal {
+                    value: LiteralType::String(inner.lexeme_take()),
+                })),
                 Token::LeftParen { .. } => {
-                    self.peeks.next().expect("Should not panic");
                     let expr = self.expression()?;
                     self.consume_rignt_paren()?;
                     Ok(Exprs::Grouping(Grouping::new(expr)))
                 },
-                other => Err(ParserError::Primary(other.clone())),
+                other => Err(ParserError::Primary(other)),
             },
             None => Err(ParserError::Eof),
         }
     }
 
     /// Expect `Token::RightParen`
-    #[expect(clippy::unwrap_in_result, reason = "had checked previous")]
     fn consume_rignt_paren(&mut self) -> Result<Token> {
-        match self.peeks.peek() {
-            Some(pk) => match pk {
-                Token::RightParen { .. } => Ok(self.peeks.next().expect("Should not panic")),
-                other => Err(ParserError::RightParen(other.clone())),
+        self.peeks.next().map_or_else(
+            || Err(ParserError::Eof),
+            |pk| match pk {
+                Token::RightParen { inner } => Ok(Token::RightParen { inner }),
+                other => Err(ParserError::RightParen(other)),
             },
-            None => Err(ParserError::Eof),
-        }
+        )
     }
 
     #[expect(dead_code, reason = "todo")]
