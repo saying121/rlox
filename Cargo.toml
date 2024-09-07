@@ -10,7 +10,7 @@ anyhow = { version = "^1" }
 thiserror = { version = "^1" }
 strum = { version = "0.26", features = ["derive"] }
 itertools = { version = "^0.13" }
-dyn-clone = "1"
+# dyn-clone = "1"
 paste = { version = "^1" }
 tracing = { version = "^0.1" }
 tracing-subscriber = { version = "0.3" }

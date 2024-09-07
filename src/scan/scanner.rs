@@ -35,34 +35,34 @@ impl Scanner {
                 white if white.is_whitespace() => continue,
                 // > one char tokens
                 '(' => Token::LeftParen {
-                    inner: TokenInner::new(self.source_code(), '('.to_string(), idx),
+                    inner: TokenInner::new_left_paren(self.source_code(), idx),
                 },
                 ')' => Token::RightParen {
-                    inner: TokenInner::new(self.source_code(), ')'.to_string(), idx),
+                    inner: TokenInner::new_right_paren(self.source_code(), idx),
                 },
                 '{' => Token::LeftBrace {
-                    inner: TokenInner::new(self.source_code(), '{'.to_string(), idx),
+                    inner: TokenInner::new_left_brace(self.source_code(), idx),
                 },
                 '}' => Token::RightBrace {
-                    inner: TokenInner::new(self.source_code(), '}'.to_string(), idx),
+                    inner: TokenInner::new_right_brace(self.source_code(), idx),
                 },
                 ',' => Token::Comma {
-                    inner: TokenInner::new(self.source_code(), ','.to_string(), idx),
+                    inner: TokenInner::new_comma(self.source_code(), idx),
                 },
                 '.' => Token::Dot {
-                    inner: TokenInner::new(self.source_code(), '.'.to_string(), idx),
+                    inner: TokenInner::new_dot(self.source_code(), idx),
                 },
                 '-' => Token::Minus {
-                    inner: TokenInner::new(self.source_code(), '-'.to_string(), idx),
+                    inner: TokenInner::new_minus(self.source_code(), idx),
                 },
                 '+' => Token::Plus {
-                    inner: TokenInner::new(self.source_code(), '+'.to_string(), idx),
+                    inner: TokenInner::new_plus(self.source_code(), idx),
                 },
                 ';' => Token::Semicolon {
-                    inner: TokenInner::new(self.source_code(), ';'.to_string(), idx),
+                    inner: TokenInner::new_semicolon(self.source_code(), idx),
                 },
                 '*' => Token::Star {
-                    inner: TokenInner::new(self.source_code(), '*'.to_string(), idx),
+                    inner: TokenInner::new_star(self.source_code(), idx),
                 },
                 // > two char tokens
                 '!' => self.parse_bang(&mut source_chars, idx),

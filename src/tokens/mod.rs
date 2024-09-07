@@ -15,6 +15,86 @@ pub struct TokenInner {
 }
 
 impl TokenInner {
+    pub fn new_star(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: '*'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_semicolon(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: ';'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_plus(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: '+'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_minus(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: '-'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_dot(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: '.'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_comma(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: ','.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_left_brace(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: '{'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_right_brace(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: '}'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_left_paren(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: '('.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_right_paren(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: ')'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
     pub fn new(origin: Arc<str>, lexeme: String, offset: usize) -> Self {
         let len = lexeme.len();
         Self {
