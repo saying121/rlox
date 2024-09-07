@@ -17,13 +17,13 @@ pub struct Lox {
 impl Lox {
     pub fn run_file<T: AsRef<Path>>(self, path: T) -> Result<()> {
         let content = std::fs::read_to_string(path)?;
-        self.run(content);
+        self.run(&content);
 
         Ok(())
     }
 
-    pub fn run(self, source: String) {
-        let scanner = Scanner::new(source);
+    pub fn run(self, source: &str) {
+        let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens();
 
         let mut parser = Parser::new(tokens);

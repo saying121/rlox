@@ -13,7 +13,7 @@ fn test_scan_missing_paren() {
     let correct = vec![Token::LeftParen {
         inner: TokenInner::new(Arc::clone(&source), "(".to_owned(), 0),
     }];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }
 
@@ -28,7 +28,7 @@ fn test_scan_string_escape() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 16),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("\"abcd\\\"\\\"\nefg\";");
@@ -40,7 +40,7 @@ fn test_scan_string_escape() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 14),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from(r#""abcd\"\"efg";"#);
@@ -52,7 +52,7 @@ fn test_scan_string_escape() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 13),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from(r#""abcd\"efg";"#);
@@ -64,7 +64,7 @@ fn test_scan_string_escape() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 11),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from(r#""abcd\\\"efg";"#);
@@ -76,7 +76,7 @@ fn test_scan_string_escape() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 13),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from(r#""abcd\\#efg";"#);
@@ -88,7 +88,7 @@ fn test_scan_string_escape() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 12),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }
 
@@ -112,7 +112,7 @@ fn test_scan_string() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 19),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from(r#"var a = "abcdefg";"#);
@@ -133,7 +133,7 @@ fn test_scan_string() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 17),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from(r#"var a = "abcdefg;"#);
@@ -156,35 +156,35 @@ fn test_scan_string() {
             ),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }
 
 #[test]
 fn test_line_col() {
     let source = "\n\n\nvar\n\n";
-    let sc = Scanner::new(source.to_owned());
+    let mut sc = Scanner::new(source);
     if let Token::Var { inner } = &sc.scan_tokens()[0] {
         let a = inner.get_col();
         assert_eq!(a, (4, 1));
     }
 
     let source = "\n\n\n   var\n\n";
-    let sc = Scanner::new(source.to_owned());
+    let mut sc = Scanner::new(source);
     if let Token::Var { inner } = &sc.scan_tokens()[0] {
         let a = inner.get_col();
         assert_eq!(a, (4, 4));
     }
 
     let source = "\"\"\"\n\n\n   var\n\n\"";
-    let sc = Scanner::new(source.to_owned());
+    let mut sc = Scanner::new(source);
     if let Token::Var { inner } = &sc.scan_tokens()[0] {
         let a = inner.get_col();
         assert_eq!(a, (4, 4));
     }
 
     let source = "\n\n\n  data\n\n";
-    let sc = Scanner::new(source.to_owned());
+    let mut sc = Scanner::new(source);
     if let Token::Identifier { inner } = &sc.scan_tokens()[0] {
         let a = inner.get_col();
         assert_eq!(a, (4, 3));
@@ -202,7 +202,7 @@ fn test_maximal_munch() {
             inner: TokenInner::new(Arc::clone(&source), "vara".to_owned(), 4),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("class classa");
@@ -214,7 +214,7 @@ fn test_maximal_munch() {
             inner: TokenInner::new(Arc::clone(&source), "classa".to_owned(), 6),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }
 #[test]
@@ -241,7 +241,7 @@ fn other_char() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 13),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("var a =#  1.8;");
@@ -266,7 +266,7 @@ fn other_char() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 13),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }
 
@@ -291,7 +291,7 @@ fn test_scan_number() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 11),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("var a = 1.8.pow(1);");
@@ -329,7 +329,7 @@ fn test_scan_number() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 18),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("var a = 1.0;");
@@ -351,7 +351,7 @@ fn test_scan_number() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 11),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("var a = 19.;");
@@ -376,7 +376,7 @@ fn test_scan_number() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 11),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }
 
@@ -404,7 +404,7 @@ fn test_scan_comment() {
         //     inner: TokenInner::new(";".to_owned(), 11),
         // },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("var a = 10 / 4;");
@@ -433,7 +433,7 @@ fn test_scan_comment() {
             inner: TokenInner::new(Arc::clone(&source), ";".to_owned(), 14),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }
 
@@ -459,7 +459,7 @@ fn test_scan_block_comment() {
             inner: TokenInner::new(Arc::clone(&source), "10".to_owned(), 8 + offset),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("/* this is a comment */\nvar\ta\n=\r10");
@@ -482,7 +482,7 @@ fn test_scan_block_comment() {
             inner: TokenInner::new(Arc::clone(&source), "10".to_owned(), 8 + offset),
         },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("/* this is a comment/\nvar a = 10");
@@ -495,12 +495,8 @@ fn test_scan_block_comment() {
                 0,
             ),
         },
-        // TokenType::Number {
-        //     double: 0.0,
-        //     inner:  TokenInner::new("0".to_owned(), 31),
-        // },
     ];
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }
 
@@ -674,6 +670,6 @@ var seven = 1 >= 2;
         },
     ];
 
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }

@@ -15,6 +15,78 @@ pub struct TokenInner {
 }
 
 impl TokenInner {
+    pub fn new_greater_equal(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: ">=".to_owned(),
+            len: 2,
+            offset,
+        }
+    }
+    pub fn new_greater(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: ">".to_owned(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_less_equal(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: "<=".to_owned(),
+            len: 2,
+            offset,
+        }
+    }
+    pub fn new_less(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: "<".to_owned(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_equal_equal(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: "==".to_owned(),
+            len: 2,
+            offset,
+        }
+    }
+    pub fn new_equal(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: "=".to_owned(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_bang_equal(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: "!=".to_owned(),
+            len: 2,
+            offset,
+        }
+    }
+    pub fn new_bang(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: '!'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
+    pub fn new_slash(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: '/'.to_string(),
+            len: 1,
+            offset,
+        }
+    }
     pub fn new_star(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,

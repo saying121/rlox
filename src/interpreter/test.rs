@@ -114,7 +114,7 @@ fn test_plus_minus_multi_div() {
     assert_eq!(res, LiteralType::Number(2. / 3.));
 
     let source: Arc<str> = Arc::from("2/3+ 2/1");
-    let sc = Scanner::new(source.to_string());
+    let mut sc = Scanner::new(&source);
     let tks = sc.scan_tokens();
     let mut pars = Parser::new(tks);
     let exprs = pars.parse().unwrap();

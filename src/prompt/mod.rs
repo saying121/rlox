@@ -11,7 +11,7 @@ pub fn run_prompt() -> Result<()> {
             Ok(line) => {
                 rl.add_history_entry(line.as_str())?;
                 let lox = Lox::default();
-                lox.run(line);
+                lox.run(&line);
                 // run(line)?;
                 // println!("Line: {}", line);
             },

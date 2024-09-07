@@ -14,7 +14,7 @@ fn main() -> anyhow::Result<()> {
     }
     else if let Some(fp) = cli.file_path {
         let lox = Lox::default();
-        lox.run(fp);
+        lox.run(&fp);
     }
 
     Ok(())
