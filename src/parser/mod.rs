@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod tests;
 
-use std::vec::IntoIter;
-
 use itertools::PeekNth;
 use thiserror::Error;
 
@@ -25,16 +23,23 @@ pub type Result<T, E = ParserError> = core::result::Result<T, E>;
 
 #[derive(Clone)]
 #[derive(Debug)]
-pub struct Parser {
-    #[expect(dead_code, reason = "todo")]
-    tokens: Vec<Token>,
-    peeks: PeekNth<IntoIter<Token>>,
+pub struct Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    peeks: PeekNth<I>,
 }
 
-impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
-        let peeks = itertools::peek_nth(tokens.clone());
-        Self { tokens, peeks }
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    pub fn new<V>(tokens: V) -> Self
+    where
+        V: IntoIterator<IntoIter = I>,
+    {
+        let peeks = itertools::peek_nth(tokens);
+        Self { peeks }
     }
     pub fn parse(&mut self) -> Result<Exprs> {
         self.expression()
