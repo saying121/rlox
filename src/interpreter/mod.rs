@@ -11,11 +11,11 @@ use crate::{
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[derive(thiserror::Error)]
 pub enum InterError {
-    #[error("{0}\nhelp: Operand must be numbers.")]
+    #[error("{0}\nhelp: Operand must be numbers")]
     Number(TokenInner),
-    #[error("{0}\nhelp: Operand must be a number.")]
+    #[error("{0}\nhelp: Operand must be a number")]
     UnaryNumber(TokenInner),
-    #[error("{0}\nhelp: Operand must be two number or two strings.")]
+    #[error("{0}\nhelp: Operand must be two number or two strings")]
     Plus(TokenInner),
     #[error("{0}")]
     NotMatch(String),

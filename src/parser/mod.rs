@@ -12,11 +12,11 @@ use crate::{
 #[derive(Clone)]
 #[derive(Debug, Error)]
 pub enum ParserError {
-    #[error("missing ')' after expression: {0}")]
+    #[error("Missing ')' after expression: {0}")]
     RightParen(Token),
-    #[error("End of source code, no next token.")]
+    #[error("End of source code, no next token")]
     Eof,
-    #[error("invalid Primary: {0}")]
+    #[error("Invalid Primary: {0}")]
     Primary(Token),
 }
 pub type Result<T, E = ParserError> = core::result::Result<T, E>;
