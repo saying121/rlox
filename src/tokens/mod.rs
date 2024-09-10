@@ -1,3 +1,5 @@
+#![allow(unfulfilled_lint_expectations, reason = "allow it")]
+
 use std::{fmt::Display, mem, sync::Arc};
 
 use strum::EnumString;
@@ -268,57 +270,6 @@ pub enum Token {
     Invalid { inner: TokenInner },
 }
 
-impl Display for Token {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[expect(clippy::enum_glob_use, reason = "just in this block")]
-        use Token::*;
-        match self {
-            LeftParen { inner }
-            | RightParen { inner }
-            | LeftBrace { inner }
-            | RightBrace { inner }
-            | Comma { inner }
-            | Dot { inner }
-            | Minus { inner }
-            | Plus { inner }
-            | Semicolon { inner }
-            | Slash { inner }
-            | Star { inner }
-            | Bang { inner }
-            | BangEqual { inner }
-            | Equal { inner }
-            | EqualEqual { inner }
-            | Greater { inner }
-            | GreaterEqual { inner }
-            | Less { inner }
-            | LessEqual { inner }
-            | Identifier { inner }
-            | String { inner }
-            | And { inner }
-            | Class { inner }
-            | Else { inner }
-            | Fun { inner }
-            | For { inner }
-            | If { inner }
-            | Nil { inner }
-            | Or { inner }
-            | Print { inner }
-            | Return { inner }
-            | Super { inner }
-            | This { inner }
-            | True { inner }
-            | False { inner }
-            | Var { inner }
-            | While { inner }
-            | Eof { inner }
-            | Comment { inner }
-            | BlockComment { inner }
-            | Invalid { inner }
-            | Number { inner, .. } => f.write_str(&inner.to_string()),
-        }
-    }
-}
-
 impl Display for TokenInner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (line, col) = self.get_col();
@@ -329,80 +280,102 @@ impl Display for TokenInner {
     }
 }
 
+macro_rules! token_enums_match {
+    ($($arm:ident), *) => {
+
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[expect(clippy::enum_glob_use, reason = "just in this block")]
+        use Token::*;
+        match self {
+            $(
+                | $arm { inner, .. }
+            )*
+            => f.write_str(&inner.to_string()),
+        }
+    }
+}
+
 impl Token {
     pub const fn inner(&self) -> &TokenInner {
         #[expect(clippy::enum_glob_use, reason = "just in this block")]
         use Token::*;
         match self {
-            LeftParen { inner }
-            | RightParen { inner }
-            | LeftBrace { inner }
-            | RightBrace { inner }
-            | Comma { inner }
-            | Dot { inner }
-            | Minus { inner }
-            | Plus { inner }
-            | Semicolon { inner }
-            | Slash { inner }
-            | Star { inner }
-            | Bang { inner }
-            | BangEqual { inner }
-            | Equal { inner }
-            | EqualEqual { inner }
-            | Greater { inner }
-            | GreaterEqual { inner }
-            | Less { inner }
-            | LessEqual { inner }
-            | Identifier { inner }
-            | String { inner }
-            | And { inner }
-            | Class { inner }
-            | Else { inner }
-            | Fun { inner }
-            | For { inner }
-            | If { inner }
-            | Nil { inner }
-            | Or { inner }
-            | Print { inner }
-            | Return { inner }
-            | Super { inner }
-            | This { inner }
-            | True { inner }
-            | False { inner }
-            | Var { inner }
-            | While { inner }
-            | Eof { inner }
-            | Comment { inner }
-            | BlockComment { inner }
-            | Invalid { inner }
-            | Number { inner, .. } => inner,
+            $(
+                | $arm { inner, .. }
+            )*
+            => inner,
         }
     }
 }
+
+    };
+}
+
+token_enums_match!(
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    Comma,
+    Dot,
+    Minus,
+    Plus,
+    Semicolon,
+    Slash,
+    Star,
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+    Identifier,
+    String,
+    And,
+    Class,
+    Else,
+    Fun,
+    For,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    False,
+    Var,
+    While,
+    Eof,
+    Comment,
+    BlockComment,
+    Invalid,
+    Number
+);
 
 impl Token {
     pub const fn is_keyword(&self) -> bool {
         #[expect(clippy::enum_glob_use, reason = "just in this block")]
         use Token::*;
 
-        matches!(
-            self,
-            And { .. }
-                | Class { .. }
-                | Else { .. }
-                | Fun { .. }
-                | For { .. }
-                | If { .. }
-                | Nil { .. }
-                | Or { .. }
-                | Print { .. }
-                | Return { .. }
-                | Super { .. }
-                | This { .. }
-                | True { .. }
-                | False { .. }
-                | Var { .. }
-                | While { .. }
+        macro_rules! match_arms {
+            ($($arm:ident), *) => {
+                matches!(
+                    self,
+                    $(
+                    |   $arm { .. }
+                    )*
+                )
+            };
+        }
+
+        match_arms!(
+            And, Class, Else, Fun, For, If, Nil, Or, Print, Return, Super, This, True, False, Var,
+            While
         )
     }
 }
