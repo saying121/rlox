@@ -1,83 +1,68 @@
+#![allow(unfulfilled_lint_expectations, reason = "allow it")]
+
 use std::fmt::Display;
 
 use crate::tokens::Token;
 
-pub trait Visitor<R> {
-    fn visit_assign_expr(&self, expr: &Assign) -> R;
-    fn visit_binary_expr(&self, expr: &Binary) -> R;
-    fn visit_call_expr(&self, expr: &Call) -> R;
-    fn visit_get_expr(&self, expr: &Get) -> R;
-    fn visit_grouping_expr(&self, expr: &Grouping) -> R;
-    fn visit_literal_expr(&self, expr: &Literal) -> R;
-    fn visit_logical_expr(&self, expr: &Logical) -> R;
-    fn visit_set_expr(&self, expr: &Set) -> R;
-    fn visit_super_expr(&self, expr: &Super) -> R;
-    fn visit_this_expr(&self, expr: &This) -> R;
-    fn visit_unary_expr(&self, expr: &Unary) -> R;
-    fn visit_variable_expr(&self, expr: &Variable) -> R;
-}
-
-pub trait Expr {
-    fn accept<R>(&self, visitor: &dyn Visitor<R>) -> R;
-}
-
-#[derive(Debug)]
-#[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
-pub enum Exprs {
-    Assign(Assign),
-    Binary(Binary),
-    Call(Call),
-    Get(Get),
-    Grouping(Grouping),
-    Literal(Literal),
-    Logical(Logical),
-    Set(Set),
-    Super(Super),
-    This(This),
-    Unary(Unary),
-    Variable(Variable),
-}
-impl Expr for Exprs {
-    #[inline]
-    fn accept<R>(&self, visitor: &dyn Visitor<R>) -> R {
-        #[expect(clippy::enum_glob_use, reason = "happy")]
-        use Exprs::*;
-        match self {
-            Assign(inner) => inner.accept(visitor),
-            Binary(inner) => inner.accept(visitor),
-            Call(inner) => inner.accept(visitor),
-            Get(inner) => inner.accept(visitor),
-            Grouping(inner) => inner.accept(visitor),
-            Literal(inner) => inner.accept(visitor),
-            Logical(inner) => inner.accept(visitor),
-            Set(inner) => inner.accept(visitor),
-            Super(inner) => inner.accept(visitor),
-            This(inner) => inner.accept(visitor),
-            Unary(inner) => inner.accept(visitor),
-            Variable(inner) => inner.accept(visitor),
-        }
-    }
-}
-
-macro_rules! impl_expr {
+macro_rules! visitor_method {
     ($($expr:ident), *) => {
         $(
-            impl Expr for $expr {
-                fn accept<R>(&self, visitor: &dyn Visitor<R>) -> R
-                {
-                    paste::paste! {
-                        visitor.[<visit_ $expr:lower _expr>](self)
-                    }
-                }
+            paste::paste! {
+                fn [<visit_ $expr:lower _expr>](&self, expr: &$expr) -> R;
             }
         )*
     };
 }
 
-impl_expr!(
-    Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable
-);
+pub trait ExprVisitor<R> {
+    visitor_method!(
+        Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable
+    );
+}
+
+pub trait Expr {
+    fn accept<R>(&self, visitor: &dyn ExprVisitor<R>) -> R;
+}
+
+macro_rules! expr_gen {
+    ($($variant:ident), *) => {
+
+#[derive(Debug)]
+#[derive(Clone)]
+#[derive(PartialEq, PartialOrd)]
+pub enum Exprs {
+$(
+    $variant($variant),
+)*
+}
+
+impl Expr for Exprs {
+    #[inline]
+    fn accept<R>(&self, visitor: &dyn ExprVisitor<R>) -> R {
+        #[expect(clippy::enum_glob_use, reason = "happy")]
+        use Exprs::*;
+        match self {
+        $(
+            $variant(inner) => inner.accept(visitor),
+        )*
+        }
+    }
+}
+
+$(
+    impl Expr for $variant {
+        fn accept<R>(&self, visitor: &dyn ExprVisitor<R>) -> R
+        {
+            paste::paste! {
+                visitor.[<visit_ $variant:lower _expr>](self)
+            }
+        }
+    }
+)*
+    };
+}
+
+expr_gen!(Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable);
 
 #[derive(Debug)]
 #[derive(Clone)]

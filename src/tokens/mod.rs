@@ -25,6 +25,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_greater(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -33,6 +34,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_less_equal(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -41,6 +43,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_less(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -49,6 +52,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_equal_equal(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -57,6 +61,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_equal(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -65,6 +70,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_bang_equal(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -73,6 +79,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_bang(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -81,6 +88,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_slash(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -89,6 +97,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_star(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -97,6 +106,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_semicolon(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -105,6 +115,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_plus(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -113,6 +124,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_minus(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -121,6 +133,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_dot(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -129,6 +142,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_comma(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -137,6 +151,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_left_brace(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -153,6 +168,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_left_paren(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -161,6 +177,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new_right_paren(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -169,6 +186,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn new(origin: Arc<str>, lexeme: String, offset: usize) -> Self {
         let len = lexeme.len();
         Self {
@@ -178,6 +196,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub const fn new_invalid(origin: Arc<str>, lexeme: String, len: usize, offset: usize) -> Self {
         Self {
             origin,
@@ -186,6 +205,7 @@ impl TokenInner {
             offset,
         }
     }
+
     pub fn get_col(&self) -> (usize, usize) {
         let mut line = 1;
         let mut col = 1;
@@ -200,6 +220,7 @@ impl TokenInner {
         }
         (line, col)
     }
+
 
     pub fn lexeme(&self) -> &str {
         &self.lexeme
