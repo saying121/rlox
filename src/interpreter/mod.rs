@@ -1,14 +1,18 @@
+#![allow(unfulfilled_lint_expectations, reason = "allow it")]
+
 #[cfg(test)]
 mod test;
 
 use crate::{
-    expr::{Expr, Exprs, LiteralType, Visitor},
+    env::Environment,
+    expr::{Expr, ExprVisitor, Exprs, LiteralType},
+    stmt::{Expression, Print, Stmt, StmtVisitor, Stmts, Var},
     tokens::{Token, TokenInner},
 };
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, PartialOrd)]
 #[derive(thiserror::Error)]
 pub enum InterError {
     #[error("{0}\nhelp: Operand must be numbers")]
@@ -19,24 +23,37 @@ pub enum InterError {
     Plus(TokenInner),
     #[error("{0}")]
     NotMatch(String),
+    #[error("Not exist variable: {0}")]
+    NoVar(Token),
 }
 
 pub type Result<T, E = InterError> = core::result::Result<T, E>;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-pub struct Interpreter;
+#[derive(PartialEq)]
+pub struct Interpreter {
+    environment: Environment,
+}
 
 impl Interpreter {
-    pub fn interpret(self, expr: &Exprs) -> Result<LiteralType> {
-        self.evaluate(expr)
+    pub fn interpret(&mut self, exprs: &mut [Stmts]) -> Result<()> {
+        for ele in exprs {
+            self.execute(ele)?;
+        }
+        Ok(())
     }
-    #[expect(clippy::trivially_copy_pass_by_ref, reason = "method")]
-    fn evaluate(&self, expr: &Exprs) -> Result<LiteralType> {
+
+    pub fn evaluate(&self, expr: &Exprs) -> Result<LiteralType> {
         expr.accept(self)
     }
+
+    #[expect(clippy::trivially_copy_pass_by_ref, reason = "method")]
+    fn execute(&mut self, stmt: &mut Stmts) -> Result<()> {
+        stmt.accept(self)
+    }
+
     const fn is_truthy(literal: &LiteralType) -> bool {
         match literal {
             LiteralType::Nil => false,
@@ -44,12 +61,32 @@ impl Interpreter {
             _ => true,
         }
     }
+
     fn is_equal(a: &LiteralType, b: &LiteralType) -> bool {
         a == b
     }
 }
 
-impl Visitor<Result<LiteralType>> for Interpreter {
+impl StmtVisitor<Result<()>> for Interpreter {
+    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<()> {
+        self.evaluate(stmt.expr())?;
+        Ok(())
+    }
+
+    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<()> {
+        let v = self.evaluate(stmt.expr())?;
+        println!("{v}");
+        Ok(())
+    }
+
+    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<()> {
+        let value = self.evaluate(stmt.initializer())?;
+        self.environment.define(stmt.var_name().to_owned(), value);
+        Ok(())
+    }
+}
+
+impl ExprVisitor<Result<LiteralType>> for Interpreter {
     fn visit_assign_expr(&self, expr: &crate::expr::Assign) -> Result<LiteralType> {
         todo!()
     }
@@ -181,6 +218,9 @@ impl Visitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_variable_expr(&self, expr: &crate::expr::Variable) -> Result<LiteralType> {
-        todo!()
+        self.environment
+            .get(&expr.name)
+            .cloned()
+            .ok_or(InterError::NoVar(expr.name.clone()))
     }
 }

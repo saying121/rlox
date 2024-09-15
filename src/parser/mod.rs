@@ -5,7 +5,8 @@ use itertools::PeekNth;
 use thiserror::Error;
 
 use crate::{
-    expr::{Binary, Exprs, Grouping, Literal, LiteralType, Unary},
+    expr::{Binary, Exprs, Grouping, Literal, LiteralType, Unary, Variable},
+    stmt::{Print, Stmts, Var},
     tokens::Token,
 };
 
@@ -18,6 +19,14 @@ pub enum ParserError {
     Eof,
     #[error("Invalid Primary: {0}")]
     Primary(Token),
+    #[error("Expect `;` at stmt end: {0}")]
+    PrintStmt(Token),
+    #[error("Expect `var`: {0}")]
+    Declaration(String),
+    #[error("Expect var name: {0}")]
+    VarDeclaration(Token),
+    #[error("Expect `;` after variable declaration: {0}")]
+    Semicolon(Token),
 }
 pub type Result<T, E = ParserError> = core::result::Result<T, E>;
 
@@ -41,8 +50,95 @@ where
         let peeks = itertools::peek_nth(tokens);
         Self { peeks }
     }
-    pub fn parse(&mut self) -> Result<Exprs> {
-        self.expression()
+
+    pub fn parse(&mut self) -> Vec<Stmts> {
+        let mut stmts = Vec::new();
+        while self.peeks.peek().is_some() {
+            // stmts.push(self.statement()?);
+            match self.declaration() {
+                Ok(stmt) => {
+                    stmts.push(stmt);
+                },
+                Err(e) => tracing::error!("{e}"),
+            }
+        }
+
+        stmts
+    }
+
+    fn declaration(&mut self) -> Result<Stmts> {
+        match self.peeks.peek() {
+            Some(Token::Var { .. }) => {
+                self.peeks.next();
+                self.var_declaration()
+            },
+            _ => {
+                match self.statement() {
+                    stmt @ Ok(_) => stmt,
+                    Err(e) => {
+                        self.synchronize();
+                        Err(ParserError::Declaration(e.to_string()))
+                    },
+                }
+            },
+        }
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmts> {
+        let Some(ident) = self.peeks.next()
+        else {
+            return Err(ParserError::Eof);
+        };
+        if !matches!(ident, Token::Identifier { .. }) {
+            return Err(ParserError::VarDeclaration(ident));
+        }
+
+        let Some(next_token) = self.peeks.peek()
+        else {
+            return Err(ParserError::Eof);
+        };
+        let init_val = match next_token {
+            Token::Equal { .. } => {
+                self.peeks.next();
+                self.expression()?
+            },
+            _ => Exprs::Literal(Literal::default()),
+        };
+        match self.peeks.next() {
+            Some(Token::Semicolon { .. }) => {},
+            Some(v) => return Err(ParserError::Semicolon(v)),
+            None => return Err(ParserError::Eof),
+        }
+
+        Ok(Stmts::Var(Var::new(ident, init_val)))
+    }
+
+    fn statement(&mut self) -> Result<Stmts> {
+        if let Some(next) = self.peeks.peek() {
+            match next {
+                Token::Print { .. } => {
+                    // TODO: use next instead of peek?
+                    self.peeks.next();
+                    let stmt = self.print_statement()?;
+                    Ok(stmt)
+                },
+                _ => {
+                    todo!()
+                },
+            }
+        }
+        else {
+            todo!()
+        }
+    }
+
+    fn print_statement(&mut self) -> Result<Stmts> {
+        let expr = self.expression()?;
+        match self.peeks.next() {
+            Some(Token::Semicolon { .. }) => Ok(Stmts::Print(Print::new(expr))),
+            Some(v) => Err(ParserError::PrintStmt(v)),
+            None => Err(ParserError::Eof),
+        }
     }
 
     fn expression(&mut self) -> Result<Exprs> {
@@ -52,9 +148,10 @@ where
     fn equality(&mut self) -> Result<Exprs> {
         let mut expr = self.comparison()?;
 
-        while let Some(op) = self.peeks.next()
+        while let Some(op) = self.peeks.peek()
             && matches!(op, Token::BangEqual { .. } | Token::EqualEqual { .. })
         {
+            let op = unsafe { self.peeks.next().unwrap_unchecked() };
             let right = self.comparison()?;
             expr = Exprs::Binary(Binary::new(expr, op, right));
         }
@@ -62,7 +159,6 @@ where
         Ok(expr)
     }
 
-    #[expect(clippy::unwrap_in_result, reason = "had checked previous")]
     fn comparison(&mut self) -> Result<Exprs> {
         let mut expr = self.term()?;
 
@@ -83,7 +179,6 @@ where
         Ok(expr)
     }
 
-    #[expect(clippy::unwrap_in_result, reason = "had checked previous")]
     fn term(&mut self) -> Result<Exprs> {
         let mut expr = self.factor()?;
 
@@ -98,7 +193,6 @@ where
         Ok(expr)
     }
 
-    #[expect(clippy::unwrap_in_result, reason = "had checked previous")]
     fn factor(&mut self) -> Result<Exprs> {
         let mut expr = self.unary()?;
 
@@ -113,7 +207,6 @@ where
         Ok(expr)
     }
 
-    #[expect(clippy::unwrap_in_result, reason = "had checked previous")]
     fn unary(&mut self) -> Result<Exprs> {
         if let Some(pk) = self.peeks.peek()
             && matches!(pk, Token::Bang { .. } | Token::Minus { .. })
@@ -144,6 +237,7 @@ where
                 Token::String { mut inner } => Ok(Exprs::Literal(Literal {
                     value: LiteralType::String(inner.lexeme_take()),
                 })),
+                tk @ Token::Identifier { .. } => Ok(Exprs::Variable(Variable::new(tk))),
                 Token::LeftParen { .. } => {
                     let expr = self.expression()?;
                     self.consume_rignt_paren()?;
@@ -166,7 +260,6 @@ where
         )
     }
 
-    #[expect(dead_code, reason = "todo")]
     /// when want discard tokens until we're right at the beginning of the next statment
     fn synchronize(&mut self) {
         self.peeks.next();

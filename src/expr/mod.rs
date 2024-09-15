@@ -153,11 +153,13 @@ impl Grouping {
 
 #[derive(Clone)]
 #[derive(Debug)]
+#[derive(Default)]
 #[derive(PartialEq, PartialOrd)]
 pub enum LiteralType {
     String(String),
     Number(f64),
     Bool(bool),
+    #[default]
     Nil, // CallAble(Callable),
 }
 
@@ -176,6 +178,7 @@ impl Display for LiteralType {
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(Default)]
 #[derive(PartialEq, PartialOrd)]
 pub struct Literal {
     pub value: LiteralType,

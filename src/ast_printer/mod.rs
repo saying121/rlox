@@ -1,6 +1,6 @@
 use std::string::String;
 
-use crate::expr::{Expr, Exprs, Visitor};
+use crate::expr::{Expr, Exprs, ExprVisitor};
 
 // #[derive(Debug)]
 pub struct AstPrinter;
@@ -26,7 +26,7 @@ impl AstPrinter {
     }
 }
 
-impl Visitor<String> for AstPrinter {
+impl ExprVisitor<String> for AstPrinter {
     fn visit_assign_expr(&self, expr: &crate::expr::Assign) -> String {
         todo!()
     }

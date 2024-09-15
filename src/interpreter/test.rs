@@ -7,7 +7,7 @@ use crate::{
 
 #[test]
 fn test_logic() {
-    let inter = Interpreter;
+    let inter = Interpreter::default();
 
     let source: Arc<str> = Arc::from("!true");
 
@@ -20,7 +20,7 @@ fn test_logic() {
         })),
     });
 
-    let res = inter.interpret(&exprs).unwrap();
+    let res = inter.evaluate(&exprs).unwrap();
     let correct = LiteralType::Bool(false);
     assert_eq!(res, correct);
 
@@ -35,14 +35,14 @@ fn test_logic() {
         })),
     });
 
-    let res = inter.interpret(&exprs).unwrap();
+    let res = inter.evaluate(&exprs).unwrap();
     let correct = LiteralType::Bool(true);
     assert_eq!(res, correct);
 }
 
 #[test]
 fn test_plus_minus_multi_div() {
-    let inter = Interpreter;
+    let inter = Interpreter::default();
 
     // plus
     let source: Arc<str> = Arc::from("1+1");
@@ -59,7 +59,7 @@ fn test_plus_minus_multi_div() {
         })),
     });
 
-    let res = inter.interpret(&exprs).unwrap();
+    let res = inter.evaluate(&exprs).unwrap();
     let correct = LiteralType::Number(2.0);
     assert_eq!(res, correct);
 
@@ -77,7 +77,7 @@ fn test_plus_minus_multi_div() {
             value: LiteralType::Number(1.0),
         })),
     });
-    let res = inter.interpret(&exprs).unwrap();
+    let res = inter.evaluate(&exprs).unwrap();
     assert_eq!(res, LiteralType::Number(0.0));
 
     // multiplication
@@ -93,7 +93,7 @@ fn test_plus_minus_multi_div() {
             value: LiteralType::Number(2.0),
         })),
     });
-    let res = inter.interpret(&exprs).unwrap();
+    let res = inter.evaluate(&exprs).unwrap();
     assert_eq!(res, LiteralType::Number(16.0));
 
     // div
@@ -110,15 +110,15 @@ fn test_plus_minus_multi_div() {
             value: LiteralType::Number(3.0),
         })),
     });
-    let res = inter.interpret(&exprs).unwrap();
+    let res = inter.evaluate(&exprs).unwrap();
     assert_eq!(res, LiteralType::Number(2. / 3.));
 
     let source: Arc<str> = Arc::from("2/3+ 2/1");
     let mut sc = Scanner::new(&source);
     let tks = sc.scan_tokens();
     let mut pars = Parser::new(tks);
-    let exprs = pars.parse().unwrap();
+    let exprs = pars.parse();
     dbg!(&exprs);
-    // inter.interpret(&exprs)
+    // inter.evaluate(&exprs)
     // dbg!(&tks);
 }
