@@ -57,19 +57,13 @@ where
         Self { peeks }
     }
 
-    pub fn parse(&mut self) -> Vec<Stmts> {
+    pub fn parse(&mut self) -> Result<Vec<Stmts>> {
         let mut stmts = Vec::new();
         while self.peeks.peek().is_some() {
-            // stmts.push(self.statement()?);
-            match self.declaration() {
-                Ok(stmt) => {
-                    stmts.push(stmt);
-                },
-                Err(e) => tracing::error!("{e}"),
-            }
+            stmts.push(self.declaration()?);
         }
 
-        stmts
+        Ok(stmts)
     }
 
     fn declaration(&mut self) -> Result<Stmts> {

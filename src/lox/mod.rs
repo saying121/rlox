@@ -27,7 +27,13 @@ impl Lox {
         let tokens = scanner.scan_tokens();
 
         let mut parser = Parser::new(tokens);
-        let mut expression = parser.parse();
+        let mut expression = match parser.parse() {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("{e}");
+                return;
+            },
+        };
 
         // let ast = AstPrinter.print(&expression);
         // println!("{ast}");

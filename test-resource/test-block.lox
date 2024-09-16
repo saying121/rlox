@@ -14,7 +14,7 @@ var c = "global c";
   print b;
   print c;
 }
-a = "new a"
+a = "new a";
 print a;
 print b;
 print c;

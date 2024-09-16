@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use super::Interpreter;
 use crate::{
-    expr::{Binary, Exprs, Literal, LiteralType, Unary}, parser::Parser, scan::scanner::Scanner, tokens::{Token, TokenInner}
+    expr::{Binary, Exprs, Literal, LiteralType, Unary},
+    tokens::{Token, TokenInner},
 };
 
 #[test]
@@ -114,11 +115,38 @@ fn test_plus_minus_multi_div() {
     assert_eq!(res, LiteralType::Number(2. / 3.));
 
     let source: Arc<str> = Arc::from("2/3+ 2/1");
-    let mut sc = Scanner::new(&source);
-    let tks = sc.scan_tokens();
-    let mut pars = Parser::new(tks);
-    let exprs = pars.parse();
-    dbg!(&exprs);
-    // inter.evaluate(&exprs)
-    // dbg!(&tks);
+    let exprs = Exprs::Binary(Binary {
+        left: Box::new(Exprs::Binary(Binary {
+            left: Box::new(Exprs::Literal(Literal {
+                value: LiteralType::Number(2.0),
+            })),
+            operator: Token::Slash {
+                inner: TokenInner::new_slash(Arc::clone(&source), 1),
+            },
+            right: Box::new(Exprs::Literal(Literal {
+                value: LiteralType::Number(3.0),
+            })),
+        })),
+        operator: Token::Plus {
+            inner: TokenInner::new_plus(Arc::clone(&source), 3),
+        },
+        right: Box::new(Exprs::Binary(Binary {
+            left: Box::new(Exprs::Literal(Literal {
+                value: LiteralType::Number(2.0),
+            })),
+            operator: Token::Slash {
+                inner: TokenInner::new_slash(Arc::clone(&source), 6),
+            },
+            right: Box::new(Exprs::Literal(Literal {
+                value: LiteralType::Number(1.0),
+            })),
+        })),
+    });
+    let a = inter.evaluate(&exprs).unwrap();
+    match a {
+        LiteralType::Number(v) => {
+            assert_eq!(v, 2. / 3. + 2. / 1.);
+        },
+        _ => unreachable!(),
+    }
 }

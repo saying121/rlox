@@ -17,6 +17,14 @@ pub struct TokenInner {
 }
 
 impl TokenInner {
+    pub fn new_print(origin: Arc<str>, offset: usize) -> Self {
+        Self {
+            origin,
+            lexeme: "print".to_owned(),
+            len: 5,
+            offset,
+        }
+    }
     pub fn new_greater_equal(origin: Arc<str>, offset: usize) -> Self {
         Self {
             origin,
@@ -220,7 +228,6 @@ impl TokenInner {
         }
         (line, col)
     }
-
 
     pub fn lexeme(&self) -> &str {
         &self.lexeme
