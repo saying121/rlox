@@ -25,6 +25,8 @@ pub enum InterError {
     NotMatch(String),
     #[error("Not exist variable: {0}")]
     NoVar(Token),
+    #[error("{0}")]
+    Message(String),
 }
 
 pub type Result<T, E = InterError> = core::result::Result<T, E>;
@@ -45,12 +47,12 @@ impl Interpreter {
         Ok(())
     }
 
-    pub fn evaluate(&self, expr: &Exprs) -> Result<LiteralType> {
+    pub fn evaluate(&mut self, expr: &Exprs) -> Result<LiteralType> {
         expr.accept(self)
     }
 
     #[expect(clippy::trivially_copy_pass_by_ref, reason = "method")]
-    fn execute(&mut self, stmt: &mut Stmts) -> Result<()> {
+    fn execute(&mut self, stmt: &Stmts) -> Result<()> {
         stmt.accept(self)
     }
 
@@ -87,11 +89,13 @@ impl StmtVisitor<Result<()>> for Interpreter {
 }
 
 impl ExprVisitor<Result<LiteralType>> for Interpreter {
-    fn visit_assign_expr(&self, expr: &crate::expr::Assign) -> Result<LiteralType> {
-        todo!()
+    fn visit_assign_expr(&mut self, expr: &crate::expr::Assign) -> Result<LiteralType> {
+        let value = self.evaluate(&expr.value)?;
+        self.environment.assign(&expr.name, value.clone()).map_err(|v|InterError::Message(v.to_string()))?;
+        Ok(value)
     }
 
-    fn visit_binary_expr(&self, expr: &crate::expr::Binary) -> Result<LiteralType> {
+    fn visit_binary_expr(&mut self, expr: &crate::expr::Binary) -> Result<LiteralType> {
         let left = self.evaluate(&expr.left)?;
         let right = self.evaluate(&expr.right)?;
 
@@ -168,38 +172,38 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
         }
     }
 
-    fn visit_call_expr(&self, expr: &crate::expr::Call) -> Result<LiteralType> {
+    fn visit_call_expr(&mut self, expr: &crate::expr::Call) -> Result<LiteralType> {
         todo!()
     }
 
-    fn visit_get_expr(&self, expr: &crate::expr::Get) -> Result<LiteralType> {
+    fn visit_get_expr(&mut self, expr: &crate::expr::Get) -> Result<LiteralType> {
         todo!()
     }
-    fn visit_grouping_expr(&self, expr: &crate::expr::Grouping) -> Result<LiteralType> {
+    fn visit_grouping_expr(&mut self, expr: &crate::expr::Grouping) -> Result<LiteralType> {
         self.evaluate(&expr.expression)
     }
 
-    fn visit_literal_expr(&self, expr: &crate::expr::Literal) -> Result<LiteralType> {
+    fn visit_literal_expr(&mut self, expr: &crate::expr::Literal) -> Result<LiteralType> {
         Ok(expr.value.clone())
     }
 
-    fn visit_logical_expr(&self, expr: &crate::expr::Logical) -> Result<LiteralType> {
+    fn visit_logical_expr(&mut self, expr: &crate::expr::Logical) -> Result<LiteralType> {
         todo!()
     }
 
-    fn visit_set_expr(&self, expr: &crate::expr::Set) -> Result<LiteralType> {
+    fn visit_set_expr(&mut self, expr: &crate::expr::Set) -> Result<LiteralType> {
         todo!()
     }
 
-    fn visit_super_expr(&self, expr: &crate::expr::Super) -> Result<LiteralType> {
+    fn visit_super_expr(&mut self, expr: &crate::expr::Super) -> Result<LiteralType> {
         todo!()
     }
 
-    fn visit_this_expr(&self, expr: &crate::expr::This) -> Result<LiteralType> {
+    fn visit_this_expr(&mut self, expr: &crate::expr::This) -> Result<LiteralType> {
         todo!()
     }
 
-    fn visit_unary_expr(&self, expr: &crate::expr::Unary) -> Result<LiteralType> {
+    fn visit_unary_expr(&mut self, expr: &crate::expr::Unary) -> Result<LiteralType> {
         let right = self.evaluate(&expr.right)?;
 
         match &expr.operator {
@@ -217,7 +221,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
         }
     }
 
-    fn visit_variable_expr(&self, expr: &crate::expr::Variable) -> Result<LiteralType> {
+    fn visit_variable_expr(&mut self, expr: &crate::expr::Variable) -> Result<LiteralType> {
         self.environment
             .get(&expr.name)
             .cloned()

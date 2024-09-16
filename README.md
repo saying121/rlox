@@ -23,7 +23,10 @@ exprStmt       → expression ";" ;
 
 printStmt      → "print" expression ";" ;
 
-expression     → equality ;
+expression     → assignment ;
+
+assignment     → IDENTiFIER "=" assignment
+               | equality ;
 
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 

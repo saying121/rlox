@@ -277,7 +277,7 @@ fn test_plus_minus_multi_div() {
         },
     ];
 
-    let mut p = Parser::new(tks);
+    let p = Parser::new(tks);
     // match p.parse() {
     //     Ok(_) => unreachable!("It's invalid"),
     //     Err(e) => assert_eq!("End of source code, no next token.", e.to_string()),

@@ -2,7 +2,7 @@
 use crate::{expr::Exprs, tokens::Token};
 
 pub trait Stmt {
-    fn accept<R>(&mut self, visitor: &mut dyn StmtVisitor<R>) -> R;
+    fn accept<R>(&self, visitor: &mut dyn StmtVisitor<R>) -> R;
 }
 
 #[derive(Clone)]
@@ -65,7 +65,7 @@ $(
     }
 
     impl Stmt for $stm {
-        fn accept<R>(&mut self, visitor: &mut dyn StmtVisitor<R>) -> R
+        fn accept<R>(&self, visitor: &mut dyn StmtVisitor<R>) -> R
         {
                 visitor.[<visit_ $stm:lower _stmt>](self)
         }
@@ -83,7 +83,7 @@ $(
 
 impl Stmt for Stmts {
     #[inline]
-    fn accept<R>(&mut self, visitor: &mut dyn StmtVisitor<R>) -> R {
+    fn accept<R>(&self, visitor: &mut dyn StmtVisitor<R>) -> R {
         #[expect(clippy::enum_glob_use, reason = "happy")]
         use Stmts::*;
         match self {

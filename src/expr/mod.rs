@@ -4,28 +4,19 @@ use std::fmt::Display;
 
 use crate::tokens::Token;
 
-macro_rules! visitor_method {
-    ($($expr:ident), *) => {
-        $(
-            paste::paste! {
-                fn [<visit_ $expr:lower _expr>](&self, expr: &$expr) -> R;
-            }
-        )*
-    };
-}
-
-pub trait ExprVisitor<R> {
-    visitor_method!(
-        Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable
-    );
-}
-
 pub trait Expr {
-    fn accept<R>(&self, visitor: &dyn ExprVisitor<R>) -> R;
+    fn accept<R>(&self, visitor: &mut dyn ExprVisitor<R>) -> R;
 }
 
 macro_rules! expr_gen {
     ($($variant:ident), *) => {
+paste::paste! {
+
+pub trait ExprVisitor<R> {
+$(
+    fn [<visit_ $variant:lower _expr>](&mut self, expr: &$variant) -> R;
+)*
+}
 
 #[derive(Debug)]
 #[derive(Clone)]
@@ -38,7 +29,7 @@ $(
 
 impl Expr for Exprs {
     #[inline]
-    fn accept<R>(&self, visitor: &dyn ExprVisitor<R>) -> R {
+    fn accept<R>(&self, visitor: &mut dyn ExprVisitor<R>) -> R {
         #[expect(clippy::enum_glob_use, reason = "happy")]
         use Exprs::*;
         match self {
@@ -51,14 +42,14 @@ impl Expr for Exprs {
 
 $(
     impl Expr for $variant {
-        fn accept<R>(&self, visitor: &dyn ExprVisitor<R>) -> R
+        fn accept<R>(&self, visitor: &mut dyn ExprVisitor<R>) -> R
         {
-            paste::paste! {
                 visitor.[<visit_ $variant:lower _expr>](self)
-            }
         }
     }
 )*
+
+}
     };
 }
 
@@ -151,6 +142,14 @@ impl Grouping {
     }
 }
 
+#[derive(Debug)]
+#[derive(Clone)]
+#[derive(Default)]
+#[derive(PartialEq, PartialOrd)]
+pub struct Literal {
+    pub value: LiteralType,
+}
+
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
@@ -174,14 +173,6 @@ impl Display for LiteralType {
             Nil => f.write_fmt(format_args!("nil")),
         }
     }
-}
-
-#[derive(Debug)]
-#[derive(Clone)]
-#[derive(Default)]
-#[derive(PartialEq, PartialOrd)]
-pub struct Literal {
-    pub value: LiteralType,
 }
 
 #[derive(Debug)]

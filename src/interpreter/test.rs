@@ -7,7 +7,7 @@ use crate::{
 
 #[test]
 fn test_logic() {
-    let inter = Interpreter::default();
+    let mut inter = Interpreter::default();
 
     let source: Arc<str> = Arc::from("!true");
 
@@ -42,7 +42,7 @@ fn test_logic() {
 
 #[test]
 fn test_plus_minus_multi_div() {
-    let inter = Interpreter::default();
+    let mut inter = Interpreter::default();
 
     // plus
     let source: Arc<str> = Arc::from("1+1");

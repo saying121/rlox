@@ -5,7 +5,7 @@ use itertools::PeekNth;
 use thiserror::Error;
 
 use crate::{
-    expr::{Binary, Exprs, Grouping, Literal, LiteralType, Unary, Variable},
+    expr::{Assign, Binary, Exprs, Grouping, Literal, LiteralType, Unary, Variable},
     stmt::{Print, Stmts, Var},
     tokens::Token,
 };
@@ -21,12 +21,16 @@ pub enum ParserError {
     Primary(Token),
     #[error("Expect `;` at stmt end: {0}")]
     PrintStmt(Token),
-    #[error("Expect `var`: {0}")]
-    Declaration(String),
+    #[error("{0}")]
+    DeclarationStmt(String),
     #[error("Expect var name: {0}")]
     VarDeclaration(Token),
     #[error("Expect `;` after variable declaration: {0}")]
     Semicolon(Token),
+    #[error("Invalid assignment target: {0}")]
+    Assign(Token),
+    #[error("{0}")]
+    ErrMessage(String),
 }
 pub type Result<T, E = ParserError> = core::result::Result<T, E>;
 
@@ -72,14 +76,12 @@ where
                 self.peeks.next();
                 self.var_declaration()
             },
-            _ => {
-                match self.statement() {
-                    stmt @ Ok(_) => stmt,
-                    Err(e) => {
-                        self.synchronize();
-                        Err(ParserError::Declaration(e.to_string()))
-                    },
-                }
+            _ => match self.statement() {
+                stmt @ Ok(_) => stmt,
+                Err(e) => {
+                    self.synchronize();
+                    Err(ParserError::DeclarationStmt(e.to_string()))
+                },
             },
         }
     }
@@ -137,12 +139,30 @@ where
         match self.peeks.next() {
             Some(Token::Semicolon { .. }) => Ok(Stmts::Print(Print::new(expr))),
             Some(v) => Err(ParserError::PrintStmt(v)),
-            None => Err(ParserError::Eof),
+            None => Err(ParserError::ErrMessage("Missing `;` at end".to_owned())),
         }
     }
 
     fn expression(&mut self) -> Result<Exprs> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> std::result::Result<Exprs, ParserError> {
+        let expr = self.equality()?;
+        match self.peeks.peek() {
+            Some(Token::Equal { .. }) => {
+                let equals = unsafe { self.peeks.next().unwrap_unchecked() };
+                let value = self.assignment()?;
+                match expr {
+                    Exprs::Variable(v) => {
+                        let name = v.name;
+                        Ok(Exprs::Assign(Assign::new(name, value)))
+                    },
+                    _ => Err(ParserError::Assign(equals)),
+                }
+            },
+            _ => Ok(expr),
+        }
     }
 
     fn equality(&mut self) -> Result<Exprs> {
