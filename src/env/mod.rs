@@ -16,13 +16,35 @@ pub enum EnvError {
 #[derive(Default)]
 #[derive(PartialEq)]
 pub struct Environment {
+    enclosing: Option<Box<Environment>>,
     values: HashMap<String, LiteralType>,
 }
 
 impl Environment {
+    /// global scope
+    pub fn new() -> Self {
+        Self {
+            enclosing: None,
+            values: HashMap::new(),
+        }
+    }
+
+    /// local scope
+    pub fn with_enclosing(enclosing: Self) -> Self {
+        Self {
+            enclosing: Some(Box::new(enclosing)),
+            values: HashMap::new(),
+        }
+    }
+
     pub fn get(&self, name: &Token) -> Option<&LiteralType> {
-        let name = name.inner().lexeme();
-        self.values.get(name)
+        if let v @ Some(_) = self.values.get(name.inner().lexeme()) {
+            return v;
+        }
+        if let Some(enclosing) = &self.enclosing {
+            return enclosing.get(name);
+        }
+        None
     }
 
     pub fn define(&mut self, name: String, value: LiteralType) {
@@ -33,10 +55,13 @@ impl Environment {
         let k = name.inner().lexeme();
         if self.values.contains_key(k) {
             self.values.insert(k.to_owned(), value);
-            Ok(())
+            return Ok(());
         }
-        else {
-            Err(EnvError::UndefinedVar(name.clone()))
+        if let Some(enclosing) = &mut self.enclosing {
+            enclosing.assign(name, value)?;
+            return Ok(());
         }
+
+        Err(EnvError::UndefinedVar(name.clone()))
     }
 }

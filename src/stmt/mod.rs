@@ -12,6 +12,12 @@ pub struct Expression {
     expr: Exprs,
 }
 
+impl Expression {
+    pub const fn new(expr: Exprs) -> Self {
+        Self { expr }
+    }
+}
+
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(PartialEq, PartialOrd)]
@@ -47,6 +53,24 @@ impl Var {
     }
 }
 
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(PartialEq, PartialOrd)]
+pub struct Block {
+    statements: Vec<Stmts>,
+}
+
+impl Block {
+    pub const fn new(statements: Vec<Stmts>) -> Self {
+        Self { statements }
+    }
+
+    pub fn statements(&self) -> &[Stmts] {
+        &self.statements
+    }
+}
+
 macro_rules! statement_gen {
     ($($stm:ident), *) => {
 paste::paste! {
@@ -58,12 +82,6 @@ $(
 }
 
 $(
-    impl $stm {
-        pub const fn expr(&self) -> &Exprs {
-            &self.expr
-        }
-    }
-
     impl Stmt for $stm {
         fn accept<R>(&self, visitor: &mut dyn StmtVisitor<R>) -> R
         {
@@ -98,4 +116,22 @@ impl Stmt for Stmts {
     };
 }
 
-statement_gen!(Expression, Print, Var);
+statement_gen!(Expression, Print, Var, Block);
+
+macro_rules! statement_expr {
+    ($($stm:ident), *) => {
+paste::paste! {
+
+$(
+    impl $stm {
+        pub const fn expr(&self) -> &Exprs {
+            &self.expr
+        }
+    }
+)*
+
+}
+    };
+}
+
+statement_expr!(Expression, Print, Var);

@@ -17,7 +17,10 @@ declaration    → varDecl
                | statement ;
 
 statement      → exprStmt
-               | printStmt ;
+               | printStmt
+               | block ;
+
+block          → "{" declaration"}" ;
 
 exprStmt       → expression ";" ;
 

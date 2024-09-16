@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::{
     expr::{Assign, Binary, Exprs, Grouping, Literal, LiteralType, Unary, Variable},
-    stmt::{Print, Stmts, Var},
+    stmt::{Block, Expression, Print, Stmts, Var},
     tokens::Token,
 };
 
@@ -15,6 +15,8 @@ use crate::{
 pub enum ParserError {
     #[error("Missing ')' after expression: {0}")]
     RightParen(Token),
+    #[error("Missing '}}' after expression: {0}")]
+    RightBrace(Token),
     #[error("End of source code, no next token")]
     Eof,
     #[error("Invalid Primary: {0}")]
@@ -116,21 +118,45 @@ where
     }
 
     fn statement(&mut self) -> Result<Stmts> {
-        if let Some(next) = self.peeks.peek() {
-            match next {
-                Token::Print { .. } => {
-                    // TODO: use next instead of peek?
-                    self.peeks.next();
-                    let stmt = self.print_statement()?;
-                    Ok(stmt)
-                },
-                _ => {
-                    todo!()
-                },
-            }
-        }
+        let Some(next) = self.peeks.peek()
         else {
-            todo!()
+            return Err(ParserError::Eof);
+        };
+
+        match next {
+            Token::Print { .. } => {
+                self.peeks.next();
+                let stmt = self.print_statement()?;
+                Ok(stmt)
+            },
+            Token::LeftBrace { .. } => {
+                self.peeks.next();
+                let stmt = Stmts::Block(Block::new(self.block()?));
+                Ok(stmt)
+            },
+            _ => self.expression_stmt(),
+        }
+    }
+    fn expression_stmt(&mut self) -> Result<Stmts> {
+        let expr = self.expression()?;
+        match self.peeks.next() {
+            Some(Token::Semicolon { .. }) => Ok(Stmts::Expression(Expression::new(expr))),
+            Some(tk) => Err(ParserError::Semicolon(tk)),
+            None => Err(ParserError::ErrMessage("Not end of `}`".to_owned())),
+        }
+    }
+
+    fn block(&mut self) -> Result<Vec<Stmts>> {
+        let mut statements = Vec::new();
+        while let Some(tk) = self.peeks.peek()
+            && !matches!(tk, Token::RightBrace { .. })
+        {
+            statements.push(self.declaration()?);
+        }
+        match self.peeks.next() {
+            Some(Token::RightBrace { .. }) => Ok(statements),
+            Some(v) => Err(ParserError::RightBrace(v)),
+            None => Err(ParserError::ErrMessage("Not end of `}`".to_owned())),
         }
     }
 
@@ -147,7 +173,7 @@ where
         self.assignment()
     }
 
-    fn assignment(&mut self) -> std::result::Result<Exprs, ParserError> {
+    fn assignment(&mut self) -> Result<Exprs> {
         let expr = self.equality()?;
         match self.peeks.peek() {
             Some(Token::Equal { .. }) => {

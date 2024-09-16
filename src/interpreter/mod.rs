@@ -3,10 +3,12 @@
 #[cfg(test)]
 mod test;
 
+use std::mem;
+
 use crate::{
     env::Environment,
     expr::{Expr, ExprVisitor, Exprs, LiteralType},
-    stmt::{Expression, Print, Stmt, StmtVisitor, Stmts, Var},
+    stmt::{Block, Expression, Print, Stmt, StmtVisitor, Stmts, Var},
     tokens::{Token, TokenInner},
 };
 
@@ -67,6 +69,17 @@ impl Interpreter {
     fn is_equal(a: &LiteralType, b: &LiteralType) -> bool {
         a == b
     }
+
+    fn execute_block(&mut self, statements: &[Stmts], environment: Environment) -> Result<()> {
+        let previous = mem::replace(&mut self.environment, environment);
+
+        for stmt in statements {
+            self.execute(stmt)?;
+        }
+
+        self.environment = previous;
+        Ok(())
+    }
 }
 
 impl StmtVisitor<Result<()>> for Interpreter {
@@ -86,12 +99,21 @@ impl StmtVisitor<Result<()>> for Interpreter {
         self.environment.define(stmt.var_name().to_owned(), value);
         Ok(())
     }
+
+    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<()> {
+        // PERF: use Rc<Environment> ?
+        let enclosing = self.environment.clone();
+        self.execute_block(stmt.statements(), Environment::with_enclosing(enclosing))?;
+        Ok(())
+    }
 }
 
 impl ExprVisitor<Result<LiteralType>> for Interpreter {
     fn visit_assign_expr(&mut self, expr: &crate::expr::Assign) -> Result<LiteralType> {
         let value = self.evaluate(&expr.value)?;
-        self.environment.assign(&expr.name, value.clone()).map_err(|v|InterError::Message(v.to_string()))?;
+        self.environment
+            .assign(&expr.name, value.clone())
+            .map_err(|v| InterError::Message(v.to_string()))?;
         Ok(value)
     }
 
