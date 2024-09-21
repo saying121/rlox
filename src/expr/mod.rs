@@ -255,6 +255,10 @@ impl Unary {
             right: Box::new(right),
         }
     }
+
+    pub const fn right(&self) -> &Exprs {
+        &self.right
+    }
 }
 
 #[derive(Debug)]

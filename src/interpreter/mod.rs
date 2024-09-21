@@ -1,5 +1,3 @@
-#![allow(unfulfilled_lint_expectations, reason = "allow it")]
-
 #[cfg(test)]
 mod test;
 
@@ -53,7 +51,6 @@ impl Interpreter {
         expr.accept(self)
     }
 
-    #[expect(clippy::trivially_copy_pass_by_ref, reason = "method")]
     fn execute(&mut self, stmt: &Stmts) -> Result<()> {
         stmt.accept(self)
     }
@@ -223,7 +220,22 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_logical_expr(&mut self, expr: &crate::expr::Logical) -> Result<LiteralType> {
-        todo!()
+        let left = self.evaluate(&expr.left)?;
+
+        match &expr.operator {
+            Token::Or { inner } => {
+                if Self::is_truthy(&left) {
+                    return Ok(left);
+                }
+            },
+            _ => {
+                if !Self::is_truthy(&left) {
+                    return Ok(left);
+                }
+            },
+        }
+
+        self.evaluate(&expr.right)
     }
 
     fn visit_set_expr(&mut self, expr: &crate::expr::Set) -> Result<LiteralType> {

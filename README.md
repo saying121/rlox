@@ -4,6 +4,8 @@
 
 | Name       | Operators            | Associates |
 | ---------- | -------------------- | ---------- |
+| Logic      | `and`                | Left       |
+| Logic      | `or`                 | Left       |
 | Equality   | `==`, `!=`           | Left       |
 | Comparison | `>`, `>=`, `<`, `<=` | Left       |
 | Term       | `-`, `+`             | Left       |
@@ -33,7 +35,11 @@ printStmt      → "print" expression ";" ;
 expression     → assignment ;
 
 assignment     → IDENTiFIER "=" assignment
-               | equality ;
+               | logic_or ;
+
+logic_or       → logic_and ( "or" logic_and )* ;
+
+logic_and      → equality ( "and" equality )* ;
 
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 

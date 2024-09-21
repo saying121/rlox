@@ -1,6 +1,6 @@
 use std::string::String;
 
-use crate::expr::{Expr, Exprs, ExprVisitor};
+use crate::expr::{Expr, ExprVisitor, Exprs};
 
 // #[derive(Debug)]
 pub struct AstPrinter;
@@ -69,7 +69,7 @@ impl ExprVisitor<String> for AstPrinter {
     }
 
     fn visit_unary_expr(&mut self, expr: &crate::expr::Unary) -> String {
-        self.parenthesize(expr.operator.inner().lexeme(), [&*expr.right])
+        self.parenthesize(expr.operator.inner().lexeme(), [expr.right()])
     }
 
     fn visit_variable_expr(&mut self, expr: &crate::expr::Variable) -> String {

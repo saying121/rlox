@@ -5,7 +5,7 @@ use itertools::PeekNth;
 use thiserror::Error;
 
 use crate::{
-    expr::{Assign, Binary, Exprs, Grouping, Literal, LiteralType, Unary, Variable},
+    expr::{Assign, Binary, Exprs, Grouping, Literal, LiteralType, Logical, Unary, Variable},
     stmt::{Block, Expression, If, Print, Stmts, Var},
     tokens::Token,
 };
@@ -204,7 +204,7 @@ where
     }
 
     fn assignment(&mut self) -> Result<Exprs> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
         match self.peeks.peek() {
             Some(Token::Equal { .. }) => {
                 let equals = unsafe { self.peeks.next().unwrap_unchecked() };
@@ -220,13 +220,33 @@ where
             _ => Ok(expr),
         }
     }
+    fn or(&mut self) -> Result<Exprs> {
+        let mut expr = self.and()?;
+
+        while let Some(Token::Or { .. }) = self.peeks.peek() {
+            let operator = unsafe { self.peeks.next().unwrap_unchecked() };
+            let right = self.and()?;
+            expr = Exprs::Logical(Logical::new(expr, operator, right));
+        }
+
+        Ok(expr)
+    }
+    fn and(&mut self) -> Result<Exprs> {
+        let mut expr = self.equality()?;
+
+        while let Some(Token::And { .. }) = self.peeks.peek() {
+            let operator = unsafe { self.peeks.next().unwrap_unchecked() };
+            let right = self.and()?;
+            expr = Exprs::Logical(Logical::new(expr, operator, right));
+        }
+
+        Ok(expr)
+    }
 
     fn equality(&mut self) -> Result<Exprs> {
         let mut expr = self.comparison()?;
 
-        while let Some(op) = self.peeks.peek()
-            && matches!(op, Token::BangEqual { .. } | Token::EqualEqual { .. })
-        {
+        while let Some(Token::BangEqual { .. } | Token::EqualEqual { .. }) = self.peeks.peek() {
             let op = unsafe { self.peeks.next().unwrap_unchecked() };
             let right = self.comparison()?;
             expr = Exprs::Binary(Binary::new(expr, op, right));
@@ -238,14 +258,12 @@ where
     fn comparison(&mut self) -> Result<Exprs> {
         let mut expr = self.term()?;
 
-        while let Some(op) = self.peeks.peek()
-            && matches!(
-                op,
-                Token::Greater { .. }
-                    | Token::GreaterEqual { .. }
-                    | Token::Less { .. }
-                    | Token::LessEqual { .. }
-            )
+        while let Some(
+            Token::Greater { .. }
+            | Token::GreaterEqual { .. }
+            | Token::Less { .. }
+            | Token::LessEqual { .. },
+        ) = self.peeks.peek()
         {
             let op = unsafe { self.peeks.next().unwrap_unchecked() };
             let right = self.term()?;
@@ -258,9 +276,7 @@ where
     fn term(&mut self) -> Result<Exprs> {
         let mut expr = self.factor()?;
 
-        while let Some(pk) = self.peeks.peek()
-            && matches!(pk, Token::Minus { .. } | Token::Plus { .. })
-        {
+        while let Some(Token::Minus { .. } | Token::Plus { .. }) = self.peeks.peek() {
             let operator = unsafe { self.peeks.next().unwrap_unchecked() };
             let right = self.factor()?;
             expr = Exprs::Binary(Binary::new(expr, operator, right));
@@ -272,9 +288,7 @@ where
     fn factor(&mut self) -> Result<Exprs> {
         let mut expr = self.unary()?;
 
-        while let Some(pk) = self.peeks.peek()
-            && matches!(pk, Token::Slash { .. } | Token::Star { .. })
-        {
+        while let Some(Token::Slash { .. } | Token::Star { .. }) = self.peeks.peek() {
             let operator = unsafe { self.peeks.next().unwrap_unchecked() };
             let right = self.unary()?;
             expr = Exprs::Binary(Binary::new(expr, operator, right));
