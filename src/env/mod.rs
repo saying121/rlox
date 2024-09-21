@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, mem};
 
 use crate::{expr::LiteralType, tokens::Token};
 
@@ -63,5 +63,19 @@ impl Environment {
         }
 
         Err(EnvError::UndefinedVar(name.clone()))
+    }
+
+    /// It only can call on start of [`execute_block`](crate::interpreter::Interpreter::execute_block)
+    pub fn enter_block(&mut self) {
+        let outer_env = mem::take(self);
+        self.enclosing = Box::new(outer_env).into();
+    }
+
+    /// # Safety
+    ///
+    /// It only can call on end of [`execute_block`](crate::interpreter::Interpreter::execute_block)
+    pub unsafe fn out_block(&mut self) {
+        let mut outer_env = unsafe { *self.enclosing.take().unwrap_unchecked() };
+        mem::swap(self, &mut outer_env);
     }
 }

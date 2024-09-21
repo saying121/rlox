@@ -104,6 +104,28 @@ impl If {
     }
 }
 
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(PartialEq, PartialOrd)]
+pub struct While {
+    condition: Exprs,
+    body: Box<Stmts>,
+}
+
+impl While {
+    pub const fn new(condition: Exprs, body: Box<Stmts>) -> Self {
+        Self { condition, body }
+    }
+
+    pub const fn condition(&self) -> &Exprs {
+        &self.condition
+    }
+
+    pub const fn body(&self) -> &Stmts {
+        &self.body
+    }
+}
+
 macro_rules! statement_gen {
     ($($stm:ident), *) => {
 paste::paste! {
@@ -148,7 +170,7 @@ impl Stmt for Stmts {
     };
 }
 
-statement_gen!(Expression, Print, Var, Block, If);
+statement_gen!(Expression, Print, Var, Block, If, While);
 
 impl From<Stmts> for Option<Box<Stmts>> {
     fn from(val: Stmts) -> Self {

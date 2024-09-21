@@ -1,0 +1,10 @@
+if (true) {
+    print true;
+}
+
+var cond = 0;
+
+while (cond < 5) {
+    print cond;
+    cond = cond + 1;
+}

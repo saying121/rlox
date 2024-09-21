@@ -384,9 +384,6 @@ fn test_scan_number() {
 fn test_scan_comment() {
     let source = Arc::from("// this is a comment\nvar a = 10");
     let correct = vec![
-        Token::Comment {
-            inner: TokenInner::new(Arc::clone(&source), " this is a comment".to_owned(), 0),
-        },
         Token::Var {
             inner: TokenInner::new(Arc::clone(&source), "var".to_owned(), 21),
         },
@@ -442,9 +439,6 @@ fn test_scan_block_comment() {
     let source = Arc::from("/* this is a comment*/\nvar a = 10");
     let offset = 23;
     let correct = vec![
-        Token::BlockComment {
-            inner: TokenInner::new(Arc::clone(&source), " this is a comment".to_owned(), 0),
-        },
         Token::Var {
             inner: TokenInner::new(Arc::clone(&source), "var".to_owned(), offset),
         },
@@ -465,9 +459,6 @@ fn test_scan_block_comment() {
     let source = Arc::from("/* this is a comment */\nvar\ta\n=\r10");
     let offset = 24;
     let correct = vec![
-        Token::BlockComment {
-            inner: TokenInner::new(Arc::clone(&source), " this is a comment ".to_owned(), 0),
-        },
         Token::Var {
             inner: TokenInner::new(Arc::clone(&source), "var".to_owned(), offset),
         },
@@ -486,16 +477,14 @@ fn test_scan_block_comment() {
     assert_eq!(sc.scan_tokens(), correct);
 
     let source = Arc::from("/* this is a comment/\nvar a = 10");
-    let correct = vec![
-        Token::Invalid {
-            inner: TokenInner::new_invalid(
-                Arc::clone(&source),
-                "Invalid block comment, not end with `*/`".to_owned(),
-                32,
-                0,
-            ),
-        },
-    ];
+    let correct = vec![Token::Invalid {
+        inner: TokenInner::new_invalid(
+            Arc::clone(&source),
+            "Invalid block comment, not end with `*/`".to_owned(),
+            32,
+            0,
+        ),
+    }];
     let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
 }

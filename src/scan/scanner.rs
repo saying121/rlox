@@ -60,7 +60,15 @@ impl<'s> Scanner<'s> {
                 '=' => self.parse_equal(idx),
                 '<' => self.parse_less(idx),
                 '>' => self.parse_greater(idx),
-                '/' => self.parse_slash(idx),
+                '/' => {
+                    let token = self.parse_slash(idx);
+                    match token {
+                        Token::BlockComment { .. } | Token::Comment { .. } => {
+                            continue;
+                        },
+                        t => t,
+                    }
+                },
                 // > multi char tokens
                 '"' => self.parse_string(idx),
                 digit if digit.is_ascii_digit() => self.parse_number(digit, idx),

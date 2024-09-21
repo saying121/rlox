@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::{
     expr::{Assign, Binary, Exprs, Grouping, Literal, LiteralType, Logical, Unary, Variable},
-    stmt::{Block, Expression, If, Print, Stmts, Var},
+    stmt::{Block, Expression, If, Print, Stmts, Var, While},
     tokens::Token,
 };
 
@@ -130,6 +130,11 @@ where
                 let stmt = self.print_statement()?;
                 Ok(stmt)
             },
+            Token::While { .. } => {
+                self.peeks.next();
+                let stmt = self.while_statement()?;
+                Ok(stmt)
+            },
             Token::LeftBrace { .. } => {
                 self.peeks.next();
                 let stmt = Stmts::Block(Block::new(self.block()?));
@@ -139,20 +144,23 @@ where
         }
     }
 
+    fn while_statement(&mut self) -> Result<Stmts> {
+        self.consume_left_paren()?;
+
+        let cond = self.expression()?;
+
+        self.consume_rignt_paren()?;
+        let body = self.statement()?;
+
+        Ok(Stmts::While(While::new(cond, body.into())))
+    }
+
     fn if_statement(&mut self) -> Result<Stmts> {
-        match self.peeks.next() {
-            Some(Token::LeftParen { .. }) => {},
-            Some(v) => return Err(ParserError::LeftParen(v)),
-            None => return Err(ParserError::Eof),
-        }
+        self.consume_left_paren()?;
 
         let condition = self.expression()?;
 
-        match self.peeks.next() {
-            Some(Token::RightParen { .. }) => {},
-            Some(v) => return Err(ParserError::RightParen(v)),
-            None => return Err(ParserError::Eof),
-        }
+        self.consume_rignt_paren()?;
 
         let then_branch = self.statement()?;
 
@@ -338,16 +346,28 @@ where
             None => Err(ParserError::Eof),
         }
     }
+}
 
-    /// Expect `Token::RightParen`
-    fn consume_rignt_paren(&mut self) -> Result<Token> {
-        self.peeks.next().map_or_else(
-            || Err(ParserError::Eof),
-            |pk| match pk {
-                Token::RightParen { inner } => Ok(Token::RightParen { inner }),
-                other => Err(ParserError::RightParen(other)),
-            },
-        )
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    /// Expect `Token::LeftParen`, (
+    fn consume_left_paren(&mut self) -> Result<()> {
+        match self.peeks.next() {
+            Some(Token::LeftParen { .. }) => Ok(()),
+            Some(other) => Err(ParserError::LeftParen(other)),
+            None => Err(ParserError::Eof),
+        }
+    }
+
+    /// Expect `Token::RightParen`, )
+    fn consume_rignt_paren(&mut self) -> Result<()> {
+        match self.peeks.next() {
+            Some(Token::RightParen { .. }) => Ok(()),
+            Some(other) => Err(ParserError::RightParen(other)),
+            None => Err(ParserError::Eof),
+        }
     }
 
     /// when want discard tokens until we're right at the beginning of the next statment

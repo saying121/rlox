@@ -1,12 +1,10 @@
 #[cfg(test)]
 mod test;
 
-use std::mem;
-
 use crate::{
     env::Environment,
     expr::{Expr, ExprVisitor, Exprs, LiteralType},
-    stmt::{Block, Expression, If, Print, Stmt, StmtVisitor, Stmts, Var},
+    stmt::{Block, Expression, If, Print, Stmt, StmtVisitor, Stmts, Var, While},
     tokens::{Token, TokenInner},
 };
 
@@ -67,14 +65,15 @@ impl Interpreter {
         a == b
     }
 
-    fn execute_block(&mut self, statements: &[Stmts], environment: Environment) -> Result<()> {
-        let previous = mem::replace(&mut self.environment, environment);
+    fn execute_block(&mut self, statements: &[Stmts]) -> Result<()> {
+        self.environment.enter_block();
 
         for stmt in statements {
             self.execute(stmt)?;
         }
 
-        self.environment = previous;
+        unsafe { self.environment.out_block() };
+
         Ok(())
     }
 }
@@ -98,9 +97,7 @@ impl StmtVisitor<Result<()>> for Interpreter {
     }
 
     fn visit_block_stmt(&mut self, stmt: &Block) -> Result<()> {
-        // PERF: use Rc<Environment> ?
-        let enclosing = self.environment.clone();
-        self.execute_block(stmt.statements(), Environment::with_enclosing(enclosing))?;
+        self.execute_block(stmt.statements())?;
         Ok(())
     }
 
@@ -114,6 +111,13 @@ impl StmtVisitor<Result<()>> for Interpreter {
             self.execute(else_branch)?;
         }
 
+        Ok(())
+    }
+
+    fn visit_while_stmt(&mut self, stmt: &While) -> Result<()> {
+        while Self::is_truthy(&self.evaluate(stmt.condition())?) {
+            self.execute(stmt.body())?;
+        }
         Ok(())
     }
 }
@@ -223,7 +227,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
         let left = self.evaluate(&expr.left)?;
 
         match &expr.operator {
-            Token::Or { inner } => {
+            Token::Or { .. } => {
                 if Self::is_truthy(&left) {
                     return Ok(left);
                 }
