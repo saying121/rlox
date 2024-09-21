@@ -6,13 +6,15 @@ use thiserror::Error;
 
 use crate::{
     expr::{Assign, Binary, Exprs, Grouping, Literal, LiteralType, Unary, Variable},
-    stmt::{Block, Expression, Print, Stmts, Var},
+    stmt::{Block, Expression, If, Print, Stmts, Var},
     tokens::Token,
 };
 
 #[derive(Clone)]
 #[derive(Debug, Error)]
 pub enum ParserError {
+    #[error("Missing '(' after expression: {0}")]
+    LeftParen(Token),
     #[error("Missing ')' after expression: {0}")]
     RightParen(Token),
     #[error("Missing '}}' after expression: {0}")]
@@ -118,6 +120,11 @@ where
         };
 
         match next {
+            Token::If { .. } => {
+                self.peeks.next();
+                let stmt = self.if_statement()?;
+                Ok(stmt)
+            },
             Token::Print { .. } => {
                 self.peeks.next();
                 let stmt = self.print_statement()?;
@@ -131,6 +138,35 @@ where
             _ => self.expression_stmt(),
         }
     }
+
+    fn if_statement(&mut self) -> Result<Stmts> {
+        match self.peeks.next() {
+            Some(Token::LeftParen { .. }) => {},
+            Some(v) => return Err(ParserError::LeftParen(v)),
+            None => return Err(ParserError::Eof),
+        }
+
+        let condition = self.expression()?;
+
+        match self.peeks.next() {
+            Some(Token::RightParen { .. }) => {},
+            Some(v) => return Err(ParserError::RightParen(v)),
+            None => return Err(ParserError::Eof),
+        }
+
+        let then_branch = self.statement()?;
+
+        let stmts = match self.peeks.peek() {
+            Some(Token::Else { .. }) => {
+                self.peeks.next();
+                let else_branch = self.statement()?;
+                Stmts::If(If::new(condition, then_branch.into(), else_branch))
+            },
+            _ => Stmts::If(If::new(condition, Box::new(then_branch), None)),
+        };
+        Ok(stmts)
+    }
+
     fn expression_stmt(&mut self) -> Result<Stmts> {
         let expr = self.expression()?;
         match self.peeks.next() {

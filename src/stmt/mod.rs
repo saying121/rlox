@@ -1,4 +1,3 @@
-#![allow(unfulfilled_lint_expectations, reason = "allow it")]
 use crate::{expr::Exprs, tokens::Token};
 
 pub trait Stmt {
@@ -71,6 +70,40 @@ impl Block {
     }
 }
 
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(PartialEq, PartialOrd)]
+pub struct If {
+    condition: Exprs,
+    then_branch: Box<Stmts>,
+    else_branch: Option<Box<Stmts>>,
+}
+
+impl If {
+    pub fn new<E>(condition: Exprs, then_branch: Box<Stmts>, else_branch: E) -> Self
+    where
+        E: Into<Option<Box<Stmts>>>,
+    {
+        Self {
+            condition,
+            then_branch,
+            else_branch: else_branch.into(),
+        }
+    }
+
+    pub const fn condition(&self) -> &Exprs {
+        &self.condition
+    }
+
+    pub const fn then_branch(&self) -> &Stmts {
+        &self.then_branch
+    }
+
+    pub fn else_branch(&self) -> Option<&Stmts> {
+        self.else_branch.as_deref()
+    }
+}
+
 macro_rules! statement_gen {
     ($($stm:ident), *) => {
 paste::paste! {
@@ -102,7 +135,6 @@ $(
 impl Stmt for Stmts {
     #[inline]
     fn accept<R>(&self, visitor: &mut dyn StmtVisitor<R>) -> R {
-        #[expect(clippy::enum_glob_use, reason = "happy")]
         use Stmts::*;
         match self {
         $(
@@ -116,7 +148,13 @@ impl Stmt for Stmts {
     };
 }
 
-statement_gen!(Expression, Print, Var, Block);
+statement_gen!(Expression, Print, Var, Block, If);
+
+impl From<Stmts> for Option<Box<Stmts>> {
+    fn from(val: Stmts) -> Self {
+        Some(Box::new(val))
+    }
+}
 
 macro_rules! statement_expr {
     ($($stm:ident), *) => {

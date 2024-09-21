@@ -8,7 +8,7 @@ use std::mem;
 use crate::{
     env::Environment,
     expr::{Expr, ExprVisitor, Exprs, LiteralType},
-    stmt::{Block, Expression, Print, Stmt, StmtVisitor, Stmts, Var},
+    stmt::{Block, Expression, If, Print, Stmt, StmtVisitor, Stmts, Var},
     tokens::{Token, TokenInner},
 };
 
@@ -104,6 +104,19 @@ impl StmtVisitor<Result<()>> for Interpreter {
         // PERF: use Rc<Environment> ?
         let enclosing = self.environment.clone();
         self.execute_block(stmt.statements(), Environment::with_enclosing(enclosing))?;
+        Ok(())
+    }
+
+    fn visit_if_stmt(&mut self, stmt: &If) -> Result<()> {
+        let cond = self.evaluate(stmt.condition())?;
+        let cond = Self::is_truthy(&cond);
+        if cond {
+            self.execute(stmt.then_branch())?;
+        }
+        else if let Some(else_branch) = stmt.else_branch() {
+            self.execute(else_branch)?;
+        }
+
         Ok(())
     }
 }
