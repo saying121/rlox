@@ -12,17 +12,22 @@
 | Factor     | `*`, `/`             | Left       |
 | Unary      | `!`, `-`             | Right      |
 
-```bng
+```ebnf
 program        → declaration* EOF ;
 
 declaration    → varDecl
                | statement ;
 
 statement      → exprStmt
+               | forStmt
                | ifStmt
                | printStmt
                | whileStmt
                | block ;
+
+forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+                 expression? ";"
+                 expression ")" statement ;
 
 whileStmt      → "while" "(" expression ")" statement ;
 
@@ -60,6 +65,24 @@ primary        → NUMBER | STRING | "true" | "false" | "nil"
                | IDENTiFIER;
 ```
 
-```bng
+```ebnf
 varDecl        → "var" IDENTiFIER ( "=" expression )? ";" ;
+```
+
+## Desugaring
+
+```lox
+for (var i = 0; i < 10; i = i + 1) print 1;
+```
+
+⇓
+
+```lox
+{
+    var i = 0;
+    while (i < 10) {
+        print i;
+        i =i + 1;
+    }
+}
 ```

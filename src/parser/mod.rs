@@ -19,8 +19,8 @@ pub enum ParserError {
     RightParen(Token),
     #[error("Missing '}}' after expression: {0}")]
     RightBrace(Token),
-    #[error("End of source code, no next token")]
-    Eof,
+    #[error("End of source code, no next token: {0}")]
+    Eof(String),
     #[error("Invalid Primary: {0}")]
     Primary(Token),
     #[error("Expect `;` at stmt end: {0}")]
@@ -87,7 +87,7 @@ where
     fn var_declaration(&mut self) -> Result<Stmts> {
         let Some(ident) = self.peeks.next()
         else {
-            return Err(ParserError::Eof);
+            return Err(ParserError::Eof("Expect a ident after `var`".to_owned()));
         };
         if !matches!(ident, Token::Identifier { .. }) {
             return Err(ParserError::VarDeclaration(ident));
@@ -95,7 +95,9 @@ where
 
         let Some(next_token) = self.peeks.peek()
         else {
-            return Err(ParserError::Eof);
+            return Err(ParserError::Eof(format!(
+                "Expect `=` or literal value after {ident}"
+            )));
         };
         let init_val = match next_token {
             Token::Equal { .. } => {
@@ -107,7 +109,7 @@ where
         match self.peeks.next() {
             Some(Token::Semicolon { .. }) => {},
             Some(v) => return Err(ParserError::Semicolon(v)),
-            None => return Err(ParserError::Eof),
+            None => return Err(ParserError::Eof("Expect `;` at end".to_owned())),
         }
 
         Ok(Stmts::Var(Var::new(ident, init_val)))
@@ -116,10 +118,15 @@ where
     fn statement(&mut self) -> Result<Stmts> {
         let Some(next) = self.peeks.peek()
         else {
-            return Err(ParserError::Eof);
+            return Err(ParserError::Eof("Expect a statement.".to_owned()));
         };
 
         match next {
+            Token::For { .. } => {
+                self.peeks.next();
+                let stmt = self.for_statement()?;
+                Ok(stmt)
+            },
             Token::If { .. } => {
                 self.peeks.next();
                 let stmt = self.if_statement()?;
@@ -343,8 +350,79 @@ where
                 },
                 other => Err(ParserError::Primary(other)),
             },
-            None => Err(ParserError::Eof),
+            None => Err(ParserError::Eof("Expect a primary".to_owned())),
         }
+    }
+
+    fn for_statement(&mut self) -> Result<Stmts> {
+        self.consume_left_paren()?;
+
+        let Some(tk) = self.peeks.peek()
+        else {
+            return Err(ParserError::Eof(
+                "Expect a varDecl or expr or `;`".to_owned(),
+            ));
+        };
+
+        let initializer = match tk {
+            Token::Semicolon { .. } => None,
+            Token::Var { .. } => {
+                self.peeks.next();
+                Some(self.var_declaration()?)
+            },
+            _ => Some(self.expression_stmt()?),
+        };
+
+        let Some(tk) = self.peeks.peek()
+        else {
+            return Err(ParserError::Eof("Expect a condition expr".to_owned()));
+        };
+
+        let condition = match tk {
+            Token::Semicolon { .. } => None,
+            _ => Some(self.expression()?),
+        };
+        self.consume_semicolon_paren()?;
+
+        let Some(tk) = self.peeks.peek()
+        else {
+            return Err(ParserError::Eof("Expect a increment expr".to_owned()));
+        };
+
+        let increment = match tk {
+            Token::RightParen { .. } => None,
+            _ => Some(self.expression()?),
+        };
+        self.consume_rignt_paren()?;
+
+        let mut body = self.statement()?;
+
+        if let Some(increment) = increment {
+            body = Stmts::Block(Block::new(vec![
+                body,
+                Stmts::Expression(Expression::new(increment)),
+            ]));
+        }
+
+        match condition {
+            Some(cond) => {
+                body = Stmts::While(While::new(cond, body.into()));
+            },
+            None => {
+                body = Stmts::While(While::new(
+                    Exprs::Literal(Literal {
+                        value: LiteralType::Bool(true),
+                    }),
+                    body.into(),
+                ));
+            },
+        }
+
+        if let Some(initializer) = initializer {
+            body = Stmts::Block(Block::new(vec![initializer, body]));
+        }
+
+        Ok(body)
     }
 }
 
@@ -352,12 +430,19 @@ impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
 {
+    fn consume_semicolon_paren(&mut self) -> Result<()> {
+        match self.peeks.next() {
+            Some(Token::Semicolon { .. }) => Ok(()),
+            Some(other) => Err(ParserError::LeftParen(other)),
+            None => Err(ParserError::Eof("Expect `;`".to_owned())),
+        }
+    }
     /// Expect `Token::LeftParen`, (
     fn consume_left_paren(&mut self) -> Result<()> {
         match self.peeks.next() {
             Some(Token::LeftParen { .. }) => Ok(()),
             Some(other) => Err(ParserError::LeftParen(other)),
-            None => Err(ParserError::Eof),
+            None => Err(ParserError::Eof("Expect `(`".to_owned())),
         }
     }
 
@@ -366,7 +451,7 @@ where
         match self.peeks.next() {
             Some(Token::RightParen { .. }) => Ok(()),
             Some(other) => Err(ParserError::RightParen(other)),
-            None => Err(ParserError::Eof),
+            None => Err(ParserError::Eof("Expect `)`".to_owned())),
         }
     }
 

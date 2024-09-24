@@ -63,6 +63,12 @@ pub struct Assign {
     pub value: Box<Exprs>,
 }
 
+impl Display for Assign {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.name.fmt(f)
+    }
+}
+
 impl Assign {
     pub fn new(name: Token, value: Exprs) -> Self {
         Self {
