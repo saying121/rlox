@@ -1,4 +1,4 @@
-#![feature(let_chains)]
+#![feature(let_chains, try_blocks)]
 
 pub mod ast_printer;
 pub mod cli;

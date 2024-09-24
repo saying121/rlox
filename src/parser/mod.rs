@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::{
     expr::{Assign, Binary, Exprs, Grouping, Literal, LiteralType, Logical, Unary, Variable},
-    stmt::{Block, Expression, If, Print, Stmts, Var, While},
+    stmt::{Block, Break, Expression, If, Print, Stmts, Var, While},
     tokens::Token,
 };
 
@@ -33,6 +33,8 @@ pub enum ParserError {
     Semicolon(Token),
     #[error("Invalid assignment target: {0}")]
     Assign(Token),
+    #[error("Must be inside a loop to use `break`")]
+    NotInLoop(Token),
     #[error("{0}")]
     ErrMessage(String),
 }
@@ -45,6 +47,7 @@ where
     I: Iterator<Item = Token>,
 {
     peeks: PeekNth<I>,
+    loop_depth: usize,
 }
 
 impl<I> Parser<I>
@@ -56,7 +59,10 @@ where
         V: IntoIterator<IntoIter = I>,
     {
         let peeks = itertools::peek_nth(tokens);
-        Self { peeks }
+        Self {
+            peeks,
+            loop_depth: 0,
+        }
     }
 
     pub fn parse(&mut self) -> Result<Vec<Stmts>> {
@@ -147,8 +153,21 @@ where
                 let stmt = Stmts::Block(Block::new(self.block()?));
                 Ok(stmt)
             },
+            Token::Break { .. } => {
+                let stmt = self.break_statement()?;
+                Ok(stmt)
+            },
             _ => self.expression_stmt(),
         }
+    }
+
+    fn break_statement(&mut self) -> Result<Stmts> {
+        let break_ = unsafe { self.peeks.next().unwrap_unchecked() };
+        if self.loop_depth == 0 {
+            return Err(ParserError::NotInLoop(break_));
+        }
+        self.consume_semicolon_paren()?;
+        Ok(Stmts::Break(Break::new(break_)))
     }
 
     fn while_statement(&mut self) -> Result<Stmts> {
@@ -157,9 +176,19 @@ where
         let cond = self.expression()?;
 
         self.consume_rignt_paren()?;
-        let body = self.statement()?;
+        let res: Result<Stmts> = try {
+            self.loop_depth += 1;
+            let body = self.statement()?;
 
-        Ok(Stmts::While(While::new(cond, body.into())))
+            Stmts::While(While::new(cond, body.into()))
+        };
+        match res {
+            r @ Ok(_) => r,
+            r @ Err(_) => {
+                self.loop_depth -= 1;
+                r
+            },
+        }
     }
 
     fn if_statement(&mut self) -> Result<Stmts> {
@@ -395,34 +424,44 @@ where
         };
         self.consume_rignt_paren()?;
 
-        let mut body = self.statement()?;
+        let res: Result<Stmts> = try {
+            self.loop_depth += 1;
+            let mut body = self.statement()?;
 
-        if let Some(increment) = increment {
-            body = Stmts::Block(Block::new(vec![
-                body,
-                Stmts::Expression(Expression::new(increment)),
-            ]));
-        }
+            if let Some(increment) = increment {
+                body = Stmts::Block(Block::new(vec![
+                    body,
+                    Stmts::Expression(Expression::new(increment)),
+                ]));
+            }
 
-        match condition {
-            Some(cond) => {
-                body = Stmts::While(While::new(cond, body.into()));
+            match condition {
+                Some(cond) => {
+                    body = Stmts::While(While::new(cond, body.into()));
+                },
+                None => {
+                    body = Stmts::While(While::new(
+                        Exprs::Literal(Literal {
+                            value: LiteralType::Bool(true),
+                        }),
+                        body.into(),
+                    ));
+                },
+            }
+
+            if let Some(initializer) = initializer {
+                body = Stmts::Block(Block::new(vec![initializer, body]));
+            }
+
+            body
+        };
+        match res {
+            r @ Ok(_) => r,
+            e @ Err(_) => {
+                self.loop_depth -= 1;
+                e
             },
-            None => {
-                body = Stmts::While(While::new(
-                    Exprs::Literal(Literal {
-                        value: LiteralType::Bool(true),
-                    }),
-                    body.into(),
-                ));
-            },
         }
-
-        if let Some(initializer) = initializer {
-            body = Stmts::Block(Block::new(vec![initializer, body]));
-        }
-
-        Ok(body)
     }
 }
 

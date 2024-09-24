@@ -1,3 +1,5 @@
+#![allow(unfulfilled_lint_expectations, reason = "allow it")]
+
 use std::{str::CharIndices, sync::Arc};
 
 use itertools::PeekNth;
@@ -85,10 +87,8 @@ impl<'s> Scanner<'s> {
     }
 
     fn keyword_or_ident(inner: TokenInner) -> Token {
-        use Token::{
-            And, Class, Else, False, For, Fun, Identifier, If, Nil, Or, Print, Return, Super, This,
-            True, Var, While,
-        };
+        #[expect(clippy::enum_glob_use, reason = "just in this block")]
+        use Token::*;
         match inner.lexeme() {
             "and" => And { inner },
             "or" => Or { inner },
@@ -106,6 +106,7 @@ impl<'s> Scanner<'s> {
             "return" => Return { inner },
             "var" => Var { inner },
             "nil" => Nil { inner },
+            "break" => Break { inner },
             _ => Identifier { inner },
         }
     }

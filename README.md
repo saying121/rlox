@@ -23,7 +23,10 @@ statement      → exprStmt
                | ifStmt
                | printStmt
                | whileStmt
+               | breakStmt
                | block ;
+
+breakStmt      → "break" ";" ;
 
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
                  expression? ";"
@@ -34,7 +37,7 @@ whileStmt      → "while" "(" expression ")" statement ;
 ifStmt         → "if" "(" expression ")" statement
                ( "else" statement )? ;
 
-block          → "{" declaration"}" ;
+block          → "{" declaration* "}" ;
 
 exprStmt       → expression ";" ;
 
@@ -82,7 +85,7 @@ for (var i = 0; i < 10; i = i + 1) print 1;
     var i = 0;
     while (i < 10) {
         print i;
-        i =i + 1;
+        i = i + 1;
     }
 }
 ```

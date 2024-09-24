@@ -9,7 +9,7 @@ pub struct Cli {
     #[arg(short, long, value_name = "PATH")]
     pub file_path: Option<String>,
     #[arg(short, long)]
-    pub(crate) prompt:    bool,
+    pub(crate) prompt: bool,
 }
 
 impl Cli {

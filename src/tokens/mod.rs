@@ -295,6 +295,8 @@ pub enum Token {
     Comment { inner: TokenInner },
     BlockComment { inner: TokenInner },
 
+    Break { inner: TokenInner },
+
     Invalid { inner: TokenInner },
 }
 
@@ -382,6 +384,7 @@ token_enums_match!(
     Comment,
     BlockComment,
     Invalid,
+    Break,
     Number
 );
 
@@ -403,7 +406,7 @@ impl Token {
 
         match_arms!(
             And, Class, Else, Fun, For, If, Nil, Or, Print, Return, Super, This, True, False, Var,
-            While
+            While, Break
         )
     }
 }

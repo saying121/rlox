@@ -4,7 +4,7 @@ mod test;
 use crate::{
     env::Environment,
     expr::{Expr, ExprVisitor, Exprs, LiteralType},
-    stmt::{Block, Expression, If, Print, Stmt, StmtVisitor, Stmts, Var, While},
+    stmt::{Block, Break, Expression, If, Print, Stmt, StmtVisitor, Stmts, Var, While},
     tokens::{Token, TokenInner},
 };
 
@@ -23,6 +23,8 @@ pub enum InterError {
     NotMatch(String),
     #[error("Not exist variable: {0}")]
     NoVar(Token),
+    #[error("Should not use `break` out of loop: {0}")]
+    NeedBreak(Token),
     #[error("{0}")]
     Message(String),
 }
@@ -115,10 +117,20 @@ impl StmtVisitor<Result<()>> for Interpreter {
     }
 
     fn visit_while_stmt(&mut self, stmt: &While) -> Result<()> {
-        while Self::is_truthy(&self.evaluate(stmt.condition())?) {
-            self.execute(stmt.body())?;
+        let res: Result<()> = try {
+            while Self::is_truthy(&self.evaluate(stmt.condition())?) {
+                self.execute(stmt.body())?;
+            }
+        };
+        match res {
+            r @ Ok(_) => r,
+            Err(InterError::NeedBreak(_)) => Ok(()),
+            e @ Err(_) => e,
         }
-        Ok(())
+    }
+
+    fn visit_break_stmt(&mut self, stmt: &Break) -> Result<()> {
+        Err(InterError::NeedBreak(stmt.lexeme().clone()))
     }
 }
 

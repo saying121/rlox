@@ -126,6 +126,23 @@ impl While {
     }
 }
 
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(PartialEq, PartialOrd)]
+pub struct Break {
+    lexeme: Token,
+}
+
+impl Break {
+    pub const fn new(lexeme: Token) -> Self {
+        Self { lexeme }
+    }
+
+    pub fn lexeme(&self) -> &Token {
+        &self.lexeme
+    }
+}
+
 macro_rules! statement_gen {
     ($($stm:ident), *) => {
 paste::paste! {
@@ -170,7 +187,7 @@ impl Stmt for Stmts {
     };
 }
 
-statement_gen!(Expression, Print, Var, Block, If, While);
+statement_gen!(Expression, Print, Var, Block, If, While, Break);
 
 impl From<Stmts> for Option<Box<Stmts>> {
     fn from(val: Stmts) -> Self {

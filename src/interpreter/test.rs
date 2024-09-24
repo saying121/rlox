@@ -3,6 +3,7 @@ use std::sync::Arc;
 use super::Interpreter;
 use crate::{
     expr::{Binary, Exprs, Literal, LiteralType, Unary},
+    lox::Lox,
     tokens::{Token, TokenInner},
 };
 
@@ -149,4 +150,26 @@ fn test_plus_minus_multi_div() {
         },
         _ => unreachable!(),
     }
+}
+
+#[test]
+fn test_break() {
+    let mut lox = Lox::default();
+    lox.run(
+        "
+while (true) {
+    break;
+}
+",
+    );
+    lox.run(
+        "
+for (var i = 1; i < 5; i = i + 1) {
+    print i;
+    if (i > 2) {
+        break;
+    }
+}
+",
+    );
 }
