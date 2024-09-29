@@ -310,8 +310,7 @@ impl<'s> Scanner<'s> {
             && next == '.'
             && next_next.is_ascii_digit()
         {
-            #[expect(clippy::unwrap_used, reason = "it must be `Some`")]
-            let (_, dot) = self.source_chars.next().unwrap();
+            let (_, dot) = unsafe { self.source_chars.next().unwrap_unchecked() };
             its.push(dot.to_string());
 
             let mut count = 0;

@@ -65,21 +65,25 @@ where
         }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Stmts>> {
+    pub fn parse(&mut self) -> (Vec<Stmts>, bool) {
+        let mut had_err = false;
         let mut stmts = Vec::new();
         while self.peeks.peek().is_some() {
-            stmts.push(self.declaration()?);
+            match self.declaration() {
+                Ok(v) => stmts.push(v),
+                Err(e) => {
+                    had_err = true;
+                    tracing::error!("{e}");
+                },
+            }
         }
 
-        Ok(stmts)
+        (stmts, had_err)
     }
 
     fn declaration(&mut self) -> Result<Stmts> {
         match self.peeks.peek() {
-            Some(Token::Var { .. }) => {
-                self.peeks.next();
-                self.var_declaration()
-            },
+            Some(Token::Var { .. }) => self.var_declaration(),
             _ => match self.statement() {
                 stmt @ Ok(_) => stmt,
                 Err(e) => {
@@ -91,6 +95,9 @@ where
     }
 
     fn var_declaration(&mut self) -> Result<Stmts> {
+        let var = unsafe { self.peeks.next().unwrap_unchecked() };
+        assert!(matches!(var, Token::Var { .. }));
+
         let Some(ident) = self.peeks.next()
         else {
             return Err(ParserError::Eof("Expect a ident after `var`".to_owned()));
@@ -129,28 +136,24 @@ where
 
         match next {
             Token::For { .. } => {
-                self.peeks.next();
                 let stmt = self.for_statement()?;
                 Ok(stmt)
             },
             Token::If { .. } => {
-                self.peeks.next();
                 let stmt = self.if_statement()?;
                 Ok(stmt)
             },
             Token::Print { .. } => {
-                self.peeks.next();
                 let stmt = self.print_statement()?;
                 Ok(stmt)
             },
             Token::While { .. } => {
-                self.peeks.next();
                 let stmt = self.while_statement()?;
                 Ok(stmt)
             },
             Token::LeftBrace { .. } => {
-                self.peeks.next();
-                let stmt = Stmts::Block(Block::new(self.block()?));
+                let blk_stmt = self.block()?;
+                let stmt = Stmts::Block(Block::new(blk_stmt));
                 Ok(stmt)
             },
             Token::Break { .. } => {
@@ -171,6 +174,9 @@ where
     }
 
     fn while_statement(&mut self) -> Result<Stmts> {
+        let while_ = unsafe { self.peeks.next().unwrap_unchecked() };
+        assert!(matches!(while_, Token::While { .. }));
+
         self.consume_left_paren()?;
 
         let cond = self.expression()?;
@@ -192,6 +198,9 @@ where
     }
 
     fn if_statement(&mut self) -> Result<Stmts> {
+        let if_ = unsafe { self.peeks.next().unwrap_unchecked() };
+        assert!(matches!(if_, Token::If { .. }));
+
         self.consume_left_paren()?;
 
         let condition = self.expression()?;
@@ -221,6 +230,9 @@ where
     }
 
     fn block(&mut self) -> Result<Vec<Stmts>> {
+        let left_brace = unsafe { self.peeks.next().unwrap_unchecked() };
+        assert!(matches!(left_brace, Token::LeftBrace { .. }));
+
         let mut statements = Vec::new();
         while let Some(tk) = self.peeks.peek()
             && !matches!(tk, Token::RightBrace { .. })
@@ -235,6 +247,9 @@ where
     }
 
     fn print_statement(&mut self) -> Result<Stmts> {
+        let print_ = unsafe { self.peeks.next().unwrap_unchecked() };
+        assert!(matches!(print_, Token::Print { .. }));
+
         let expr = self.expression()?;
         match self.peeks.next() {
             Some(Token::Semicolon { .. }) => Ok(Stmts::Print(Print::new(expr))),
@@ -384,6 +399,9 @@ where
     }
 
     fn for_statement(&mut self) -> Result<Stmts> {
+        let for_ = unsafe { self.peeks.next().unwrap_unchecked() };
+        assert!(matches!(for_, Token::For { .. }));
+
         self.consume_left_paren()?;
 
         let Some(tk) = self.peeks.peek()
@@ -395,10 +413,7 @@ where
 
         let initializer = match tk {
             Token::Semicolon { .. } => None,
-            Token::Var { .. } => {
-                self.peeks.next();
-                Some(self.var_declaration()?)
-            },
+            Token::Var { .. } => Some(self.var_declaration()?),
             _ => Some(self.expression_stmt()?),
         };
 

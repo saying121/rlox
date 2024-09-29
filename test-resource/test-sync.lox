@@ -1,0 +1,19 @@
+var a = 1
+var b = 1
+var c = 1
+
+
+var cond = 0;
+
+while (cond < 5) {
+    print cond;
+    cond = cond + 1;
+}
+
+
+for (var i = 1; i < 50; i = i + 1) {
+    print i;
+    if (i > 2) {
+        break;
+    }
+}

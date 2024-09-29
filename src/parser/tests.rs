@@ -34,7 +34,7 @@ fn test_equal() {
     ))];
 
     let mut p = Parser::new(tks);
-    let stmts = p.parse().unwrap();
+    let (stmts, _) = p.parse();
     assert_eq!(right, stmts);
 }
 
@@ -73,7 +73,7 @@ fn test_precedence() {
         })),
     })))];
     let mut p = Parser::new(tks);
-    let stmts = p.parse().unwrap();
+    let (stmts, _) = p.parse();
     assert_eq!(right, stmts);
 
     let source: Arc<str> = Arc::from("print 6/3-16*2;");
@@ -110,7 +110,7 @@ fn test_precedence() {
     })))];
 
     let mut p = Parser::new(tks);
-    let stmts = p.parse().unwrap();
+    let (stmts, _) = p.parse();
     assert_eq!(right, stmts);
 
     let source: Arc<str> = Arc::from("print 6/3-16*-2;");
@@ -151,7 +151,7 @@ fn test_precedence() {
     let tks = scan.scan_tokens();
 
     let mut p = Parser::new(tks);
-    let exprs = p.parse().unwrap();
+    let (exprs, _) = p.parse();
     assert_eq!(right, exprs);
 }
 
@@ -181,7 +181,7 @@ fn test_plus_minus_multi_div() {
     ))];
 
     let mut p = Parser::new(tks);
-    let exprs = p.parse().unwrap();
+    let (exprs, _) = p.parse();
     assert_eq!(right, exprs);
 
     // plus strings
@@ -208,7 +208,7 @@ fn test_plus_minus_multi_div() {
     ))];
 
     let mut p = Parser::new(tks);
-    let stmts = p.parse().unwrap();
+    let (stmts, _) = p.parse();
     assert_eq!(right, stmts);
 
     // minus
@@ -235,7 +235,7 @@ fn test_plus_minus_multi_div() {
     ))];
 
     let mut p = Parser::new(tks);
-    let stmts = p.parse().unwrap();
+    let (stmts, _) = p.parse();
     assert_eq!(right, stmts);
 
     // multiplication
@@ -262,7 +262,7 @@ fn test_plus_minus_multi_div() {
     ))];
 
     let mut p = Parser::new(tks);
-    let stmts = p.parse().unwrap();
+    let (stmts, _) = p.parse();
     assert_eq!(right, stmts);
 
     // div
@@ -289,7 +289,7 @@ fn test_plus_minus_multi_div() {
     ))];
 
     let mut p = Parser::new(tks);
-    let stmts = p.parse().unwrap();
+    let (stmts, _) = p.parse();
     assert_eq!(right, stmts);
 }
 
@@ -302,8 +302,6 @@ fn test_paren() {
     }];
 
     let mut p = Parser::new(tks);
-    match p.parse() {
-        Ok(_) => unreachable!("It's invalid"),
-        Err(_e) => {},
-    }
+    let (_, had_err) = p.parse();
+    assert!(had_err);
 }
