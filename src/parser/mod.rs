@@ -5,8 +5,8 @@ use itertools::PeekNth;
 use thiserror::Error;
 
 use crate::{
-    expr::{Assign, Binary, Exprs, Grouping, Literal, LiteralType, Logical, Unary, Variable},
-    stmt::{Block, Break, Expression, If, Print, Stmts, Var, While},
+    expr::{Assign, Binary, Call, Exprs, Grouping, Literal, LiteralType, Logical, Unary, Variable},
+    stmt::{Block, Break, Expression, Function, If, Print, Stmts, Var, While},
     tokens::Token,
 };
 
@@ -15,6 +15,8 @@ use crate::{
 pub enum ParserError {
     #[error("Missing '(' after expression: {0}")]
     LeftParen(Token),
+    #[error("Missing '{{' after expression: {0}")]
+    LeftBrace(Token),
     #[error("Missing ')' after expression: {0}")]
     RightParen(Token),
     #[error("Missing '}}' after expression: {0}")]
@@ -35,8 +37,14 @@ pub enum ParserError {
     Assign(Token),
     #[error("Must be inside a loop to use `break`")]
     NotInLoop(Token),
+    #[error("Can't have more than 255 arguments: {0}")]
+    TooManyArgs(Token),
     #[error("{0}")]
     ErrMessage(String),
+    #[error("Expect {kind} name: {tk}")]
+    CallDecl { tk: Token, kind: String },
+    #[error("Expect parameters name: {0}")]
+    Parameters(Token),
 }
 pub type Result<T, E = ParserError> = core::result::Result<T, E>;
 
@@ -83,6 +91,7 @@ where
 
     fn declaration(&mut self) -> Result<Stmts> {
         match self.peeks.peek() {
+            Some(Token::Fun { .. }) => self.function("function".to_owned()),
             Some(Token::Var { .. }) => self.var_declaration(),
             _ => match self.statement() {
                 stmt @ Ok(_) => stmt,
@@ -365,7 +374,40 @@ where
             return Ok(Exprs::Unary(Unary::new(operator, right)));
         }
 
-        self.primary()
+        self.call()
+    }
+
+    fn call(&mut self) -> Result<Exprs> {
+        let mut expr = self.primary()?;
+        while let Some(Token::LeftParen { .. }) = self.peeks.peek() {
+            expr = self.finish_call(expr)?;
+        }
+
+        Ok(expr)
+    }
+
+    fn finish_call(&mut self, callee: Exprs) -> Result<Exprs> {
+        let left_paren = unsafe { self.peeks.next().unwrap_unchecked() };
+        assert!(matches!(left_paren, Token::LeftParen { .. }));
+        let mut args = Vec::new();
+        while let Some(tk) = self.peeks.peek()
+            && !matches!(tk, Token::RightParen { .. })
+        {
+            loop {
+                if args.len() >= 255 {
+                    // return Err(ParserError::TooManyArgs(left_paren));
+                    tracing::error!("Can't have more than 255 arguments: {left_paren}");
+                }
+                args.push(self.expression()?);
+                let flag = matches!(self.peeks.peek(), Some(Token::Comma { .. }));
+                if !flag {
+                    break;
+                }
+            }
+        }
+        self.consume_rignt_paren()?;
+
+        Ok(Exprs::Call(Call::new(callee, left_paren, args)))
     }
 
     fn primary(&mut self) -> Result<Exprs> {
@@ -478,8 +520,51 @@ where
             },
         }
     }
+
+    fn function(&mut self, kind: String) -> Result<Stmts> {
+        let fun = self.peeks.next();
+        assert!(matches!(fun, Some(Token::Fun { .. })));
+        let name = match self.peeks.next() {
+            Some(tk @ Token::Identifier { .. }) => tk,
+            Some(other) => return Err(ParserError::CallDecl { tk: other, kind }),
+            None => return Err(ParserError::Eof(format!("Expect `{kind}` name"))),
+        };
+        self.consume_left_paren()?;
+        let mut parameters = Vec::new();
+        if let Some(pk) = self.peeks.peek()
+            && !matches!(pk, Token::RightParen { .. })
+        {
+            loop {
+                if parameters.len() >= 255 {
+                    return Err(ParserError::TooManyArgs(name));
+                }
+
+                let value = match self.peeks.next() {
+                    Some(value @ Token::Identifier { .. }) => value,
+                    Some(v) => {
+                        return Err(ParserError::Parameters(v));
+                    },
+                    None => return Err(ParserError::Eof("Expect parameters".to_owned())),
+                };
+                parameters.push(value);
+
+                match self.peeks.peek() {
+                    Some(Token::Comma { .. }) => {
+                        self.peeks.next();
+                    },
+                    _ => break,
+                }
+            }
+        }
+        self.consume_rignt_paren()?;
+        // self.consume_left_brace()?;
+        let body = self.block()?;
+
+        Ok(Stmts::Function(Function::new(name, parameters, body)))
+    }
 }
 
+#[expect(dead_code, reason = "Util function")]
 impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
@@ -499,6 +584,14 @@ where
             None => Err(ParserError::Eof("Expect `(`".to_owned())),
         }
     }
+    /// Expect `Token::LeftBrace`, (
+    fn consume_left_brace(&mut self) -> Result<()> {
+        match self.peeks.next() {
+            Some(Token::LeftBrace { .. }) => Ok(()),
+            Some(other) => Err(ParserError::LeftBrace(other)),
+            None => Err(ParserError::Eof("Expect `{`".to_owned())),
+        }
+    }
 
     /// Expect `Token::RightParen`, )
     fn consume_rignt_paren(&mut self) -> Result<()> {
@@ -506,6 +599,14 @@ where
             Some(Token::RightParen { .. }) => Ok(()),
             Some(other) => Err(ParserError::RightParen(other)),
             None => Err(ParserError::Eof("Expect `)`".to_owned())),
+        }
+    }
+    /// Expect `Token::RightParen`, )
+    fn consume_rignt_brace(&mut self) -> Result<()> {
+        match self.peeks.next() {
+            Some(Token::RightBrace { .. }) => Ok(()),
+            Some(other) => Err(ParserError::RightBrace(other)),
+            None => Err(ParserError::Eof("Expect `}`".to_owned())),
         }
     }
 

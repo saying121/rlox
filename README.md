@@ -18,7 +18,8 @@
 ```ebnf
 program        → declaration* EOF ;
 
-declaration    → varDecl
+declaration    → funDecl
+               | varDecl
                | statement ;
 
 statement      → exprStmt
@@ -26,16 +27,15 @@ statement      → exprStmt
                | ifStmt
                | printStmt
                | whileStmt
-               | breakStmt
                | block ;
 
 breakStmt      → "break" ";" ;
 
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
                  expression? ";"
-                 expression ")" statement ;
+                 expression ")" statement ( breakStmt ) ;
 
-whileStmt      → "while" "(" expression ")" statement ;
+whileStmt      → "while" "(" expression ")" statement ( breakStmt ) ;
 
 ifStmt         → "if" "(" expression ")" statement
                ( "else" statement )? ;
@@ -63,16 +63,21 @@ term           → factor ( ( "-" | "+" ) factor )* ;
 
 factor         → unary ( ( "/" | "*" ) unary )* ;
 
-unary          → ( "!" | "-" ) unary
-               | primary ;
+unary          → ( "!" | "-" ) unary | call ;
+
+call           → primary ( "(" arguments? ")" )* ;
+
+arguments      → expression ( "," expression )* ;
 
 primary        → NUMBER | STRING | "true" | "false" | "nil"
                | "(" expression ")"
                | IDENTiFIER;
-```
 
-```ebnf
 varDecl        → "var" IDENTiFIER ( "=" expression )? ";" ;
+
+funDecl        → "fun" function ;
+
+function       → IDENTiFIER "(" parameters? ")" block ;
 ```
 
 ## Desugaring

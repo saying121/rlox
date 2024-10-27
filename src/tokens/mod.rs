@@ -2,8 +2,6 @@
 
 use std::{fmt::Display, mem, sync::Arc};
 
-use strum::EnumString;
-
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
@@ -241,7 +239,6 @@ impl TokenInner {
 // multiple cursor magic moment
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(EnumString)]
 #[derive(PartialEq, PartialOrd)]
 pub enum Token {
     // Single_character tokens
@@ -315,7 +312,7 @@ macro_rules! token_enums_match {
 
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[expect(clippy::enum_glob_use, reason = "just in this block")]
+        // #[expect(clippy::enum_glob_use, reason = "just in this block")]
         use Token::*;
         match self {
             $(
@@ -328,7 +325,7 @@ impl Display for Token {
 
 impl Token {
     pub const fn inner(&self) -> &TokenInner {
-        #[expect(clippy::enum_glob_use, reason = "just in this block")]
+        // #[expect(clippy::enum_glob_use, reason = "just in this block")]
         use Token::*;
         match self {
             $(
