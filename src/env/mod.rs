@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{expr::LiteralType, tokens::Token};
 
@@ -16,7 +16,7 @@ pub enum EnvError {
 #[derive(Default)]
 #[derive(PartialEq)]
 pub struct Environment {
-    enclosing: Option<Box<Environment>>,
+    enclosing: Option<Rc<RefCell<Environment>>>,
     values: HashMap<String, LiteralType>,
 }
 
@@ -30,19 +30,19 @@ impl Environment {
     }
 
     /// local scope
-    pub fn with_enclosing(enclosing: Self) -> Self {
+    pub fn with_enclosing(enclosing: Rc<RefCell<Self>>) -> Self {
         Self {
-            enclosing: Some(Box::new(enclosing)),
+            enclosing: Some(enclosing),
             values: HashMap::new(),
         }
     }
 
-    pub fn get(&self, name: &Token) -> Option<&LiteralType> {
-        if let v @ Some(_) = self.values.get(name.inner().lexeme()) {
+    pub fn get(&self, name: &Token) -> Option<LiteralType> {
+        if let v @ Some(_) = self.values.get(name.inner().lexeme()).cloned() {
             return v;
         }
         if let Some(enclosing) = &self.enclosing {
-            return enclosing.get(name);
+            return enclosing.borrow().get(name);
         }
         None
     }
@@ -57,25 +57,11 @@ impl Environment {
             self.values.insert(k.to_owned(), value);
             return Ok(());
         }
-        if let Some(enclosing) = &mut self.enclosing {
-            enclosing.assign(name, value)?;
+        if let Some(enclosing) = &self.enclosing {
+            enclosing.borrow_mut().assign(name, value)?;
             return Ok(());
         }
 
         Err(EnvError::UndefinedVar(name.clone()))
-    }
-
-    /// It only can call on start of [`execute_block`](crate::interpreter::Interpreter::execute_block)
-    pub fn enter_block(&mut self) {
-        let outer_env = mem::take(self);
-        self.enclosing = Box::new(outer_env).into();
-    }
-
-    /// # Safety
-    ///
-    /// It only can call on end of [`execute_block`](crate::interpreter::Interpreter::execute_block)
-    pub unsafe fn out_block(&mut self) {
-        let mut outer_env = unsafe { *self.enclosing.take().unwrap_unchecked() };
-        mem::swap(self, &mut outer_env);
     }
 }

@@ -2,7 +2,7 @@
 
 use std::fmt::Display;
 
-use crate::tokens::Token;
+use crate::{lox_callable::Callables, tokens::Token};
 
 pub trait Expr {
     fn accept<R>(&self, visitor: &mut dyn ExprVisitor<R>) -> R;
@@ -102,7 +102,7 @@ impl Binary {
 #[derive(PartialEq, PartialOrd)]
 pub struct Call {
     pub callee: Box<Exprs>,
-    pub paren: Token,
+    pub name: Token,
     pub arguments: Vec<Exprs>,
 }
 
@@ -110,7 +110,7 @@ impl Call {
     pub fn new(callee: Exprs, paren: Token, arguments: Vec<Exprs>) -> Self {
         Self {
             callee: Box::new(callee),
-            paren,
+            name: paren,
             arguments,
         }
     }
@@ -165,7 +165,8 @@ pub enum LiteralType {
     Number(f64),
     Bool(bool),
     #[default]
-    Nil, // CallAble(Callable),
+    Nil,
+    Callable(Callables),
 }
 
 impl Display for LiteralType {
@@ -177,6 +178,10 @@ impl Display for LiteralType {
             Number(n) => f.write_fmt(format_args!("{n}")),
             Bool(b) => f.write_fmt(format_args!("{b}")),
             Nil => f.write_fmt(format_args!("nil")),
+            Callable(v) => match v {
+                Callables::Fun(lox_function) => lox_function.fmt(f),
+                Callables::Clock(clock_function) => clock_function.fmt(f),
+            },
         }
     }
 }

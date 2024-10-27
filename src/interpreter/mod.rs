@@ -1,16 +1,19 @@
 #[cfg(test)]
 mod test;
 
+use std::{cell::RefCell, rc::Rc, time::SystemTimeError};
+
 use crate::{
     env::Environment,
     expr::{Expr, ExprVisitor, Exprs, LiteralType},
-    stmt::{Block, Break, Expression, If, Print, Stmt, StmtVisitor, Stmts, Var, While},
+    lox_callable::{Callables, LoxCallable},
+    stmt::{Block, Break, Expression, Function, If, Print, Stmt, StmtVisitor, Stmts, Var, While},
+    lox_fun::{ClockFunction, LoxFunction},
     tokens::{Token, TokenInner},
 };
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
 #[derive(thiserror::Error)]
 pub enum InterError {
     #[error("{0}\nhelp: Operand must be numbers")]
@@ -27,19 +30,47 @@ pub enum InterError {
     NeedBreak(Token),
     #[error("{0}")]
     Message(String),
+    #[error("Can not call: {0}")]
+    NotCallable(Token),
+    #[error("Args arity not match: {tk}, expected: {expect}, but got {actual}")]
+    ArgsArity {
+        tk: Token,
+        expect: usize,
+        actual: usize,
+    },
+    #[error("Get time failed: {0}")]
+    Time(#[from] SystemTimeError),
 }
 
 pub type Result<T, E = InterError> = core::result::Result<T, E>;
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(Default)]
 #[derive(PartialEq)]
 pub struct Interpreter {
-    environment: Environment,
+    pub globals: Rc<RefCell<Environment>>,
+    pub environment: Rc<RefCell<Environment>>,
+}
+
+impl Default for Interpreter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Interpreter {
+    pub fn new() -> Self {
+        let mut globals = Environment::default();
+        globals.define(
+            "clock".to_owned(),
+            LiteralType::Callable(Callables::Clock(ClockFunction)),
+        );
+        Self {
+            globals: Rc::new(RefCell::new(globals)),
+            environment: Rc::new(RefCell::new(Environment::default())),
+        }
+    }
+
     pub fn interpret(&mut self, exprs: &mut [Stmts]) -> Result<()> {
         for ele in exprs {
             self.execute(ele)?;
@@ -67,14 +98,15 @@ impl Interpreter {
         a == b
     }
 
-    fn execute_block(&mut self, statements: &[Stmts]) -> Result<()> {
-        self.environment.enter_block();
+    pub fn execute_block(&mut self, statements: &[Stmts], env: Environment) -> Result<()> {
+        let previous = Rc::clone(&self.environment);
+        self.environment = Rc::new(RefCell::new(env));
 
         for stmt in statements {
             self.execute(stmt)?;
         }
 
-        unsafe { self.environment.out_block() };
+        self.environment = previous;
 
         Ok(())
     }
@@ -94,12 +126,17 @@ impl StmtVisitor<Result<()>> for Interpreter {
 
     fn visit_var_stmt(&mut self, stmt: &Var) -> Result<()> {
         let value = self.evaluate(stmt.initializer())?;
-        self.environment.define(stmt.var_name().to_owned(), value);
+        self.environment
+            .borrow_mut()
+            .define(stmt.var_name().to_owned(), value);
         Ok(())
     }
 
     fn visit_block_stmt(&mut self, stmt: &Block) -> Result<()> {
-        self.execute_block(stmt.statements())?;
+        self.execute_block(
+            stmt.statements(),
+            Environment::with_enclosing(Rc::clone(&self.environment)),
+        )?;
         Ok(())
     }
 
@@ -132,12 +169,23 @@ impl StmtVisitor<Result<()>> for Interpreter {
     fn visit_break_stmt(&mut self, stmt: &Break) -> Result<()> {
         Err(InterError::NeedBreak(stmt.lexeme().clone()))
     }
+
+    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<()> {
+        let fun = LoxFunction::new(stmt.clone());
+        self.environment.borrow_mut().define(
+            stmt.name.inner().lexeme().to_owned(),
+            LiteralType::Callable(Callables::Fun(fun)),
+        );
+
+        Ok(())
+    }
 }
 
 impl ExprVisitor<Result<LiteralType>> for Interpreter {
     fn visit_assign_expr(&mut self, expr: &crate::expr::Assign) -> Result<LiteralType> {
         let value = self.evaluate(&expr.value)?;
         self.environment
+            .borrow_mut()
             .assign(&expr.name, value.clone())
             .map_err(|v| InterError::Message(v.to_string()))?;
         Ok(value)
@@ -221,7 +269,29 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_call_expr(&mut self, expr: &crate::expr::Call) -> Result<LiteralType> {
-        todo!()
+        let callee = self.evaluate(&expr.callee)?;
+        let LiteralType::Callable(callee) = callee
+        else {
+            return Err(InterError::NotCallable(expr.name.clone()));
+        };
+        let mut args = Vec::with_capacity(expr.arguments.len());
+        for arg in &expr.arguments {
+            args.push(self.evaluate(arg)?);
+        }
+        let res = match callee {
+            Callables::Fun(fun) => {
+                if args.len() != fun.arity() {
+                    return Err(InterError::ArgsArity {
+                        tk: expr.name.clone(),
+                        expect: fun.arity(),
+                        actual: args.len(),
+                    });
+                }
+                fun.call(self, args)?
+            },
+            Callables::Clock(clock_function) => clock_function.call(self, vec![])?,
+        };
+        Ok(res)
     }
 
     fn visit_get_expr(&mut self, expr: &crate::expr::Get) -> Result<LiteralType> {
@@ -285,9 +355,13 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &crate::expr::Variable) -> Result<LiteralType> {
-        self.environment
+        if let Some(v) = self.environment.borrow().get(&expr.name) {
+            return Ok(v);
+        }
+
+        self.globals
+            .borrow_mut()
             .get(&expr.name)
-            .cloned()
-            .ok_or(InterError::NoVar(expr.name.clone()))
+            .ok_or_else(|| InterError::NoVar(expr.name.clone()))
     }
 }

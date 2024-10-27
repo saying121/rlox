@@ -7,6 +7,21 @@ pub trait Stmt {
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(PartialEq, PartialOrd)]
+pub struct Function {
+    pub name: Token,
+    pub params: Vec<Token>,
+    pub body: Vec<Stmts>,
+}
+
+impl Function {
+    pub const fn new(name: Token, params: Vec<Token>, body: Vec<Stmts>) -> Self {
+        Self { name, params, body }
+    }
+}
+
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Expression {
     expr: Exprs,
 }
@@ -138,7 +153,7 @@ impl Break {
         Self { lexeme }
     }
 
-    pub fn lexeme(&self) -> &Token {
+    pub const fn lexeme(&self) -> &Token {
         &self.lexeme
     }
 }
@@ -187,7 +202,7 @@ impl Stmt for Stmts {
     };
 }
 
-statement_gen!(Expression, Print, Var, Block, If, While, Break);
+statement_gen!(Expression, Print, Var, Block, If, While, Break, Function);
 
 impl From<Stmts> for Option<Box<Stmts>> {
     fn from(val: Stmts) -> Self {
