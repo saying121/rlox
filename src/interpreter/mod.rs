@@ -7,8 +7,11 @@ use crate::{
     env::Environment,
     expr::{Expr, ExprVisitor, Exprs, LiteralType},
     lox_callable::{Callables, LoxCallable},
-    stmt::{Block, Break, Expression, Function, If, Print, Stmt, StmtVisitor, Stmts, Var, While},
     lox_fun::{ClockFunction, LoxFunction},
+    r#return::FnReturn,
+    stmt::{
+        Block, Break, Expression, Function, If, Print, Return, Stmt, StmtVisitor, Stmts, Var, While,
+    },
     tokens::{Token, TokenInner},
 };
 
@@ -40,9 +43,12 @@ pub enum InterError {
     },
     #[error("Get time failed: {0}")]
     Time(#[from] SystemTimeError),
+    // TODO: maybe use Result<Resturn, Error>
+    #[error("Fn return value: {0}")]
+    Return(crate::r#return::FnReturn),
 }
 
-pub type Result<T, E = InterError> = core::result::Result<T, E>;
+pub type Result<T> = core::result::Result<T, InterError>;
 
 #[derive(Clone)]
 #[derive(Debug)]
@@ -60,14 +66,15 @@ impl Default for Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        let mut globals = Environment::default();
+        let mut globals = Environment::new();
         globals.define(
             "clock".to_owned(),
             LiteralType::Callable(Callables::Clock(ClockFunction)),
         );
+        let globals = Rc::new(RefCell::new(globals));
         Self {
-            globals: Rc::new(RefCell::new(globals)),
-            environment: Rc::new(RefCell::new(Environment::default())),
+            globals: Rc::clone(&globals),
+            environment: Rc::clone(&globals),
         }
     }
 
@@ -102,13 +109,15 @@ impl Interpreter {
         let previous = Rc::clone(&self.environment);
         self.environment = Rc::new(RefCell::new(env));
 
-        for stmt in statements {
-            self.execute(stmt)?;
-        }
+        let res: Result<()> = try {
+            for stmt in statements {
+                self.execute(stmt)?;
+            }
+        };
 
         self.environment = previous;
 
-        Ok(())
+        res
     }
 }
 
@@ -176,6 +185,15 @@ impl StmtVisitor<Result<()>> for Interpreter {
             stmt.name.inner().lexeme().to_owned(),
             LiteralType::Callable(Callables::Fun(fun)),
         );
+
+        Ok(())
+    }
+
+    fn visit_return_stmt(&mut self, stmt: &Return) -> Result<()> {
+        if let Some(v) = &stmt.value {
+            let value = self.evaluate(v)?;
+            return Err(InterError::Return(FnReturn::new(value)));
+        }
 
         Ok(())
     }

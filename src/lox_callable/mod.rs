@@ -15,7 +15,7 @@ pub trait LoxCallable {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub enum Callables {
     Fun(LoxFunction),
     Clock(ClockFunction),
@@ -29,11 +29,3 @@ impl Display for Callables {
         }
     }
 }
-
-// #[derive(Clone, Copy)]
-// #[derive(Debug)]
-// #[derive(Default)]
-// #[derive(PartialEq, Eq, PartialOrd, Ord)]
-// pub struct Name {
-//     field: Box<dyn LoxCallable>,
-// }

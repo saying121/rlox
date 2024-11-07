@@ -12,25 +12,32 @@ type Result<T> = std::result::Result<T, InterError>;
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct LoxFunction {
     pub declaration: Function,
 }
 
 impl LoxFunction {
     pub const fn new(declaration: Function) -> Self {
-        Self { declaration }
+        Self {
+            declaration,
+        }
     }
 }
 
 impl LoxCallable for LoxFunction {
     fn call(&self, inter: &mut Interpreter, args: Vec<LiteralType>) -> Result<LiteralType> {
-        let mut env = Environment::with_enclosing(Rc::clone(&inter.globals));
+        let mut env = Environment::with_enclosing(Rc::clone(&inter.environment));
         for (tk, val) in self.declaration.params.iter().zip(args.iter()) {
             env.define(tk.inner().lexeme().to_owned(), val.clone());
         }
-
-        inter.execute_block(&self.declaration.body, env)?;
+        match inter.execute_block(&self.declaration.body, env) {
+            Ok(()) => {},
+            Err(InterError::Return(fn_return)) => {
+                return Ok(fn_return.value);
+            },
+            Err(e) => return Err(e),
+        }
 
         Ok(LiteralType::Nil)
     }

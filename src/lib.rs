@@ -13,3 +13,4 @@ pub mod prompt;
 pub mod scan;
 pub mod stmt;
 pub mod tokens;
+pub mod r#return;

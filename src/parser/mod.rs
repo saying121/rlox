@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::{
     expr::{Assign, Binary, Call, Exprs, Grouping, Literal, LiteralType, Logical, Unary, Variable},
-    stmt::{Block, Break, Expression, Function, If, Print, Stmts, Var, While},
+    stmt::{Block, Break, Expression, Function, If, Print, Return, Stmts, Var, While},
     tokens::Token,
 };
 
@@ -154,6 +154,10 @@ where
             },
             Token::Print { .. } => {
                 let stmt = self.print_statement()?;
+                Ok(stmt)
+            },
+            Token::Return { .. } => {
+                let stmt = self.return_statement()?;
                 Ok(stmt)
             },
             Token::While { .. } => {
@@ -403,6 +407,7 @@ where
                 if !flag {
                     break;
                 }
+                self.peeks.next();
             }
         }
         self.consume_rignt_paren()?;
@@ -541,9 +546,7 @@ where
 
                 let value = match self.peeks.next() {
                     Some(value @ Token::Identifier { .. }) => value,
-                    Some(v) => {
-                        return Err(ParserError::Parameters(v));
-                    },
+                    Some(v) => return Err(ParserError::Parameters(v)),
                     None => return Err(ParserError::Eof("Expect parameters".to_owned())),
                 };
                 parameters.push(value);
@@ -561,6 +564,19 @@ where
         let body = self.block()?;
 
         Ok(Stmts::Function(Function::new(name, parameters, body)))
+    }
+
+    fn return_statement(&mut self) -> Result<Stmts> {
+        let keyword = unsafe { self.peeks.next().unwrap_unchecked() };
+        let value = if matches!(self.peeks.peek(), Some(Token::Semicolon { .. })) {
+            None
+        }
+        else {
+            Some(self.expression()?)
+        };
+        self.consume_semicolon_paren()?;
+
+        Ok(Stmts::Return(Return::new(keyword, value)))
     }
 }
 

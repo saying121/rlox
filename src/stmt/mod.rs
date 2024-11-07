@@ -6,7 +6,24 @@ pub trait Stmt {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
+pub struct Return {
+    pub keyword: Token,
+    pub value: Option<Exprs>,
+}
+
+impl Return {
+    pub fn new<V: Into<Option<Exprs>>>(keyword: Token, value: V) -> Self {
+        Self {
+            keyword,
+            value: value.into(),
+        }
+    }
+}
+
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(PartialEq)]
 pub struct Function {
     pub name: Token,
     pub params: Vec<Token>,
@@ -21,7 +38,7 @@ impl Function {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Expression {
     expr: Exprs,
 }
@@ -34,7 +51,7 @@ impl Expression {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Print {
     expr: Exprs,
 }
@@ -47,7 +64,7 @@ impl Print {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Var {
     name: Token,
     expr: Exprs,
@@ -70,7 +87,7 @@ impl Var {
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Block {
     statements: Vec<Stmts>,
 }
@@ -87,7 +104,7 @@ impl Block {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct If {
     condition: Exprs,
     then_branch: Box<Stmts>,
@@ -121,7 +138,7 @@ impl If {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct While {
     condition: Exprs,
     body: Box<Stmts>,
@@ -179,7 +196,7 @@ $(
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub enum Stmts {
 $(
     $stm($stm),
@@ -202,7 +219,7 @@ impl Stmt for Stmts {
     };
 }
 
-statement_gen!(Expression, Print, Var, Block, If, While, Break, Function);
+statement_gen!(Expression, Print, Var, Block, If, While, Break, Function, Return);
 
 impl From<Stmts> for Option<Box<Stmts>> {
     fn from(val: Stmts) -> Self {

@@ -20,7 +20,7 @@ $(
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub enum Exprs {
 $(
     $variant($variant),
@@ -57,7 +57,7 @@ expr_gen!(Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, Thi
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Assign {
     pub name: Token,
     pub value: Box<Exprs>,
@@ -80,7 +80,7 @@ impl Assign {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Binary {
     pub left: Box<Exprs>,
     pub operator: Token,
@@ -99,7 +99,7 @@ impl Binary {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Call {
     pub callee: Box<Exprs>,
     pub name: Token,
@@ -118,7 +118,7 @@ impl Call {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Get {
     pub object: Box<Exprs>,
     pub name: Token,
@@ -135,7 +135,7 @@ impl Get {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Grouping {
     pub expression: Box<Exprs>,
 }
@@ -151,7 +151,7 @@ impl Grouping {
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Default)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Literal {
     pub value: LiteralType,
 }
@@ -159,7 +159,7 @@ pub struct Literal {
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub enum LiteralType {
     String(String),
     Number(f64),
@@ -188,7 +188,7 @@ impl Display for LiteralType {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Logical {
     pub left: Box<Exprs>,
     pub operator: Token,
@@ -205,7 +205,7 @@ impl Logical {
     }
 }
 
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 #[derive(Debug)]
 #[derive(Clone)]
 pub struct Set {
@@ -253,7 +253,7 @@ impl This {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq)]
 pub struct Unary {
     pub operator: Token,
     pub right: Box<Exprs>,
