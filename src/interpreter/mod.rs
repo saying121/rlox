@@ -1,3 +1,5 @@
+#![expect(clippy::allow_attributes, clippy::allow_attributes_without_reason)]
+
 #[cfg(test)]
 mod test;
 
