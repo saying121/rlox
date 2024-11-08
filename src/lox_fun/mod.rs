@@ -1,4 +1,4 @@
-use std::{fmt::Display, rc::Rc, time::SystemTime};
+use std::{cell::RefCell, fmt::Display, rc::Rc, time::SystemTime};
 
 use crate::{
     env::Environment,
@@ -15,19 +15,21 @@ type Result<T> = std::result::Result<T, InterError>;
 #[derive(PartialEq)]
 pub struct LoxFunction {
     pub declaration: Function,
+    pub closure: Rc<RefCell<Environment>>,
 }
 
 impl LoxFunction {
-    pub const fn new(declaration: Function) -> Self {
+    pub const fn new(declaration: Function, closure: Rc<RefCell<Environment>>) -> Self {
         Self {
             declaration,
+            closure,
         }
     }
 }
 
 impl LoxCallable for LoxFunction {
     fn call(&self, inter: &mut Interpreter, args: Vec<LiteralType>) -> Result<LiteralType> {
-        let mut env = Environment::with_enclosing(Rc::clone(&inter.environment));
+        let mut env = Environment::with_enclosing(Rc::clone(&self.closure));
         for (tk, val) in self.declaration.params.iter().zip(args.iter()) {
             env.define(tk.inner().lexeme().to_owned(), val.clone());
         }
@@ -49,7 +51,7 @@ impl LoxCallable for LoxFunction {
 
 impl std::fmt::Display for LoxFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        format!("<fn {} >", self.declaration.name.inner().lexeme()).fmt(f)
+        format!("<fn {}>", self.declaration.name.inner().lexeme()).fmt(f)
     }
 }
 
@@ -60,7 +62,7 @@ pub struct ClockFunction;
 
 impl Display for ClockFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("<fn clock >(inner)")
+        f.write_str("<fn clock>(inner)")
     }
 }
 
