@@ -31,6 +31,7 @@ pub enum InterError {
     NotMatch(String),
     #[error("Not exist variable: {0}")]
     NoVar(Token),
+    // TODO: maybe use Result<Break, Error>
     #[error("Should not use `break` out of loop: {0}")]
     NeedBreak(Token),
     #[error("{0}")]
