@@ -23,6 +23,7 @@ pub type Result<T> = core::result::Result<T, EnvError>;
 #[derive(PartialEq, Eq)]
 pub struct Environment {
     enclosing: Option<Rc<RefCell<Environment>>>,
+    /// NOTE: Use [`std::rc::Rc`] pointers to avoid expensive cloning of [`Environment::ancestor`]
     values: Rc<RefCell<HashMap<String, LiteralType>>>,
 }
 
@@ -36,8 +37,6 @@ impl Hash for Environment {
         }
     }
 }
-
-// impl Eq for Environment {}
 
 impl Environment {
     /// global scope

@@ -32,7 +32,10 @@ impl Lox {
             return;
         }
         let mut r = Resolver::new(&mut self.interpreter);
-        r.resolve(&expression).unwrap();
+        let had_err = r.resolve(&expression);
+        if had_err {
+            return;
+        }
 
         // let ast = AstPrinter.print(&expression);
         // println!("{ast}");

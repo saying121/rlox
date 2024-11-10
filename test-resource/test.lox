@@ -1,2 +1,7 @@
 var a = 1;
 print a;
+
+fun bad() {
+  //var a = "first";
+  var a = "second";
+}

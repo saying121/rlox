@@ -12,6 +12,17 @@ use crate::{
 pub struct Resolver<'i> {
     pub interpreter: &'i mut Interpreter,
     pub scopes: Vec<HashMap<String, bool>>,
+    current_fun: FunctionType,
+}
+
+#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+enum FunctionType {
+    #[default]
+    None,
+    Function,
 }
 
 impl<'i> Resolver<'i> {
@@ -19,6 +30,7 @@ impl<'i> Resolver<'i> {
         Self {
             interpreter,
             scopes: Vec::new(),
+            current_fun: FunctionType::None,
         }
     }
 
@@ -31,11 +43,15 @@ impl<'i> Resolver<'i> {
         self.scopes.pop();
     }
 
-    pub fn resolve(&mut self, statements: &[Stmts]) -> Result<()> {
+    pub fn resolve(&mut self, statements: &[Stmts]) -> bool {
+        let mut had_error = false;
         for stmt in statements {
-            self.resolve_stmt(stmt)?;
+            if let Err(e) = self.resolve_stmt(stmt) {
+                tracing::error!("{e}");
+                had_error = true;
+            }
         }
-        Ok(())
+        had_error
     }
 
     fn resolve_stmt(&mut self, stmt: &Stmts) -> Result<()> {
@@ -46,12 +62,17 @@ impl<'i> Resolver<'i> {
         expr.accept(self)
     }
 
-    fn declare(&mut self, name: &crate::tokens::Token) {
+    fn declare(&mut self, name: &crate::tokens::Token) -> Result<()> {
         let Some(last) = self.scopes.last_mut()
         else {
-            return;
+            // Without local scope it will look global
+            return Ok(());
         };
+        if last.contains_key(name.inner().lexeme()) {
+            return Err(ParserError::DoubleVar(name.clone()));
+        }
         last.insert(name.inner().lexeme().to_owned(), false);
+        Ok(())
     }
 
     fn define(&mut self, name: &crate::tokens::Token) {
@@ -69,15 +90,18 @@ impl<'i> Resolver<'i> {
         }
     }
 
-    fn resolve_function(&mut self, stmt: &Function) -> Result<()> {
+    fn resolve_function(&mut self, stmt: &Function, ft: FunctionType) -> Result<()> {
+        let enclosing_fun = self.current_fun;
+        self.current_fun = ft;
         self.begin_scope();
 
         for ele in &stmt.params {
-            self.declare(ele);
+            self.declare(ele)?;
             self.define(ele);
         }
-        self.resolve(&stmt.body)?;
+        self.resolve(&stmt.body);
         self.end_scope();
+        self.current_fun = enclosing_fun;
         Ok(())
     }
 }
@@ -158,7 +182,7 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_var_stmt(&mut self, stmt: &Var) -> Result<()> {
-        self.declare(stmt.name());
+        self.declare(stmt.name())?;
 
         self.resolve_expr(stmt.initializer())?;
 
@@ -169,7 +193,7 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
 
     fn visit_block_stmt(&mut self, stmt: &Block) -> Result<()> {
         self.begin_scope();
-        self.resolve(stmt.statements())?;
+        self.resolve(stmt.statements());
         self.end_scope();
 
         Ok(())
@@ -194,14 +218,17 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_function_stmt(&mut self, stmt: &Function) -> Result<()> {
-        self.declare(&stmt.name);
+        self.declare(&stmt.name)?;
         self.define(&stmt.name);
 
-        self.resolve_function(stmt)?;
+        self.resolve_function(stmt, FunctionType::Function)?;
         Ok(())
     }
 
     fn visit_return_stmt(&mut self, stmt: &Return) -> Result<()> {
+        if matches!(self.current_fun, FunctionType::None) {
+            return Err(ParserError::NotInFn(stmt.keyword().clone()));
+        }
         if let Some(v) = stmt.value() {
             self.resolve_expr(v)?;
         }

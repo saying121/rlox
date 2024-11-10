@@ -23,6 +23,10 @@ impl Return {
     pub const fn value(&self) -> Option<&Exprs> {
         self.value.as_ref()
     }
+
+    pub const fn keyword(&self) -> &Token {
+        &self.keyword
+    }
 }
 
 #[derive(Clone)]

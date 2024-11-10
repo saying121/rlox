@@ -47,6 +47,12 @@ pub enum ParserError {
     Parameters(Token),
     #[error("Var not Initialization: {0}")]
     Initialization(Token),
+    #[error("There is no scope")]
+    NotInScope,
+    #[error("Already variable with this name in this scope: {0}")]
+    DoubleVar(Token),
+    #[error("Use `return` outer function: {0}")]
+    NotInFn(Token),
 }
 pub type Result<T, E = ParserError> = core::result::Result<T, E>;
 
