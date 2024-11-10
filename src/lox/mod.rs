@@ -2,12 +2,12 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::{interpreter::Interpreter, parser::Parser, scan::scanner::Scanner};
+use crate::{interpreter::Interpreter, parser::Parser, resolver::Resolver, scan::scanner::Scanner};
 
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub struct Lox {
     had_err: bool,
     had_runtime_error: bool,
@@ -31,6 +31,8 @@ impl Lox {
         if had_err {
             return;
         }
+        let mut r = Resolver::new(&mut self.interpreter);
+        r.resolve(&expression).unwrap();
 
         // let ast = AstPrinter.print(&expression);
         // println!("{ast}");

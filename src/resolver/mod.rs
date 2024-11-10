@@ -8,13 +8,20 @@ use crate::{
 };
 
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub struct Resolver<'i> {
     pub interpreter: &'i mut Interpreter,
     pub scopes: Vec<HashMap<String, bool>>,
 }
 
-impl Resolver<'_> {
+impl<'i> Resolver<'i> {
+    pub fn new(interpreter: &'i mut Interpreter) -> Self {
+        Self {
+            interpreter,
+            scopes: Vec::new(),
+        }
+    }
+
     pub fn begin_scope(&mut self) {
         self.scopes.push(HashMap::new());
     }
@@ -47,8 +54,10 @@ impl Resolver<'_> {
         last.insert(name.inner().lexeme().to_owned(), false);
     }
 
-    fn define(&self, name: &crate::tokens::Token) -> Result<()> {
-        todo!()
+    fn define(&mut self, name: &crate::tokens::Token) {
+        if let Some(last) = self.scopes.last_mut() {
+            last.insert(name.inner().lexeme().to_owned(), true);
+        }
     }
 
     fn resolve_local(&mut self, expr: &Exprs, name: &crate::tokens::Token) {
@@ -65,7 +74,7 @@ impl Resolver<'_> {
 
         for ele in &stmt.params {
             self.declare(ele);
-            self.define(ele)?;
+            self.define(ele);
         }
         self.resolve(&stmt.body)?;
         self.end_scope();
@@ -153,7 +162,7 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
 
         self.resolve_expr(stmt.initializer())?;
 
-        self.define(stmt.name())?;
+        self.define(stmt.name());
 
         Ok(())
     }
@@ -186,7 +195,7 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
 
     fn visit_function_stmt(&mut self, stmt: &Function) -> Result<()> {
         self.declare(&stmt.name);
-        self.define(&stmt.name)?;
+        self.define(&stmt.name);
 
         self.resolve_function(stmt)?;
         Ok(())

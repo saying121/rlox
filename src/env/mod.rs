@@ -1,5 +1,4 @@
-use std::hash::Hash;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, hash::Hash, rc::Rc};
 
 use crate::{expr::LiteralType, tokens::Token};
 
@@ -10,15 +9,21 @@ use crate::{expr::LiteralType, tokens::Token};
 pub enum EnvError {
     #[error("Not define: {0}")]
     UndefinedVar(Token),
+    #[error("No var: {distance}: {name}")]
+    NoVar { distance: usize, name: String },
+    #[error("Distance not enough depth: {0}")]
+    Distance(usize),
 }
+
+pub type Result<T> = core::result::Result<T, EnvError>;
 
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub struct Environment {
     enclosing: Option<Rc<RefCell<Environment>>>,
-    values: HashMap<String, LiteralType>,
+    values: Rc<RefCell<HashMap<String, LiteralType>>>,
 }
 
 impl Hash for Environment {
@@ -26,20 +31,20 @@ impl Hash for Environment {
         if let Some(encl) = &self.enclosing {
             encl.borrow().hash(state);
         }
-        for ele in &self.values {
+        for ele in &*self.values.borrow() {
             ele.hash(state);
         }
     }
 }
 
-impl Eq for Environment {}
+// impl Eq for Environment {}
 
 impl Environment {
     /// global scope
     pub fn new() -> Self {
         Self {
             enclosing: None,
-            values: HashMap::new(),
+            values: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
@@ -47,12 +52,12 @@ impl Environment {
     pub fn with_enclosing(enclosing: Rc<RefCell<Self>>) -> Self {
         Self {
             enclosing: Some(enclosing),
-            values: HashMap::new(),
+            values: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
     pub fn get(&self, name: &Token) -> Option<LiteralType> {
-        if let v @ Some(_) = self.values.get(name.inner().lexeme()).cloned() {
+        if let v @ Some(_) = self.values.borrow().get(name.inner().lexeme()).cloned() {
             return v;
         }
         if let Some(enclosing) = &self.enclosing {
@@ -61,14 +66,14 @@ impl Environment {
         None
     }
 
-    pub fn define(&mut self, name: String, value: LiteralType) {
-        self.values.insert(name, value);
+    pub fn define(&self, name: String, value: LiteralType) {
+        self.values.borrow_mut().insert(name, value);
     }
 
-    pub fn assign(&mut self, name: &Token, value: LiteralType) -> Result<(), EnvError> {
+    pub fn assign(&self, name: &Token, value: LiteralType) -> Result<()> {
         let k = name.inner().lexeme();
-        if self.values.contains_key(k) {
-            self.values.insert(k.to_owned(), value);
+        if self.values.borrow().contains_key(k) {
+            self.values.borrow_mut().insert(k.to_owned(), value);
             return Ok(());
         }
         if let Some(enclosing) = &self.enclosing {
@@ -77,5 +82,42 @@ impl Environment {
         }
 
         Err(EnvError::UndefinedVar(name.clone()))
+    }
+    pub fn get_at(&self, distance: usize, name: &str) -> Result<LiteralType> {
+        self.ancestor(distance)?
+            .borrow()
+            .values
+            .borrow()
+            .get(name)
+            .cloned()
+            .ok_or_else(|| EnvError::NoVar {
+                distance,
+                name: name.to_owned(),
+            })
+    }
+
+    fn ancestor(&self, distance: usize) -> Result<Rc<RefCell<Self>>> {
+        let mut env = Rc::new(RefCell::new(self.clone()));
+
+        for _ in 0..distance {
+            let enc = Rc::clone(
+                env.borrow()
+                    .enclosing
+                    .as_ref()
+                    .ok_or(EnvError::Distance(distance))?,
+            );
+
+            env = enc;
+        }
+
+        Ok(env)
+    }
+    pub fn assign_at(&self, distance: usize, name: &Token, value: LiteralType) -> Result<()> {
+        self.ancestor(distance)?
+            .borrow()
+            .values
+            .borrow_mut()
+            .insert(name.inner().lexeme().to_owned(), value);
+        Ok(())
     }
 }
