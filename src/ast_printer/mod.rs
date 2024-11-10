@@ -32,8 +32,8 @@ impl ExprVisitor<String> for AstPrinter {
     }
 
     fn visit_binary_expr(&mut self, expr: &crate::expr::Binary) -> String {
-        let exprs = [&*expr.left, &*expr.right];
-        self.parenthesize(expr.operator.inner().lexeme(), exprs)
+        let exprs = [expr.left(), expr.right()];
+        self.parenthesize(expr.operator().inner().lexeme(), exprs)
     }
 
     fn visit_call_expr(&mut self, expr: &crate::expr::Call) -> String {
@@ -45,11 +45,11 @@ impl ExprVisitor<String> for AstPrinter {
     }
 
     fn visit_grouping_expr(&mut self, expr: &crate::expr::Grouping) -> String {
-        self.parenthesize("group", [&*expr.expression])
+        self.parenthesize("group", [expr.expression()])
     }
 
     fn visit_literal_expr(&mut self, expr: &crate::expr::Literal) -> String {
-        expr.value.to_string()
+        expr.value().to_string()
     }
 
     fn visit_logical_expr(&mut self, expr: &crate::expr::Logical) -> String {
@@ -69,11 +69,11 @@ impl ExprVisitor<String> for AstPrinter {
     }
 
     fn visit_unary_expr(&mut self, expr: &crate::expr::Unary) -> String {
-        self.parenthesize(expr.operator.inner().lexeme(), [expr.right()])
+        self.parenthesize(expr.operator().inner().lexeme(), [expr.right()])
     }
 
     fn visit_variable_expr(&mut self, expr: &crate::expr::Variable) -> String {
-        expr.name.inner().lexeme().to_owned()
+        expr.name_str().to_owned()
     }
 }
 
@@ -95,16 +95,14 @@ mod tests {
                 Token::Minus {
                     inner: TokenInner::new(Arc::clone(&source), '-'.to_string(), 1),
                 },
-                Exprs::Literal(Literal {
-                    value: crate::expr::LiteralType::Number(123.),
-                }),
+                Exprs::Literal(Literal::new(crate::expr::LiteralType::Number(123.))),
             )),
             Token::Star {
                 inner: TokenInner::new(Arc::clone(&source), '*'.to_string(), 1),
             },
-            Exprs::Grouping(Grouping::new(Exprs::Literal(Literal {
-                value: crate::expr::LiteralType::Number(45.67),
-            }))),
+            Exprs::Grouping(Grouping::new(Exprs::Literal(Literal::new(
+                crate::expr::LiteralType::Number(45.67),
+            )))),
         ));
         let mut asp = AstPrinter;
         let res = asp.print(&expression);

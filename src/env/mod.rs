@@ -1,10 +1,11 @@
+use std::hash::Hash;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{expr::LiteralType, tokens::Token};
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq, Eq, PartialOrd)]
 #[derive(thiserror::Error)]
 pub enum EnvError {
     #[error("Not define: {0}")]
@@ -19,6 +20,19 @@ pub struct Environment {
     enclosing: Option<Rc<RefCell<Environment>>>,
     values: HashMap<String, LiteralType>,
 }
+
+impl Hash for Environment {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        if let Some(encl) = &self.enclosing {
+            encl.borrow().hash(state);
+        }
+        for ele in &self.values {
+            ele.hash(state);
+        }
+    }
+}
+
+impl Eq for Environment {}
 
 impl Environment {
     /// global scope

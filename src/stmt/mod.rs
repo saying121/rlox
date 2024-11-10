@@ -6,10 +6,10 @@ pub trait Stmt {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Return {
-    pub keyword: Token,
-    pub value: Option<Exprs>,
+    keyword: Token,
+    value: Option<Exprs>,
 }
 
 impl Return {
@@ -19,11 +19,15 @@ impl Return {
             value: value.into(),
         }
     }
+
+    pub const fn value(&self) -> Option<&Exprs> {
+        self.value.as_ref()
+    }
 }
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Function {
     pub name: Token,
     pub params: Vec<Token>,
@@ -38,7 +42,7 @@ impl Function {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Expression {
     expr: Exprs,
 }
@@ -51,7 +55,7 @@ impl Expression {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Print {
     expr: Exprs,
 }
@@ -64,7 +68,7 @@ impl Print {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Var {
     name: Token,
     expr: Exprs,
@@ -82,12 +86,16 @@ impl Var {
     pub fn var_name(&self) -> &str {
         self.name.inner().lexeme()
     }
+
+    pub const fn name(&self) -> &Token {
+        &self.name
+    }
 }
 
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Block {
     statements: Vec<Stmts>,
 }
@@ -104,7 +112,7 @@ impl Block {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct If {
     condition: Exprs,
     then_branch: Box<Stmts>,
@@ -138,7 +146,7 @@ impl If {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct While {
     condition: Exprs,
     body: Box<Stmts>,
@@ -160,7 +168,7 @@ impl While {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq, Eq, Hash, PartialOrd)]
 pub struct Break {
     lexeme: Token,
 }
@@ -196,7 +204,7 @@ $(
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub enum Stmts {
 $(
     $stm($stm),

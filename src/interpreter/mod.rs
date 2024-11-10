@@ -1,9 +1,7 @@
-#![expect(clippy::allow_attributes, clippy::allow_attributes_without_reason)]
-
 #[cfg(test)]
 mod test;
 
-use std::{cell::RefCell, rc::Rc, time::SystemTimeError};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, time::SystemTimeError};
 
 use crate::{
     env::Environment,
@@ -55,10 +53,11 @@ pub type Result<T> = core::result::Result<T, InterError>;
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub struct Interpreter {
     pub globals: Rc<RefCell<Environment>>,
     pub environment: Rc<RefCell<Environment>>,
+    locals: HashMap<Exprs, usize>,
 }
 
 impl Default for Interpreter {
@@ -78,6 +77,7 @@ impl Interpreter {
         Self {
             globals: Rc::clone(&globals),
             environment: Rc::clone(&globals),
+            locals: HashMap::new(),
         }
     }
 
@@ -94,6 +94,10 @@ impl Interpreter {
 
     fn execute(&mut self, stmt: &Stmts) -> Result<()> {
         stmt.accept(self)
+    }
+
+    pub(crate) fn resolve(&mut self, expr: &Exprs, depth: usize) {
+        self.locals.insert(expr.clone(), depth);
     }
 
     const fn is_truthy(literal: &LiteralType) -> bool {
@@ -193,7 +197,7 @@ impl StmtVisitor<Result<()>> for Interpreter {
     }
 
     fn visit_return_stmt(&mut self, stmt: &Return) -> Result<()> {
-        if let Some(v) = &stmt.value {
+        if let Some(v) = stmt.value() {
             let value = self.evaluate(v)?;
             return Err(InterError::Return(FnReturn::new(value)));
         }
@@ -204,19 +208,19 @@ impl StmtVisitor<Result<()>> for Interpreter {
 
 impl ExprVisitor<Result<LiteralType>> for Interpreter {
     fn visit_assign_expr(&mut self, expr: &crate::expr::Assign) -> Result<LiteralType> {
-        let value = self.evaluate(&expr.value)?;
+        let value = self.evaluate(expr.value())?;
         self.environment
             .borrow_mut()
-            .assign(&expr.name, value.clone())
+            .assign(expr.name(), value.clone())
             .map_err(|v| InterError::Message(v.to_string()))?;
         Ok(value)
     }
 
     fn visit_binary_expr(&mut self, expr: &crate::expr::Binary) -> Result<LiteralType> {
-        let left = self.evaluate(&expr.left)?;
-        let right = self.evaluate(&expr.right)?;
+        let left = self.evaluate(expr.left())?;
+        let right = self.evaluate(expr.right())?;
 
-        match &expr.operator {
+        match expr.operator() {
             Token::Plus { inner } => match (left, right) {
                 (LiteralType::Number(left), LiteralType::Number(right)) => {
                     let var_name = left + right;
@@ -290,20 +294,20 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_call_expr(&mut self, expr: &crate::expr::Call) -> Result<LiteralType> {
-        let callee = self.evaluate(&expr.callee)?;
+        let callee = self.evaluate(expr.callee())?;
         let LiteralType::Callable(callee) = callee
         else {
-            return Err(InterError::NotCallable(expr.name.clone()));
+            return Err(InterError::NotCallable(expr.name().clone()));
         };
-        let mut args = Vec::with_capacity(expr.arguments.len());
-        for arg in &expr.arguments {
+        let mut args = Vec::with_capacity(expr.arguments().len());
+        for arg in expr.arguments() {
             args.push(self.evaluate(arg)?);
         }
         let res = match callee {
             Callables::Fun(fun) => {
                 if args.len() != fun.arity() {
                     return Err(InterError::ArgsArity {
-                        tk: expr.name.clone(),
+                        tk: expr.name().clone(),
                         expect: fun.arity(),
                         actual: args.len(),
                     });
@@ -319,17 +323,17 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
         todo!()
     }
     fn visit_grouping_expr(&mut self, expr: &crate::expr::Grouping) -> Result<LiteralType> {
-        self.evaluate(&expr.expression)
+        self.evaluate(expr.expression())
     }
 
     fn visit_literal_expr(&mut self, expr: &crate::expr::Literal) -> Result<LiteralType> {
-        Ok(expr.value.clone())
+        Ok(expr.value().clone())
     }
 
     fn visit_logical_expr(&mut self, expr: &crate::expr::Logical) -> Result<LiteralType> {
-        let left = self.evaluate(&expr.left)?;
+        let left = self.evaluate(expr.left())?;
 
-        match &expr.operator {
+        match expr.operator() {
             Token::Or { .. } => {
                 if Self::is_truthy(&left) {
                     return Ok(left);
@@ -342,7 +346,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
             },
         }
 
-        self.evaluate(&expr.right)
+        self.evaluate(expr.right())
     }
 
     fn visit_set_expr(&mut self, expr: &crate::expr::Set) -> Result<LiteralType> {
@@ -358,9 +362,9 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_unary_expr(&mut self, expr: &crate::expr::Unary) -> Result<LiteralType> {
-        let right = self.evaluate(&expr.right)?;
+        let right = self.evaluate(expr.right())?;
 
-        match &expr.operator {
+        match expr.operator() {
             Token::Minus { inner } => {
                 if let LiteralType::Number(n) = right {
                     return Ok(LiteralType::Number(-n));
@@ -376,13 +380,13 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &crate::expr::Variable) -> Result<LiteralType> {
-        if let Some(v) = self.environment.borrow().get(&expr.name) {
+        if let Some(v) = self.environment.borrow().get(expr.name()) {
             return Ok(v);
         }
 
         self.globals
             .borrow_mut()
-            .get(&expr.name)
-            .ok_or_else(|| InterError::NoVar(expr.name.clone()))
+            .get(expr.name())
+            .ok_or_else(|| InterError::NoVar(expr.name().clone()))
     }
 }

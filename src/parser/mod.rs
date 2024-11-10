@@ -45,6 +45,8 @@ pub enum ParserError {
     CallDecl { tk: Token, kind: String },
     #[error("Expect parameters name: {0}")]
     Parameters(Token),
+    #[error("Var not Initialization: {0}")]
+    Initialization(Token),
 }
 pub type Result<T, E = ParserError> = core::result::Result<T, E>;
 
@@ -283,7 +285,7 @@ where
                 let value = self.assignment()?;
                 match expr {
                     Exprs::Variable(v) => {
-                        let name = v.name;
+                        let name = v.into_name();
                         Ok(Exprs::Assign(Assign::new(name, value)))
                     },
                     _ => Err(ParserError::Assign(equals)),
@@ -418,21 +420,15 @@ where
     fn primary(&mut self) -> Result<Exprs> {
         match self.peeks.next() {
             Some(pk) => match pk {
-                Token::False { .. } => Ok(Exprs::Literal(Literal {
-                    value: LiteralType::Bool(false),
-                })),
-                Token::True { .. } => Ok(Exprs::Literal(Literal {
-                    value: LiteralType::Bool(true),
-                })),
-                Token::Nil { .. } => Ok(Exprs::Literal(Literal {
-                    value: LiteralType::Nil,
-                })),
-                Token::Number { double, .. } => Ok(Exprs::Literal(Literal {
-                    value: LiteralType::Number(double),
-                })),
-                Token::String { mut inner } => Ok(Exprs::Literal(Literal {
-                    value: LiteralType::String(inner.lexeme_take()),
-                })),
+                Token::False { .. } => Ok(Exprs::Literal(Literal::new(LiteralType::Bool(false)))),
+                Token::True { .. } => Ok(Exprs::Literal(Literal::new(LiteralType::Bool(true)))),
+                Token::Nil { .. } => Ok(Exprs::Literal(Literal::new(LiteralType::Nil))),
+                Token::Number { double, .. } => {
+                    Ok(Exprs::Literal(Literal::new(LiteralType::Number(double))))
+                },
+                Token::String { mut inner } => Ok(Exprs::Literal(Literal::new(
+                    LiteralType::String(inner.lexeme_take()),
+                ))),
                 tk @ Token::Identifier { .. } => Ok(Exprs::Variable(Variable::new(tk))),
                 Token::LeftParen { .. } => {
                     let expr = self.expression()?;
@@ -503,9 +499,7 @@ where
                 },
                 None => {
                     body = Stmts::While(While::new(
-                        Exprs::Literal(Literal {
-                            value: LiteralType::Bool(true),
-                        }),
+                        Exprs::Literal(Literal::new(LiteralType::Bool(true))),
                         body.into(),
                     ));
                 },
@@ -617,7 +611,7 @@ where
             None => Err(ParserError::Eof("Expect `)`".to_owned())),
         }
     }
-    /// Expect `Token::RightParen`, )
+    /// Expect `Token::RightBrace`, )
     fn consume_rignt_brace(&mut self) -> Result<()> {
         match self.peeks.next() {
             Some(Token::RightBrace { .. }) => Ok(()),

@@ -12,10 +12,17 @@ type Result<T> = std::result::Result<T, InterError>;
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub struct LoxFunction {
     pub declaration: Function,
     pub closure: Rc<RefCell<Environment>>,
+}
+
+impl std::hash::Hash for LoxFunction {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.declaration.hash(state);
+        self.closure.borrow().hash(state);
+    }
 }
 
 impl LoxFunction {
@@ -57,7 +64,7 @@ impl std::fmt::Display for LoxFunction {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd, Eq, Ord)]
+#[derive(PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct ClockFunction;
 
 impl Display for ClockFunction {

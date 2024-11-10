@@ -13,14 +13,12 @@ fn test_logic() {
 
     let source: Arc<str> = Arc::from("!true");
 
-    let exprs = Exprs::Unary(Unary {
-        operator: Token::Bang {
+    let exprs = Exprs::Unary(Unary::new(
+        Token::Bang {
             inner: TokenInner::new(source, "!".to_owned(), 0),
         },
-        right: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Bool(true),
-        })),
-    });
+        Exprs::Literal(Literal::new(LiteralType::Bool(true))),
+    ));
 
     let res = inter.evaluate(&exprs).unwrap();
     let correct = LiteralType::Bool(false);
@@ -28,14 +26,12 @@ fn test_logic() {
 
     let source: Arc<str> = Arc::from("!false");
 
-    let exprs = Exprs::Unary(Unary {
-        operator: Token::Bang {
+    let exprs = Exprs::Unary(Unary::new(
+        Token::Bang {
             inner: TokenInner::new(source, "!".to_owned(), 0),
         },
-        right: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Bool(false),
-        })),
-    });
+        Exprs::Literal(Literal::new(LiteralType::Bool(false))),
+    ));
 
     let res = inter.evaluate(&exprs).unwrap();
     let correct = LiteralType::Bool(true);
@@ -49,17 +45,13 @@ fn test_plus_minus_multi_div() {
     // plus
     let source: Arc<str> = Arc::from("1+1");
 
-    let exprs = Exprs::Binary(Binary {
-        left: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Number(1.0),
-        })),
-        operator: Token::Plus {
+    let exprs = Exprs::Binary(Binary::new(
+        Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
+        Token::Plus {
             inner: TokenInner::new(source, "+".to_owned(), 1),
         },
-        right: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Number(1.0),
-        })),
-    });
+        Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
+    ));
 
     let res = inter.evaluate(&exprs).unwrap();
     let correct = LiteralType::Number(2.0);
@@ -68,81 +60,61 @@ fn test_plus_minus_multi_div() {
     // minus
     let source: Arc<str> = Arc::from("1-1");
 
-    let exprs = Exprs::Binary(Binary {
-        left: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Number(1.0),
-        })),
-        operator: Token::Minus {
+    let exprs = Exprs::Binary(Binary::new(
+        Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
+        Token::Minus {
             inner: TokenInner::new(source, "-".to_owned(), 1),
         },
-        right: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Number(1.0),
-        })),
-    });
+        Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
+    ));
     let res = inter.evaluate(&exprs).unwrap();
     assert_eq!(res, LiteralType::Number(0.0));
 
     // multiplication
     let source: Arc<str> = Arc::from("8*2");
-    let exprs = Exprs::Binary(Binary {
-        left: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Number(8.0),
-        })),
-        operator: Token::Star {
+    let exprs = Exprs::Binary(Binary::new(
+        Exprs::Literal(Literal::new(LiteralType::Number(8.0))),
+        Token::Star {
             inner: TokenInner::new(source, "*".to_owned(), 1),
         },
-        right: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Number(2.0),
-        })),
-    });
+        Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
+    ));
     let res = inter.evaluate(&exprs).unwrap();
     assert_eq!(res, LiteralType::Number(16.0));
 
     // div
     let source: Arc<str> = Arc::from("2/3");
 
-    let exprs = Exprs::Binary(Binary {
-        left: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Number(2.0),
-        })),
-        operator: Token::Slash {
+    let exprs = Exprs::Binary(Binary::new(
+        Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
+        Token::Slash {
             inner: TokenInner::new(source, "/".to_owned(), 1),
         },
-        right: Box::new(Exprs::Literal(Literal {
-            value: LiteralType::Number(3.0),
-        })),
-    });
+        Exprs::Literal(Literal::new(LiteralType::Number(3.0))),
+    ));
     let res = inter.evaluate(&exprs).unwrap();
     assert_eq!(res, LiteralType::Number(2. / 3.));
 
     let source: Arc<str> = Arc::from("2/3+ 2/1");
-    let exprs = Exprs::Binary(Binary {
-        left: Box::new(Exprs::Binary(Binary {
-            left: Box::new(Exprs::Literal(Literal {
-                value: LiteralType::Number(2.0),
-            })),
-            operator: Token::Slash {
+    let exprs = Exprs::Binary(Binary::new(
+        Exprs::Binary(Binary::new(
+            Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
+            Token::Slash {
                 inner: TokenInner::new_slash(Arc::clone(&source), 1),
             },
-            right: Box::new(Exprs::Literal(Literal {
-                value: LiteralType::Number(3.0),
-            })),
-        })),
-        operator: Token::Plus {
+            Exprs::Literal(Literal::new(LiteralType::Number(3.0))),
+        )),
+        Token::Plus {
             inner: TokenInner::new_plus(Arc::clone(&source), 3),
         },
-        right: Box::new(Exprs::Binary(Binary {
-            left: Box::new(Exprs::Literal(Literal {
-                value: LiteralType::Number(2.0),
-            })),
-            operator: Token::Slash {
+        Exprs::Binary(Binary::new(
+            Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
+            Token::Slash {
                 inner: TokenInner::new_slash(Arc::clone(&source), 6),
             },
-            right: Box::new(Exprs::Literal(Literal {
-                value: LiteralType::Number(1.0),
-            })),
-        })),
-    });
+            Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
+        )),
+    ));
     let a = inter.evaluate(&exprs).unwrap();
     match a {
         LiteralType::Number(v) => {

@@ -1,4 +1,7 @@
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    hash::Hash,
+};
 
 use crate::{
     expr::LiteralType,
@@ -15,7 +18,7 @@ pub trait LoxCallable {
 
 #[derive(Clone)]
 #[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub enum Callables {
     Fun(LoxFunction),
     Clock(ClockFunction),

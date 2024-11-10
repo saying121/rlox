@@ -5,7 +5,7 @@ use std::{fmt::Display, mem, sync::Arc};
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TokenInner {
     origin: Arc<str>,
     lexeme: String,
@@ -296,6 +296,69 @@ pub enum Token {
 
     Invalid { inner: TokenInner },
 }
+
+impl std::hash::Hash for Token {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        macro_rules! hash_variant {
+            ($($variant:ident), *,) => {
+                match self {
+                    $(Self::$variant { inner } => inner.hash(state),)*
+                    Self::Number { double, inner } => {
+                        double.to_bits().hash(state);
+                        inner.hash(state);
+                    },
+                }
+
+            };
+        }
+        hash_variant!(
+            LeftParen,
+            RightParen,
+            LeftBrace,
+            RightBrace,
+            Comma,
+            Dot,
+            Minus,
+            Plus,
+            Semicolon,
+            Slash,
+            Star,
+            Bang,
+            BangEqual,
+            Equal,
+            EqualEqual,
+            Greater,
+            GreaterEqual,
+            Less,
+            LessEqual,
+            Identifier,
+            String,
+            And,
+            Class,
+            Else,
+            Fun,
+            For,
+            If,
+            Nil,
+            Or,
+            Print,
+            Return,
+            Super,
+            This,
+            True,
+            False,
+            Var,
+            While,
+            Eof,
+            Comment,
+            BlockComment,
+            Break,
+            Invalid,
+        );
+    }
+}
+
+impl Eq for Token {}
 
 impl Display for TokenInner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

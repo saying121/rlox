@@ -1,6 +1,6 @@
 #![allow(unfulfilled_lint_expectations, reason = "allow it")]
 
-use std::fmt::Display;
+use std::{fmt::Display, hash::Hash};
 
 use crate::{lox_callable::Callables, tokens::Token};
 
@@ -20,7 +20,7 @@ $(
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub enum Exprs {
 $(
     $variant($variant),
@@ -57,10 +57,10 @@ expr_gen!(Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, Thi
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Assign {
-    pub name: Token,
-    pub value: Box<Exprs>,
+    name: Token,
+    value: Box<Exprs>,
 }
 
 impl Display for Assign {
@@ -76,15 +76,23 @@ impl Assign {
             value: Box::new(value),
         }
     }
+
+    pub const fn value(&self) -> &Exprs {
+        &self.value
+    }
+
+    pub const fn name(&self) -> &Token {
+        &self.name
+    }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Binary {
-    pub left: Box<Exprs>,
-    pub operator: Token,
-    pub right: Box<Exprs>,
+    left: Box<Exprs>,
+    operator: Token,
+    right: Box<Exprs>,
 }
 
 impl Binary {
@@ -95,15 +103,27 @@ impl Binary {
             right: Box::new(right),
         }
     }
+
+    pub const fn operator(&self) -> &Token {
+        &self.operator
+    }
+
+    pub const fn left(&self) -> &Exprs {
+        &self.left
+    }
+
+    pub const fn right(&self) -> &Exprs {
+        &self.right
+    }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Call {
-    pub callee: Box<Exprs>,
-    pub name: Token,
-    pub arguments: Vec<Exprs>,
+    callee: Box<Exprs>,
+    name: Token,
+    arguments: Vec<Exprs>,
 }
 
 impl Call {
@@ -114,14 +134,26 @@ impl Call {
             arguments,
         }
     }
+
+    pub const fn callee(&self) -> &Exprs {
+        &self.callee
+    }
+
+    pub const fn name(&self) -> &Token {
+        &self.name
+    }
+
+    pub fn arguments(&self) -> &[Exprs] {
+        &self.arguments
+    }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Get {
-    pub object: Box<Exprs>,
-    pub name: Token,
+    object: Box<Exprs>,
+    name: Token,
 }
 
 impl Get {
@@ -131,13 +163,21 @@ impl Get {
             name,
         }
     }
+
+    pub const fn object(&self) -> &Exprs {
+        &self.object
+    }
+
+    pub const fn name(&self) -> &Token {
+        &self.name
+    }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Grouping {
-    pub expression: Box<Exprs>,
+    expression: Box<Exprs>,
 }
 
 impl Grouping {
@@ -146,14 +186,28 @@ impl Grouping {
             expression: Box::new(expression),
         }
     }
+
+    pub const fn expression(&self) -> &Exprs {
+        &self.expression
+    }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(Default)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Literal {
-    pub value: LiteralType,
+    value: LiteralType,
+}
+
+impl Literal {
+    pub const fn new(value: LiteralType) -> Self {
+        Self { value }
+    }
+
+    pub const fn value(&self) -> &LiteralType {
+        &self.value
+    }
 }
 
 #[derive(Clone)]
@@ -168,6 +222,20 @@ pub enum LiteralType {
     Nil,
     Callable(Callables),
 }
+
+impl Hash for LiteralType {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match &self {
+            Self::String(s) => s.hash(state),
+            Self::Number(n) => n.to_bits().hash(state),
+            Self::Bool(b) => b.hash(state),
+            Self::Nil => "nil".hash(state),
+            Self::Callable(callables) => callables.hash(state),
+        }
+    }
+}
+
+impl Eq for LiteralType {}
 
 impl Display for LiteralType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -188,11 +256,11 @@ impl Display for LiteralType {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Logical {
-    pub left: Box<Exprs>,
-    pub operator: Token,
-    pub right: Box<Exprs>,
+    left: Box<Exprs>,
+    operator: Token,
+    right: Box<Exprs>,
 }
 
 impl Logical {
@@ -203,15 +271,27 @@ impl Logical {
             right: Box::new(right),
         }
     }
+
+    pub const fn left(&self) -> &Exprs {
+        &self.left
+    }
+
+    pub const fn operator(&self) -> &Token {
+        &self.operator
+    }
+
+    pub const fn right(&self) -> &Exprs {
+        &self.right
+    }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 #[derive(Debug)]
 #[derive(Clone)]
 pub struct Set {
-    pub object: Box<Exprs>,
-    pub name: Token,
-    pub value: Box<Exprs>,
+    object: Box<Exprs>,
+    name: Token,
+    value: Box<Exprs>,
 }
 
 impl Set {
@@ -222,41 +302,65 @@ impl Set {
             value: Box::new(value),
         }
     }
+
+    pub const fn object(&self) -> &Exprs {
+        &self.object
+    }
+
+    pub const fn name(&self) -> &Token {
+        &self.name
+    }
+
+    pub const fn value(&self) -> &Exprs {
+        &self.value
+    }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq, Eq, Hash, PartialOrd)]
 pub struct Super {
-    pub keyword: Token,
-    pub method: Token,
+    keyword: Token,
+    method: Token,
 }
 
 impl Super {
     pub const fn new(keyword: Token, method: Token) -> Self {
         Self { keyword, method }
     }
+
+    pub const fn keyword(&self) -> &Token {
+        &self.keyword
+    }
+
+    pub const fn method(&self) -> &Token {
+        &self.method
+    }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq, Eq, Hash, PartialOrd)]
 pub struct This {
-    pub keyword: Token,
+    keyword: Token,
 }
 
 impl This {
     pub const fn new(keyword: Token) -> Self {
         Self { keyword }
     }
+
+    pub const fn keyword(&self) -> &Token {
+        &self.keyword
+    }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Unary {
-    pub operator: Token,
-    pub right: Box<Exprs>,
+    operator: Token,
+    right: Box<Exprs>,
 }
 
 impl Unary {
@@ -270,17 +374,33 @@ impl Unary {
     pub const fn right(&self) -> &Exprs {
         &self.right
     }
+
+    pub const fn operator(&self) -> &Token {
+        &self.operator
+    }
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq, Eq, Hash, PartialOrd)]
 pub struct Variable {
-    pub name: Token,
+    name: Token,
 }
 
 impl Variable {
     pub const fn new(name: Token) -> Self {
         Self { name }
+    }
+
+    pub const fn name(&self) -> &Token {
+        &self.name
+    }
+
+    pub fn into_name(self) -> Token {
+        self.name
+    }
+
+    pub fn name_str(&self) -> &str {
+        self.name.inner().lexeme()
     }
 }
