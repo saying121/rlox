@@ -17,7 +17,6 @@ tracing-subscriber = { version = "0.3" }
 pretty_assertions = { version = "^1" }
 
 [lints.rust]
-temporary_cstring_as_ptr = "deny"
 
 [lints.clippy]
 perf = { level = "deny", priority = -1 }

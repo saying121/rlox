@@ -145,3 +145,13 @@ for (var i = 1; i < 5; i = i + 1) {
 ",
     );
 }
+
+#[test]
+fn test_define_del() {
+    let mut lox = Lox::default();
+    lox.run(
+        "
+var a = 1;
+",
+    );
+}

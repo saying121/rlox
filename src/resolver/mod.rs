@@ -160,11 +160,11 @@ impl crate::expr::ExprVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<()> {
-        if let Some(last) = self.scopes.last() {
-            if last.get(expr.name_str()) == Some(&false) {
-                return Err(ParserError::Initialization(expr.name().clone()));
-            }
-        };
+        if let Some(last) = self.scopes.last()
+            && last.get(expr.name_str()) == Some(&false)
+        {
+            return Err(ParserError::Initialization(expr.name().clone()));
+        }
 
         self.resolve_local(&Exprs::Variable(expr.clone()), expr.name());
 
@@ -214,7 +214,7 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_break_stmt(&mut self, stmt: &Break) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     fn visit_function_stmt(&mut self, stmt: &Function) -> Result<()> {

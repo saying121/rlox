@@ -45,7 +45,7 @@ pub enum ParserError {
     CallDecl { tk: Token, kind: String },
     #[error("Expect parameters name: {0}")]
     Parameters(Token),
-    #[error("Var not Initialization: {0}")]
+    #[error("Can't read local variable in its own initializer: {0}")]
     Initialization(Token),
     #[error("There is no scope")]
     NotInScope,

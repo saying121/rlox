@@ -5,7 +5,7 @@ use crate::expr::LiteralType;
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub struct FnReturn {
     pub value: LiteralType,
 }

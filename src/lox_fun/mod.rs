@@ -36,7 +36,7 @@ impl LoxFunction {
 
 impl LoxCallable for LoxFunction {
     fn call(&self, inter: &mut Interpreter, args: Vec<LiteralType>) -> Result<LiteralType> {
-        let mut env = Environment::with_enclosing(Rc::clone(&self.closure));
+        let env = Environment::with_enclosing(Rc::clone(&self.closure));
         for (tk, val) in self.declaration.params.iter().zip(args.iter()) {
             env.define(tk.inner().lexeme().to_owned(), val.clone());
         }
