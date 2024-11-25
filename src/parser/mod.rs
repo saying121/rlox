@@ -600,7 +600,7 @@ where
             None => Err(ParserError::Eof("Expect `(`".to_owned())),
         }
     }
-    /// Expect `Token::LeftBrace`, (
+    /// Expect `Token::LeftBrace`, {
     fn consume_left_brace(&mut self) -> Result<()> {
         match self.peeks.next() {
             Some(Token::LeftBrace { .. }) => Ok(()),
@@ -617,7 +617,7 @@ where
             None => Err(ParserError::Eof("Expect `)`".to_owned())),
         }
     }
-    /// Expect `Token::RightBrace`, )
+    /// Expect `Token::RightBrace`, }
     fn consume_rignt_brace(&mut self) -> Result<()> {
         match self.peeks.next() {
             Some(Token::RightBrace { .. }) => Ok(()),
