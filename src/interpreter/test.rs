@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use super::Interpreter;
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
 fn test_logic() {
     let mut inter = Interpreter::default();
 
-    let source: Arc<str> = Arc::from("!true");
+    let source: Rc<str> = Rc::from("!true");
 
     let exprs = Exprs::Unary(Unary::new(
         Token::Bang {
@@ -24,7 +24,7 @@ fn test_logic() {
     let correct = LiteralType::Bool(false);
     assert_eq!(res, correct);
 
-    let source: Arc<str> = Arc::from("!false");
+    let source: Rc<str> = Rc::from("!false");
 
     let exprs = Exprs::Unary(Unary::new(
         Token::Bang {
@@ -43,7 +43,7 @@ fn test_plus_minus_multi_div() {
     let mut inter = Interpreter::default();
 
     // plus
-    let source: Arc<str> = Arc::from("1+1");
+    let source: Rc<str> = Rc::from("1+1");
 
     let exprs = Exprs::Binary(Binary::new(
         Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
@@ -58,7 +58,7 @@ fn test_plus_minus_multi_div() {
     assert_eq!(res, correct);
 
     // minus
-    let source: Arc<str> = Arc::from("1-1");
+    let source: Rc<str> = Rc::from("1-1");
 
     let exprs = Exprs::Binary(Binary::new(
         Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
@@ -71,7 +71,7 @@ fn test_plus_minus_multi_div() {
     assert_eq!(res, LiteralType::Number(0.0));
 
     // multiplication
-    let source: Arc<str> = Arc::from("8*2");
+    let source: Rc<str> = Rc::from("8*2");
     let exprs = Exprs::Binary(Binary::new(
         Exprs::Literal(Literal::new(LiteralType::Number(8.0))),
         Token::Star {
@@ -83,7 +83,7 @@ fn test_plus_minus_multi_div() {
     assert_eq!(res, LiteralType::Number(16.0));
 
     // div
-    let source: Arc<str> = Arc::from("2/3");
+    let source: Rc<str> = Rc::from("2/3");
 
     let exprs = Exprs::Binary(Binary::new(
         Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
@@ -95,22 +95,22 @@ fn test_plus_minus_multi_div() {
     let res = inter.evaluate(&exprs).unwrap();
     assert_eq!(res, LiteralType::Number(2. / 3.));
 
-    let source: Arc<str> = Arc::from("2/3+ 2/1");
+    let source: Rc<str> = Rc::from("2/3+ 2/1");
     let exprs = Exprs::Binary(Binary::new(
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
             Token::Slash {
-                inner: TokenInner::new_slash(Arc::clone(&source), 1),
+                inner: TokenInner::new_slash(Rc::clone(&source), 1),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(3.0))),
         )),
         Token::Plus {
-            inner: TokenInner::new_plus(Arc::clone(&source), 3),
+            inner: TokenInner::new_plus(Rc::clone(&source), 3),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
             Token::Slash {
-                inner: TokenInner::new_slash(Arc::clone(&source), 6),
+                inner: TokenInner::new_slash(Rc::clone(&source), 6),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
         )),

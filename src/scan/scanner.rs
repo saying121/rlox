@@ -1,6 +1,5 @@
 #![allow(unfulfilled_lint_expectations, reason = "allow it")]
-
-use std::{str::CharIndices, sync::Arc};
+use std::{rc::Rc, str::CharIndices};
 
 use itertools::PeekNth;
 
@@ -379,8 +378,8 @@ impl<'s> Scanner<'s> {
         }
     }
 
-    pub fn origin(&self) -> Arc<str> {
-        Arc::from(self.source)
+    pub fn origin(&self) -> Rc<str> {
+        Rc::from(self.source)
     }
 
     pub const fn source(&self) -> &str {

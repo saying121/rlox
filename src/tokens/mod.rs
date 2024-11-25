@@ -1,13 +1,13 @@
 #![allow(unfulfilled_lint_expectations, reason = "allow it")]
 
-use std::{fmt::Display, mem, sync::Arc};
+use std::{fmt::Display, mem, rc::Rc};
 
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TokenInner {
-    origin: Arc<str>,
+    origin: Rc<str>,
     lexeme: String,
     len: usize,
     /// start char offset
@@ -15,7 +15,7 @@ pub struct TokenInner {
 }
 
 impl TokenInner {
-    pub fn new_print(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_print(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: "print".to_owned(),
@@ -23,7 +23,7 @@ impl TokenInner {
             offset,
         }
     }
-    pub fn new_greater_equal(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_greater_equal(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: ">=".to_owned(),
@@ -32,7 +32,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_greater(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_greater(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: ">".to_owned(),
@@ -41,7 +41,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_less_equal(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_less_equal(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: "<=".to_owned(),
@@ -50,7 +50,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_less(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_less(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: "<".to_owned(),
@@ -59,7 +59,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_equal_equal(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_equal_equal(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: "==".to_owned(),
@@ -68,7 +68,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_equal(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_equal(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: "=".to_owned(),
@@ -77,7 +77,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_bang_equal(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_bang_equal(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: "!=".to_owned(),
@@ -86,7 +86,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_bang(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_bang(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: '!'.to_string(),
@@ -95,7 +95,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_slash(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_slash(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: '/'.to_string(),
@@ -104,7 +104,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_star(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_star(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: '*'.to_string(),
@@ -113,7 +113,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_semicolon(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_semicolon(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: ';'.to_string(),
@@ -122,7 +122,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_plus(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_plus(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: '+'.to_string(),
@@ -131,7 +131,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_minus(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_minus(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: '-'.to_string(),
@@ -140,7 +140,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_dot(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_dot(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: '.'.to_string(),
@@ -149,7 +149,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_comma(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_comma(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: ','.to_string(),
@@ -158,7 +158,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_left_brace(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_left_brace(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: '{'.to_string(),
@@ -166,7 +166,7 @@ impl TokenInner {
             offset,
         }
     }
-    pub fn new_right_brace(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_right_brace(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: '}'.to_string(),
@@ -175,7 +175,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_left_paren(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_left_paren(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: '('.to_string(),
@@ -184,7 +184,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new_right_paren(origin: Arc<str>, offset: usize) -> Self {
+    pub fn new_right_paren(origin: Rc<str>, offset: usize) -> Self {
         Self {
             origin,
             lexeme: ')'.to_string(),
@@ -193,7 +193,7 @@ impl TokenInner {
         }
     }
 
-    pub fn new(origin: Arc<str>, lexeme: String, offset: usize) -> Self {
+    pub fn new(origin: Rc<str>, lexeme: String, offset: usize) -> Self {
         let len = lexeme.len();
         Self {
             origin,
@@ -203,7 +203,7 @@ impl TokenInner {
         }
     }
 
-    pub const fn new_invalid(origin: Arc<str>, lexeme: String, len: usize, offset: usize) -> Self {
+    pub const fn new_invalid(origin: Rc<str>, lexeme: String, len: usize, offset: usize) -> Self {
         Self {
             origin,
             lexeme,

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use pretty_assertions::assert_eq;
 
@@ -12,18 +12,18 @@ use crate::{
 
 #[test]
 fn test_equal() {
-    let source: Arc<str> = Arc::from("var a = 1==1;");
+    let source: Rc<str> = Rc::from("var a = 1==1;");
     let mut scan = scanner::Scanner::new(&source);
     let tks = scan.scan_tokens();
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Arc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
             Token::EqualEqual {
-                inner: TokenInner::new(Arc::clone(&source), "==".to_owned(), 9),
+                inner: TokenInner::new(Rc::clone(&source), "==".to_owned(), 9),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
         )),
@@ -36,7 +36,7 @@ fn test_equal() {
 
 #[test]
 fn test_precedence() {
-    let source: Arc<str> = Arc::from("print 6/3+16/2;");
+    let source: Rc<str> = Rc::from("print 6/3+16/2;");
 
     let mut scan = scanner::Scanner::new(&source);
     let tks = scan.scan_tokens();
@@ -45,17 +45,17 @@ fn test_precedence() {
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(6.0))),
             Token::Slash {
-                inner: TokenInner::new_slash(Arc::clone(&source), 7),
+                inner: TokenInner::new_slash(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(3.0))),
         )),
         Token::Plus {
-            inner: TokenInner::new_plus(Arc::clone(&source), 9),
+            inner: TokenInner::new_plus(Rc::clone(&source), 9),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(16.0))),
             Token::Slash {
-                inner: TokenInner::new_slash(Arc::clone(&source), 12),
+                inner: TokenInner::new_slash(Rc::clone(&source), 12),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
         )),
@@ -64,7 +64,7 @@ fn test_precedence() {
     let (stmts, _) = p.parse();
     assert_eq!(right, stmts);
 
-    let source: Arc<str> = Arc::from("print 6/3-16*2;");
+    let source: Rc<str> = Rc::from("print 6/3-16*2;");
 
     let mut scan = scanner::Scanner::new(&source);
     let tks = scan.scan_tokens();
@@ -73,17 +73,17 @@ fn test_precedence() {
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(6.0))),
             Token::Slash {
-                inner: TokenInner::new_slash(Arc::clone(&source), 7),
+                inner: TokenInner::new_slash(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(3.0))),
         )),
         Token::Minus {
-            inner: TokenInner::new_minus(Arc::clone(&source), 9),
+            inner: TokenInner::new_minus(Rc::clone(&source), 9),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(16.0))),
             Token::Star {
-                inner: TokenInner::new_star(Arc::clone(&source), 12),
+                inner: TokenInner::new_star(Rc::clone(&source), 12),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
         )),
@@ -93,26 +93,26 @@ fn test_precedence() {
     let (stmts, _) = p.parse();
     assert_eq!(right, stmts);
 
-    let source: Arc<str> = Arc::from("print 6/3-16*-2;");
+    let source: Rc<str> = Rc::from("print 6/3-16*-2;");
     let right = vec![Stmts::Print(Print::new(Exprs::Binary(Binary::new(
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(6.0))),
             Token::Slash {
-                inner: TokenInner::new_slash(Arc::clone(&source), 7),
+                inner: TokenInner::new_slash(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(3.0))),
         )),
         Token::Minus {
-            inner: TokenInner::new_minus(Arc::clone(&source), 9),
+            inner: TokenInner::new_minus(Rc::clone(&source), 9),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(16.0))),
             Token::Star {
-                inner: TokenInner::new_star(Arc::clone(&source), 12),
+                inner: TokenInner::new_star(Rc::clone(&source), 12),
             },
-            Exprs::Unary(Unary::new (
+            Exprs::Unary(Unary::new(
                 Token::Minus {
-                    inner: TokenInner::new_minus(Arc::clone(&source), 13),
+                    inner: TokenInner::new_minus(Rc::clone(&source), 13),
                 },
                 Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
             )),
@@ -130,19 +130,19 @@ fn test_precedence() {
 #[test]
 fn test_plus_minus_multi_div() {
     // plus
-    let source: Arc<str> = Arc::from("var a=1+1;");
+    let source: Rc<str> = Rc::from("var a=1+1;");
 
     let mut scan = scanner::Scanner::new(&source);
     let tks = scan.scan_tokens();
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Arc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
             Token::Plus {
-                inner: TokenInner::new_plus(Arc::clone(&source), 7),
+                inner: TokenInner::new_plus(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
         )),
@@ -153,19 +153,19 @@ fn test_plus_minus_multi_div() {
     assert_eq!(right, exprs);
 
     // plus strings
-    let source: Arc<str> = Arc::from(r#"var a="ab"+"cd";"#);
+    let source: Rc<str> = Rc::from(r#"var a="ab"+"cd";"#);
 
     let mut scan = scanner::Scanner::new(&source);
     let tks = scan.scan_tokens();
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Arc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::String("ab".to_owned()))),
             Token::Plus {
-                inner: TokenInner::new_plus(Arc::clone(&source), 10),
+                inner: TokenInner::new_plus(Rc::clone(&source), 10),
             },
             Exprs::Literal(Literal::new(LiteralType::String("cd".to_owned()))),
         )),
@@ -176,19 +176,19 @@ fn test_plus_minus_multi_div() {
     assert_eq!(right, stmts);
 
     // minus
-    let source: Arc<str> = Arc::from("var a=1-1;");
+    let source: Rc<str> = Rc::from("var a=1-1;");
 
     let mut scan = scanner::Scanner::new(&source);
     let tks = scan.scan_tokens();
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Arc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
             Token::Minus {
-                inner: TokenInner::new_minus(Arc::clone(&source), 7),
+                inner: TokenInner::new_minus(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
         )),
@@ -199,19 +199,19 @@ fn test_plus_minus_multi_div() {
     assert_eq!(right, stmts);
 
     // multiplication
-    let source: Arc<str> = Arc::from("var a=1*1;");
+    let source: Rc<str> = Rc::from("var a=1*1;");
 
     let mut scan = scanner::Scanner::new(&source);
     let tks = scan.scan_tokens();
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Arc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
             Token::Star {
-                inner: TokenInner::new_star(Arc::clone(&source), 7),
+                inner: TokenInner::new_star(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
         )),
@@ -222,19 +222,19 @@ fn test_plus_minus_multi_div() {
     assert_eq!(right, stmts);
 
     // div
-    let source: Arc<str> = Arc::from("var a=1/1;");
+    let source: Rc<str> = Rc::from("var a=1/1;");
 
     let mut scan = scanner::Scanner::new(&source);
     let tks = scan.scan_tokens();
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Arc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
             Token::Slash {
-                inner: TokenInner::new_slash(Arc::clone(&source), 7),
+                inner: TokenInner::new_slash(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
         )),
@@ -247,10 +247,10 @@ fn test_plus_minus_multi_div() {
 
 #[test]
 fn test_paren() {
-    let source: Arc<str> = Arc::from("(");
+    let source: Rc<str> = Rc::from("(");
 
     let tks = vec![Token::LeftParen {
-        inner: TokenInner::new(Arc::clone(&source), "(".to_owned(), 0),
+        inner: TokenInner::new(Rc::clone(&source), "(".to_owned(), 0),
     }];
 
     let mut p = Parser::new(tks);
