@@ -1,0 +1,7 @@
+class DevonshireCream {
+    fun serveOn() {
+        return "Scones";
+    }
+}
+
+print DevonshireCream;
