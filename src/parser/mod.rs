@@ -1,12 +1,14 @@
 #[cfg(test)]
 mod tests;
 
+use std::fmt::Display;
+
 use itertools::PeekNth;
 use thiserror::Error;
 
 use crate::{
     expr::{Assign, Binary, Call, Exprs, Grouping, Literal, LiteralType, Logical, Unary, Variable},
-    stmt::{Block, Break, Expression, Function, If, Print, Return, Stmts, Var, While},
+    stmt::{Block, Break, Class, Expression, Function, If, Print, Return, Stmts, Var, While},
     tokens::Token,
 };
 
@@ -42,9 +44,11 @@ pub enum ParserError {
     #[error("{0}")]
     ErrMessage(String),
     #[error("Expect {kind} name: {tk}")]
-    CallDecl { tk: Token, kind: String },
+    CallDecl { tk: Token, kind: FunctionKind },
     #[error("Expect parameters name: {0}")]
     Parameters(Token),
+    #[error("Expect Class name: {0}")]
+    Class(Token),
     #[error("Can't read local variable in its own initializer: {0}")]
     Initialization(Token),
     #[error("There is no scope")]
@@ -54,7 +58,25 @@ pub enum ParserError {
     #[error("Use `return` outer function: {0}")]
     NotInFn(Token),
 }
+
 pub type Result<T, E = ParserError> = core::result::Result<T, E>;
+
+#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub enum FunctionKind {
+    Function,
+    Method,
+}
+
+impl Display for FunctionKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Function => f.write_str("function"),
+            Self::Method => f.write_str("method"),
+        }
+    }
+}
 
 #[derive(Clone)]
 #[derive(Debug)]
@@ -99,7 +121,8 @@ where
 
     fn declaration(&mut self) -> Result<Stmts> {
         match self.peeks.peek() {
-            Some(Token::Fun { .. }) => self.function("function".to_owned()),
+            Some(Token::Class { .. }) => self.class_declaration(),
+            Some(Token::Fun { .. }) => self.function(FunctionKind::Function),
             Some(Token::Var { .. }) => self.var_declaration(),
             _ => match self.statement() {
                 stmt @ Ok(_) => stmt,
@@ -526,7 +549,7 @@ where
         }
     }
 
-    fn function(&mut self, kind: String) -> Result<Stmts> {
+    fn function(&mut self, kind: FunctionKind) -> Result<Stmts> {
         let fun = self.peeks.next();
         assert!(matches!(fun, Some(Token::Fun { .. })));
         let name = match self.peeks.next() {
@@ -578,9 +601,31 @@ where
 
         Ok(Stmts::Return(Return::new(keyword, value)))
     }
+
+    fn class_declaration(&mut self) -> Result<Stmts> {
+        let class = self.peeks.next();
+        assert!(matches!(class, Some(Token::Class { .. })));
+        let name = match self.peeks.next() {
+            Some(tk @ Token::Identifier { .. }) => tk,
+            Some(other) => return Err(ParserError::Class(other)),
+            None => return Err(ParserError::Eof("Expect class name".to_owned())),
+        };
+        self.consume_left_brace()?;
+
+        let mut methods = Vec::new();
+
+        while let Some(next) = self.peeks.peek()
+            && !matches!(next, Token::RightBrace { .. })
+        {
+            methods.push(self.function(FunctionKind::Method)?);
+        }
+
+        self.consume_rignt_brace()?;
+
+        Ok(Stmts::Class(Class::new(name, methods)))
+    }
 }
 
-#[expect(dead_code, reason = "Util function")]
 impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,

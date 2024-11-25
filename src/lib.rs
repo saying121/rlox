@@ -7,6 +7,7 @@ pub mod expr;
 pub mod interpreter;
 pub mod lox;
 pub mod lox_callable;
+pub mod lox_class;
 pub mod lox_fun;
 pub mod parser;
 pub mod prompt;

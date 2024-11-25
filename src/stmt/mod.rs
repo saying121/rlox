@@ -7,6 +7,28 @@ pub trait Stmt {
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(PartialEq, Eq, Hash)]
+pub struct Class {
+    name: Token,
+    methods: Vec<Stmts>, // Stmts::Function
+}
+
+impl Class {
+    pub const fn new(name: Token, methods: Vec<Stmts>) -> Self {
+        Self { name, methods }
+    }
+
+    pub const fn name(&self) -> &Token {
+        &self.name
+    }
+
+    pub fn methods(&self) -> &[Stmts] {
+        &self.methods
+    }
+}
+
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Return {
     keyword: Token,
     value: Option<Exprs>,
@@ -188,7 +210,7 @@ impl Break {
 }
 
 macro_rules! statement_gen {
-    ($($stm:ident), *) => {
+    ($($stm:ident), *,) => {
 paste::paste! {
 
 pub trait StmtVisitor<R> {
@@ -231,7 +253,7 @@ impl Stmt for Stmts {
     };
 }
 
-statement_gen!(Expression, Print, Var, Block, If, While, Break, Function, Return);
+statement_gen!(Expression, Print, Var, Block, If, While, Break, Function, Return, Class,);
 
 impl From<Stmts> for Option<Box<Stmts>> {
     fn from(val: Stmts) -> Self {

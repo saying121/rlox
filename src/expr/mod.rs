@@ -246,10 +246,7 @@ impl Display for LiteralType {
             Number(n) => f.write_fmt(format_args!("{n}")),
             Bool(b) => f.write_fmt(format_args!("{b}")),
             Nil => f.write_fmt(format_args!("nil")),
-            Callable(v) => match v {
-                Callables::Fun(lox_function) => lox_function.fmt(f),
-                Callables::Clock(clock_function) => clock_function.fmt(f),
-            },
+            Callable(v) => v.fmt(f),
         }
     }
 }

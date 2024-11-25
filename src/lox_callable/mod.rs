@@ -4,9 +4,7 @@ use std::{
 };
 
 use crate::{
-    expr::LiteralType,
-    interpreter::{InterError, Interpreter},
-    lox_fun::{ClockFunction, LoxFunction},
+    expr::LiteralType, interpreter::{InterError, Interpreter}, lox_class::LoxClass, lox_fun::{ClockFunction, LoxFunction}
 };
 
 type Result<T> = std::result::Result<T, InterError>;
@@ -22,6 +20,7 @@ pub trait LoxCallable {
 pub enum Callables {
     Fun(LoxFunction),
     Clock(ClockFunction),
+    Class(LoxClass),
 }
 
 impl Display for Callables {
@@ -29,6 +28,7 @@ impl Display for Callables {
         match self {
             Self::Fun(lox_function) => lox_function.fmt(f),
             Self::Clock(clock_function) => clock_function.fmt(f),
+            Self::Class(lox_class) => lox_class.fmt(f),
         }
     }
 }

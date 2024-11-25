@@ -7,6 +7,7 @@ use crate::{
     env::Environment,
     expr::*,
     lox_callable::{Callables, LoxCallable},
+    lox_class::LoxClass,
     lox_fun::{ClockFunction, LoxFunction},
     r#return::FnReturn,
     stmt::*,
@@ -221,6 +222,20 @@ impl StmtVisitor<Result<()>> for Interpreter {
 
         Ok(())
     }
+
+    fn visit_class_stmt(&mut self, stmt: &Class) -> Result<()> {
+        self.environment
+            .borrow()
+            .define(stmt.name().inner().lexeme().to_owned(), LiteralType::Nil);
+
+        let klass = LoxClass::new(stmt.name().inner().lexeme().to_owned());
+
+        self.environment
+            .borrow()
+            .assign(stmt.name(), LiteralType::Callable(Callables::Class(klass)))?;
+
+        Ok(())
+    }
 }
 
 impl ExprVisitor<Result<LiteralType>> for Interpreter {
@@ -340,6 +355,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
                 fun.call(self, args)?
             },
             Callables::Clock(clock_function) => clock_function.call(self, vec![])?,
+            Callables::Class(lox_class) => todo!(),
         };
         Ok(res)
     }
