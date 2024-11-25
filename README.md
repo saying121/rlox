@@ -18,7 +18,8 @@
 ```ebnf
 program        → declaration* EOF ;
 
-declaration    → funDecl
+declaration    → classDecl
+               | funDecl
                | varDecl
                | statement ;
 
@@ -30,7 +31,7 @@ statement      → exprStmt
                | whileStmt
                | block ;
 
-returnStmt      → "return" expression? ";" ;
+returnStmt     → "return" expression? ";" ;
 
 breakStmt      → "break" ";" ;
 
@@ -51,7 +52,7 @@ printStmt      → "print" expression ";" ;
 
 expression     → assignment ;
 
-assignment     → IDENTiFIER "=" assignment
+assignment     → IDENTIFIER "=" assignment
                | logic_or ;
 
 logic_or       → logic_and ( "or" logic_and )* ;
@@ -74,13 +75,17 @@ arguments      → expression ( "," expression )* ;
 
 primary        → NUMBER | STRING | "true" | "false" | "nil"
                | "(" expression ")"
-               | IDENTiFIER;
+               | IDENTIFIER;
 
-varDecl        → "var" IDENTiFIER ( "=" expression )? ";" ;
+varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
 funDecl        → "fun" function ;
 
-function       → IDENTiFIER "(" parameters? ")" block ;
+function       → IDENTIFIER "(" parameters? ")" block ;
+
+parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
+
+classDecl      → "class" IDENTIFIER "{" funDecl* "}" ;
 ```
 
 ## Desugaring
