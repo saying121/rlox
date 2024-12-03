@@ -15,6 +15,14 @@ pub struct Lox {
 }
 
 impl Lox {
+    pub fn new() -> Self {
+        Self {
+            had_err: false,
+            had_runtime_error: false,
+            interpreter: Interpreter::new(),
+        }
+    }
+
     pub fn run_file<T: AsRef<Path>>(mut self, path: T) -> Result<()> {
         let content = std::fs::read_to_string(path)?;
         self.run(&content);
