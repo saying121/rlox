@@ -9,6 +9,7 @@ pub mod lox;
 pub mod lox_callable;
 pub mod lox_class;
 pub mod lox_fun;
+pub mod lox_instance;
 pub mod parser;
 pub mod prompt;
 pub mod resolver;

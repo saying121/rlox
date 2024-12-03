@@ -4,13 +4,13 @@ use std::{
 };
 
 use crate::{
-    expr::LiteralType, interpreter::{InterError, Interpreter}, lox_class::LoxClass, lox_fun::{ClockFunction, LoxFunction}
+    expr::LiteralType, interpreter::{InterError, Interpreter}, lox_class::LoxClass, lox_fun::{ClockFunction, LoxFunction}, lox_instance::LoxInstance
 };
 
-type Result<T> = std::result::Result<T, InterError>;
+pub type CallResult<T> = std::result::Result<T, InterError>;
 
 pub trait LoxCallable {
-    fn call(&self, inter: &mut Interpreter, args: Vec<LiteralType>) -> Result<LiteralType>;
+    fn call(&self, inter: &mut Interpreter, args: Vec<LiteralType>) -> CallResult<LiteralType>;
     fn arity(&self) -> usize;
 }
 
@@ -21,6 +21,7 @@ pub enum Callables {
     Fun(LoxFunction),
     Clock(ClockFunction),
     Class(LoxClass),
+    Instance(LoxInstance),
 }
 
 impl Display for Callables {
@@ -29,6 +30,7 @@ impl Display for Callables {
             Self::Fun(lox_function) => lox_function.fmt(f),
             Self::Clock(clock_function) => clock_function.fmt(f),
             Self::Class(lox_class) => lox_class.fmt(f),
+            Self::Instance(lox_instance) => lox_instance.fmt(f),
         }
     }
 }

@@ -355,7 +355,8 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
                 fun.call(self, args)?
             },
             Callables::Clock(clock_function) => clock_function.call(self, vec![])?,
-            Callables::Class(lox_class) => todo!(),
+            Callables::Class(lox_class) => lox_class.call(self, vec![])?,
+            Callables::Instance(lox_instance) => todo!(),
         };
         Ok(res)
     }
