@@ -73,7 +73,7 @@ impl<'s> Scanner<'s> {
                 // > multi char tokens
                 '"' => self.parse_string(idx),
                 digit if digit.is_ascii_digit() => self.parse_number(digit, idx),
-                ident_start if ident_start.is_ascii_alphanumeric() => {
+                ident_start if ident_start.is_ascii_alphanumeric() || ident_start == '_' => {
                     self.parse_ident(idx, ident_start)
                 },
                 other => self.parse_other(other, idx),
@@ -339,7 +339,7 @@ impl<'s> Scanner<'s> {
     fn parse_ident(&mut self, idx: usize, ident_start: char) -> Token {
         let mut count = 0;
         while let Some(&(_, c)) = self.source_chars.peek_nth(count)
-            && c.is_ascii_alphanumeric()
+            && (c.is_ascii_alphanumeric() || c == '_')
         {
             count += 1;
         }
