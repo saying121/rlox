@@ -48,6 +48,10 @@ pub enum InterError {
     Return(crate::r#return::FnReturn),
     #[error("Fn return value: {0}")]
     Env(#[from] crate::env::EnvError),
+    #[error("Undefined property: {0}")]
+    NoProperty(Token),
+    #[error("Only instances have properties: {0}")]
+    NotInstance(Token),
 }
 
 pub type Result<T> = core::result::Result<T, InterError>;
@@ -362,7 +366,13 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_get_expr(&mut self, expr: &Get) -> Result<LiteralType> {
-        todo!()
+        let object = self.evaluate(expr.object())?;
+        match object {
+            LiteralType::Callable(Callables::Instance(instance)) => instance
+                .get(expr.name())
+                .map_or_else(|| Err(InterError::NoProperty(expr.name().clone())), Ok),
+            _ => Err(InterError::NotInstance(expr.name().clone())),
+        }
     }
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<LiteralType> {
         self.evaluate(expr.expression())

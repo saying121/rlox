@@ -127,7 +127,7 @@ impl crate::expr::ExprVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_get_expr(&mut self, expr: &Get) -> Result<()> {
-        todo!()
+        self.resolve_expr(expr.object())
     }
 
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<()> {

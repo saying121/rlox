@@ -7,7 +7,9 @@ use itertools::PeekNth;
 use thiserror::Error;
 
 use crate::{
-    expr::{Assign, Binary, Call, Exprs, Grouping, Literal, LiteralType, Logical, Unary, Variable},
+    expr::{
+        Assign, Binary, Call, Exprs, Get, Grouping, Literal, LiteralType, Logical, Unary, Variable,
+    },
     stmt::{Block, Break, Class, Expression, Function, If, Print, Return, Stmts, Var, While},
     tokens::Token,
 };
@@ -414,8 +416,19 @@ where
 
     fn call(&mut self) -> Result<Exprs> {
         let mut expr = self.primary()?;
-        while let Some(Token::LeftParen { .. }) = self.peeks.peek() {
-            expr = self.finish_call(expr)?;
+        while let Some(token) = self.peeks.peek() {
+            if matches!(token, Token::LeftParen { .. }) {
+                expr = self.finish_call(expr)?;
+            }
+            else if matches!(token, Token::Dot { .. }) {
+                // consume `Dot`
+                self.peeks.next();
+                let name = self.consume_identifier()?;
+                expr = Exprs::Get(Get::new(expr, name));
+            }
+            else {
+                break;
+            }
         }
 
         Ok(expr)
@@ -630,6 +643,14 @@ impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
 {
+    /// Consume Identifier and get it's name
+    fn consume_identifier(&mut self) -> Result<Token> {
+        match self.peeks.next() {
+            Some(t @ Token::Identifier { .. }) => Ok(t),
+            Some(other) => Err(ParserError::LeftParen(other)),
+            None => Err(ParserError::Eof("Expect `;`".to_owned())),
+        }
+    }
     fn consume_semicolon_paren(&mut self) -> Result<()> {
         match self.peeks.next() {
             Some(Token::Semicolon { .. }) => Ok(()),
