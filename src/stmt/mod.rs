@@ -9,11 +9,11 @@ pub trait Stmt {
 #[derive(PartialEq, Eq, Hash)]
 pub struct Class {
     name: Token,
-    methods: Vec<Stmts>, // Stmts::Function
+    methods: Vec<Function>, // Stmts::Function
 }
 
 impl Class {
-    pub const fn new(name: Token, methods: Vec<Stmts>) -> Self {
+    pub const fn new(name: Token, methods: Vec<Function>) -> Self {
         Self { name, methods }
     }
 
@@ -21,7 +21,7 @@ impl Class {
         &self.name
     }
 
-    pub fn methods(&self) -> &[Stmts] {
+    pub fn methods(&self) -> &[Function] {
         &self.methods
     }
 }

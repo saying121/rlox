@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{expr::LiteralType, lox_class::LoxClass, tokens::Token};
+use crate::{expr::LiteralType, lox_class::LoxClass, lox_fun::LoxFunction, tokens::Token};
 
 #[derive(Clone)]
 #[derive(Debug)]
@@ -14,10 +14,9 @@ pub struct LoxInstance {
 impl std::hash::Hash for LoxInstance {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.klass.hash(state);
-        // NOTE: is it need?
-        // for ele in &self.fields {
-        //     ele.hash(state);
-        // }
+        for ele in &self.fields {
+            ele.hash(state);
+        }
     }
 }
 
@@ -37,7 +36,13 @@ impl LoxInstance {
         }
     }
     pub fn get(&self, name: &Token) -> Option<LiteralType> {
-        self.fields.get(name.inner().lexeme()).cloned()
+        if let m @ Some(_) = self.fields.get(name.inner().lexeme()) {
+            return m.cloned();
+        }
+
+        let method: Option<LoxFunction> = self.klass.find_method(name.inner().lexeme());
+
+        method.map(|m| LiteralType::Callable(crate::lox_callable::Callables::Fun(m)))
     }
 
     pub fn set(&mut self, name: Token, value: LiteralType) {

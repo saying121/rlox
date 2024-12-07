@@ -232,7 +232,13 @@ impl StmtVisitor<Result<()>> for Interpreter {
             .borrow()
             .define(stmt.name().inner().lexeme().to_owned(), LiteralType::Nil);
 
-        let klass = LoxClass::new(stmt.name().inner().lexeme().to_owned());
+        let mut methods = HashMap::with_capacity(stmt.methods().len());
+        for method in stmt.methods() {
+            let function = LoxFunction::new(method.clone(), Rc::clone(&self.environment));
+            methods.insert(method.name.inner().lexeme().to_owned(), function);
+        }
+
+        let klass = LoxClass::new(stmt.name().inner().lexeme().to_owned(), methods);
 
         self.environment
             .borrow()

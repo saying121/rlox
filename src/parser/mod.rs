@@ -630,7 +630,13 @@ where
         while let Some(next) = self.peeks.peek()
             && !matches!(next, Token::RightBrace { .. })
         {
-            methods.push(self.function(FunctionKind::Method)?);
+            let value = self.function(FunctionKind::Method)?;
+            match value {
+                Stmts::Function(function) => {
+                    methods.push(function);
+                },
+                _ => unreachable!("parser function method return not Function variant"),
+            }
         }
 
         self.consume_rignt_brace()?;

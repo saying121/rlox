@@ -13,7 +13,7 @@ print "for end";
 
 if (true) {
     print 1;
-    break;
+    //break;
     print 2;
 }
-break;
+//break;

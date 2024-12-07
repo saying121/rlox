@@ -23,6 +23,7 @@ enum FunctionType {
     #[default]
     None,
     Function,
+    Method,
 }
 
 impl<'i> Resolver<'i> {
@@ -239,6 +240,11 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
     fn visit_class_stmt(&mut self, stmt: &Class) -> Result<()> {
         self.declare(stmt.name())?;
         self.define(stmt.name());
+
+        for method in stmt.methods() {
+            let declaration = FunctionType::Method;
+            self.resolve_function(method, declaration)?;
+        }
         Ok(())
     }
 }

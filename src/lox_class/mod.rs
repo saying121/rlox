@@ -1,22 +1,32 @@
 #[cfg(test)]
 mod tests;
 
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::{
     expr::LiteralType,
     interpreter::Interpreter,
     lox_callable::{CallResult, Callables, LoxCallable},
+    lox_fun::LoxFunction,
     lox_instance::LoxInstance,
 };
 
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(Hash)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq)]
 pub struct LoxClass {
     name: String,
+    methods: HashMap<String, LoxFunction>,
+}
+
+impl std::hash::Hash for LoxClass {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        for ele in &self.methods {
+            ele.hash(state);
+        }
+    }
 }
 
 impl LoxCallable for LoxClass {
@@ -37,7 +47,11 @@ impl Display for LoxClass {
 }
 
 impl LoxClass {
-    pub const fn new(name: String) -> Self {
-        Self { name }
+    pub const fn new(name: String, methods: HashMap<String, LoxFunction>) -> Self {
+        Self { name, methods }
+    }
+
+    pub fn find_method(&self, name: &str) -> Option<LoxFunction> {
+        self.methods.get(name).cloned()
     }
 }
