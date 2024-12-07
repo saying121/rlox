@@ -152,8 +152,8 @@ impl Call {
 #[derive(Clone)]
 #[derive(PartialEq, Eq, Hash)]
 pub struct Get {
-    object: Box<Exprs>,
-    name: Token,
+    pub object: Box<Exprs>,
+    pub name: Token,
 }
 
 impl Get {

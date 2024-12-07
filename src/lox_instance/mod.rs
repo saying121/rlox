@@ -39,4 +39,8 @@ impl LoxInstance {
     pub fn get(&self, name: &Token) -> Option<LiteralType> {
         self.fields.get(name.inner().lexeme()).cloned()
     }
+
+    pub fn set(&mut self, name: Token, value: LiteralType) {
+        self.fields.insert(name.into_inner().lexeme_take(), value);
+    }
 }

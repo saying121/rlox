@@ -144,7 +144,8 @@ impl crate::expr::ExprVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_set_expr(&mut self, expr: &Set) -> Result<()> {
-        todo!()
+        self.resolve_expr(expr.value())?;
+        self.resolve_expr(expr.object())
     }
 
     fn visit_super_expr(&mut self, expr: &Super) -> Result<()> {

@@ -7,9 +7,7 @@ use itertools::PeekNth;
 use thiserror::Error;
 
 use crate::{
-    expr::{
-        Assign, Binary, Call, Exprs, Get, Grouping, Literal, LiteralType, Logical, Unary, Variable,
-    },
+    expr::*,
     stmt::{Block, Break, Class, Expression, Function, If, Print, Return, Stmts, Var, While},
     tokens::Token,
 };
@@ -310,19 +308,21 @@ where
 
     fn assignment(&mut self) -> Result<Exprs> {
         let expr = self.or()?;
-        match self.peeks.peek() {
-            Some(Token::Equal { .. }) => {
-                let equals = unsafe { self.peeks.next().unwrap_unchecked() };
-                let value = self.assignment()?;
-                match expr {
-                    Exprs::Variable(v) => {
-                        let name = v.into_name();
-                        Ok(Exprs::Assign(Assign::new(name, value)))
-                    },
-                    _ => Err(ParserError::Assign(equals)),
-                }
+        if !matches!(self.peeks.peek(), Some(Token::Equal { .. })) {
+            return Ok(expr);
+        }
+        let equals = unsafe { self.peeks.next().unwrap_unchecked() };
+        let value = self.assignment()?;
+        match expr {
+            Exprs::Variable(v) => {
+                let name = v.into_name();
+                Ok(Exprs::Assign(Assign::new(name, value)))
             },
-            _ => Ok(expr),
+            Exprs::Get(get) => {
+                let set = Exprs::Set(Set::new(*get.object, get.name, value));
+                Ok(set)
+            },
+            _ => Err(ParserError::Assign(equals)),
         }
     }
     fn or(&mut self) -> Result<Exprs> {

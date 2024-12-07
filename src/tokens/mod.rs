@@ -397,6 +397,16 @@ impl Token {
             => inner,
         }
     }
+    pub fn into_inner(self) -> TokenInner {
+        // #[expect(clippy::enum_glob_use, reason = "just in this block")]
+        use Token::*;
+        match self {
+            $(
+                | $arm { inner, .. }
+            )*
+            => inner,
+        }
+    }
 }
 
     };

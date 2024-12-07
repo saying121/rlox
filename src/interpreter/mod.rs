@@ -402,7 +402,15 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_set_expr(&mut self, expr: &Set) -> Result<LiteralType> {
-        todo!()
+        let object = self.evaluate(expr.object())?;
+        match object {
+            LiteralType::Callable(Callables::Instance(mut instance)) => {
+                let value = self.evaluate(expr.value())?;
+                instance.set(expr.name().clone(), value.clone());
+                Ok(value)
+            },
+            _ => Err(InterError::NotInstance(expr.name().clone())),
+        }
     }
 
     fn visit_super_expr(&mut self, expr: &Super) -> Result<LiteralType> {
