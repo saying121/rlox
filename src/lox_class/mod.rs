@@ -32,11 +32,14 @@ impl std::hash::Hash for LoxClass {
 impl LoxCallable for LoxClass {
     fn call(&self, inter: &mut Interpreter, args: Vec<LiteralType>) -> CallResult<LiteralType> {
         let instance = LoxInstance::new(self.clone());
+        if let Some(initializer) = self.find_method("init") {
+            initializer.bind(&instance).call(inter, args)?;
+        }
         Ok(LiteralType::Callable(Callables::Instance(instance)))
     }
 
     fn arity(&self) -> usize {
-        0
+        self.find_method("init").map_or(0, |init| init.arity())
     }
 }
 

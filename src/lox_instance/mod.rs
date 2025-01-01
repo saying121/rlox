@@ -42,7 +42,10 @@ impl LoxInstance {
 
         let method: Option<LoxFunction> = self.klass.find_method(name.inner().lexeme());
 
-        method.map(|m| m.bind(self))
+        method.map(|m| {
+            let fun = m.bind(self);
+            LiteralType::Callable(crate::lox_callable::Callables::Fun(fun))
+        })
     }
 
     pub fn set(&mut self, name: Token, value: LiteralType) {
