@@ -13,6 +13,7 @@ pub struct Resolver<'i> {
     pub interpreter: &'i mut Interpreter,
     pub scopes: Vec<HashMap<String, bool>>,
     current_fun: FunctionType,
+    current_class: ClassType,
 }
 
 #[derive(Clone, Copy)]
@@ -26,12 +27,23 @@ enum FunctionType {
     Method,
 }
 
+#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+enum ClassType {
+    #[default]
+    None,
+    Class,
+}
+
 impl<'i> Resolver<'i> {
     pub fn new(interpreter: &'i mut Interpreter) -> Self {
         Self {
             interpreter,
             scopes: Vec::new(),
             current_fun: FunctionType::None,
+            current_class: ClassType::Class,
         }
     }
 
@@ -154,7 +166,11 @@ impl crate::expr::ExprVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_this_expr(&mut self, expr: &This) -> Result<()> {
-        todo!()
+        if matches!(self.current_class, ClassType::None) {
+            return Err(ParserError::NotInClass(expr.keyword().clone()));
+        }
+        self.resolve_local(&Exprs::This(expr.clone()), expr.keyword());
+        Ok(())
     }
 
     fn visit_unary_expr(&mut self, expr: &Unary) -> Result<()> {
@@ -215,7 +231,7 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
         self.resolve_stmt(stmt.body())
     }
 
-    fn visit_break_stmt(&mut self, stmt: &Break) -> Result<()> {
+    fn visit_break_stmt(&mut self, _stmt: &Break) -> Result<()> {
         Ok(())
     }
 
@@ -238,13 +254,29 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_class_stmt(&mut self, stmt: &Class) -> Result<()> {
+        let enclosing_class = self.current_class;
+        self.current_class = ClassType::Class;
+
         self.declare(stmt.name())?;
         self.define(stmt.name());
+
+        self.begin_scope();
+        unsafe {
+            self.scopes
+                .last_mut()
+                .unwrap_unchecked()
+                .insert("this".to_owned(), true)
+        };
 
         for method in stmt.methods() {
             let declaration = FunctionType::Method;
             self.resolve_function(method, declaration)?;
         }
+
+        self.end_scope();
+
+        self.current_class = enclosing_class;
+
         Ok(())
     }
 }

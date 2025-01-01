@@ -132,8 +132,8 @@ impl Interpreter {
         res
     }
 
-    fn look_up_variable(&self, name: &Token, expr: &Variable) -> Result<LiteralType> {
-        let distance = self.locals.get(&Exprs::Variable(expr.clone()));
+    fn look_up_variable(&self, name: &Token, expr: &Exprs) -> Result<LiteralType> {
+        let distance = self.locals.get(expr);
         if let Some(distance) = distance {
             let var = self
                 .environment
@@ -144,8 +144,8 @@ impl Interpreter {
         else {
             self.globals
                 .borrow()
-                .get(expr.name())
-                .ok_or_else(|| InterError::NoVar(expr.name().clone()))
+                .get(name)
+                .ok_or_else(|| InterError::NoVar(name.clone()))
         }
     }
 }
@@ -424,7 +424,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_this_expr(&mut self, expr: &This) -> Result<LiteralType> {
-        todo!()
+        self.look_up_variable(expr.keyword(), &Exprs::This(expr.clone()))
     }
 
     fn visit_unary_expr(&mut self, expr: &Unary) -> Result<LiteralType> {
@@ -446,6 +446,6 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<LiteralType> {
-        self.look_up_variable(expr.name(), expr)
+        self.look_up_variable(expr.name(), &Exprs::Variable(expr.clone()))
     }
 }

@@ -57,6 +57,8 @@ pub enum ParserError {
     DoubleVar(Token),
     #[error("Use `return` outer function: {0}")]
     NotInFn(Token),
+    #[error("Use `this` outer function: {0}")]
+    NotInClass(Token),
 }
 
 pub type Result<T, E = ParserError> = core::result::Result<T, E>;
@@ -471,6 +473,7 @@ where
                 Token::String { mut inner } => Ok(Exprs::Literal(Literal::new(
                     LiteralType::String(inner.lexeme_take()),
                 ))),
+                this @ Token::This { .. } => Ok(Exprs::This(This::new(this))),
                 tk @ Token::Identifier { .. } => Ok(Exprs::Variable(Variable::new(tk))),
                 Token::LeftParen { .. } => {
                     let expr = self.expression()?;
