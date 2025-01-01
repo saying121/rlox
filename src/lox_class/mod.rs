@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::{collections::HashMap, fmt::Display};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::{
     expr::LiteralType,
@@ -31,11 +31,13 @@ impl std::hash::Hash for LoxClass {
 
 impl LoxCallable for LoxClass {
     fn call(&self, inter: &mut Interpreter, args: Vec<LiteralType>) -> CallResult<LiteralType> {
-        let instance = LoxInstance::new(self.clone());
+        let instance = Rc::new(RefCell::new(LoxInstance::new(self.clone())));
         if let Some(initializer) = self.find_method("init") {
-            initializer.bind(&instance).call(inter, args)?;
+            initializer.bind(Rc::clone(&instance)).call(inter, args)?;
         }
-        Ok(LiteralType::Callable(Callables::Instance(instance)))
+        Ok(LiteralType::Callable(Callables::Instance(Rc::clone(
+            &instance,
+        ))))
     }
 
     fn arity(&self) -> usize {

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::{expr::LiteralType, lox_class::LoxClass, lox_fun::LoxFunction, tokens::Token};
 
@@ -43,7 +43,7 @@ impl LoxInstance {
         let method: Option<LoxFunction> = self.klass.find_method(name.inner().lexeme());
 
         method.map(|m| {
-            let fun = m.bind(self);
+            let fun = m.bind(Rc::new(RefCell::new(self.to_owned())));
             LiteralType::Callable(crate::lox_callable::Callables::Fun(fun))
         })
     }

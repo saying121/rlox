@@ -379,6 +379,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
         let object = self.evaluate(expr.object())?;
         match object {
             LiteralType::Callable(Callables::Instance(instance)) => instance
+                .borrow()
                 .get(expr.name())
                 .map_or_else(|| Err(InterError::NoProperty(expr.name().clone())), Ok),
             _ => Err(InterError::NotInstance(expr.name().clone())),
@@ -414,9 +415,11 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     fn visit_set_expr(&mut self, expr: &Set) -> Result<LiteralType> {
         let object = self.evaluate(expr.object())?;
         match object {
-            LiteralType::Callable(Callables::Instance(mut instance)) => {
+            LiteralType::Callable(Callables::Instance(instance)) => {
                 let value = self.evaluate(expr.value())?;
-                instance.set(expr.name().clone(), value.clone());
+                instance
+                    .borrow_mut()
+                    .set(expr.name().clone(), value.clone());
                 Ok(value)
             },
             _ => Err(InterError::NotInstance(expr.name().clone())),

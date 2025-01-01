@@ -40,11 +40,11 @@ impl LoxFunction {
         }
     }
 
-    pub fn bind(&self, arg: &LoxInstance) -> Self {
+    pub fn bind(&self, arg: Rc<RefCell<LoxInstance>>) -> Self {
         let env = Environment::with_enclosing(Rc::clone(&self.closure));
         env.define(
             "this".to_owned(),
-            LiteralType::Callable(Callables::Instance(arg.clone())),
+            LiteralType::Callable(Callables::Instance(arg)),
         );
         Self {
             declaration: self.declaration.clone(),
