@@ -17,6 +17,7 @@ type Result<T> = std::result::Result<T, InterError>;
 pub struct LoxFunction {
     pub declaration: Function,
     pub closure: Rc<RefCell<Environment>>,
+    is_init: bool,
 }
 
 impl std::hash::Hash for LoxFunction {
@@ -27,10 +28,15 @@ impl std::hash::Hash for LoxFunction {
 }
 
 impl LoxFunction {
-    pub const fn new(declaration: Function, closure: Rc<RefCell<Environment>>) -> Self {
+    pub const fn new(
+        declaration: Function,
+        closure: Rc<RefCell<Environment>>,
+        is_init: bool,
+    ) -> Self {
         Self {
             declaration,
             closure,
+            is_init,
         }
     }
 
@@ -43,6 +49,7 @@ impl LoxFunction {
         Self {
             declaration: self.declaration.clone(),
             closure: Rc::new(RefCell::new(env)),
+            is_init: self.is_init,
         }
     }
 }
@@ -59,6 +66,11 @@ impl LoxCallable for LoxFunction {
                 return Ok(fn_return.value);
             },
             Err(e) => return Err(e),
+        }
+
+        if self.is_init {
+            let get_at = self.closure.borrow().get_at(0, "this")?;
+            return Ok(get_at);
         }
 
         Ok(LiteralType::Nil)
