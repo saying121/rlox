@@ -63,6 +63,9 @@ impl LoxCallable for LoxFunction {
         match inter.execute_block(&self.declaration.body, env) {
             Ok(()) => {},
             Err(InterError::Return(fn_return)) => {
+                if self.is_init {
+                    return Ok(self.closure.borrow().get_at(0, "this")?);
+                }
                 return Ok(fn_return.value);
             },
             Err(e) => return Err(e),

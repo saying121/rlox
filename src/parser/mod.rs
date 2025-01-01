@@ -59,6 +59,8 @@ pub enum ParserError {
     NotInFn(Token),
     #[error("Use `this` outer function: {0}")]
     NotInClass(Token),
+    #[error("Can't return a value from an initializer: {0}")]
+    RtValInit(Token),
 }
 
 pub type Result<T, E = ParserError> = core::result::Result<T, E>;

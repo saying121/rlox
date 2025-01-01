@@ -24,6 +24,7 @@ enum FunctionType {
     #[default]
     None,
     Function,
+    Initializer,
     Method,
 }
 
@@ -248,6 +249,9 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
             return Err(ParserError::NotInFn(stmt.keyword().clone()));
         }
         if let Some(v) = stmt.value() {
+            if matches!(self.current_fun, FunctionType::Initializer) {
+                return Err(ParserError::RtValInit(stmt.keyword().clone()));
+            }
             self.resolve_expr(v)?;
         }
         Ok(())
@@ -269,7 +273,12 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
         };
 
         for method in stmt.methods() {
-            let declaration = FunctionType::Method;
+            let declaration = if method.name.inner().lexeme().eq("init") {
+                FunctionType::Initializer
+            }
+            else {
+                FunctionType::Method
+            };
             self.resolve_function(method, declaration)?;
         }
 
