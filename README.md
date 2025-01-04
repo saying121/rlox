@@ -1,7 +1,7 @@
 # Some nightly features
 
 - [let-chains](https://github.com/rust-lang/rfcs/blob/master/text/2497-if-let-chains.md) so wonderful.
-- [try-expr](https://github.com/rust-lang/rfcs/blob/master/text/2388-try-expr.mdrl)
+- [try-expr](https://github.com/rust-lang/rfcs/blob/master/text/2388-try-expr.md)
 
 ## precedence and associativity
 
