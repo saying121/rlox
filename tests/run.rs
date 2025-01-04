@@ -1,10 +1,15 @@
-#[test]
-fn run_scripts() {
-    let read_dir = std::fs::read_dir("./test-resource").unwrap();
-    for ele in read_dir {
-        let path = ele.unwrap();
-        let path = path.path();
-        let lox = rlox::lox::Lox::new();
-        lox.run_file(path).unwrap();
-    }
+use test_generator::test_resources;
+
+#[test_resources("./test-resource/ok/*")]
+fn run_scripts_ok(resource: &str) {
+    let lox = rlox::lox::Lox::new();
+    let r = lox.run_file(resource);
+    assert!(r.is_ok());
+}
+
+#[test_resources("./test-resource/err/*")]
+fn run_scripts_err(resource: &str) {
+    let lox = rlox::lox::Lox::new();
+    let r = lox.run_file(resource);
+    assert!(r.is_err());
 }

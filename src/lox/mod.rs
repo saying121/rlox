@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 
 use crate::{interpreter::Interpreter, parser::Parser, resolver::Resolver, scan::scanner::Scanner};
 
@@ -25,32 +25,32 @@ impl Lox {
 
     pub fn run_file<T: AsRef<Path>>(mut self, path: T) -> Result<()> {
         let content = std::fs::read_to_string(path)?;
-        self.run(&content);
-
-        Ok(())
+        self.run(&content)
     }
 
-    pub fn run(&mut self, source: &str) {
+    pub fn run(&mut self, source: &str) -> Result<()> {
         let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens();
 
         let mut parser = Parser::new(tokens);
         let (mut expression, had_err) = parser.parse();
         if had_err {
-            return;
+            bail!("parse err")
         }
         let mut r = Resolver::new(&mut self.interpreter);
         let had_err = r.resolve(&expression);
         if had_err {
-            return;
+            bail!("resolver err")
         }
 
         // let ast = AstPrinter.print(&expression);
         // println!("{ast}");
 
         match self.interpreter.interpret(&mut expression) {
-            Ok(()) => {},
-            Err(e) => tracing::error!("{e}"),
+            Ok(_) => Ok(()),
+            Err(e) => {
+                bail!(e.to_string())
+            },
         }
     }
 

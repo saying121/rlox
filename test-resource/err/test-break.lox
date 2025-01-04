@@ -1,0 +1,19 @@
+while (true) {
+    break;
+}
+
+print "for start";
+for (var i = 1; i < 50; i = i + 1) {
+    print i;
+    if (i > 2) {
+        break;
+    }
+}
+print "for end";
+
+if (true) {
+    print 1;
+    //break;
+    print 2;
+}
+break;
