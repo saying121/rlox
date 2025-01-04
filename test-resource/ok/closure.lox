@@ -21,9 +21,3 @@ counter(); // "2".
     count();
     count();
 }
-
-fun scope(a) {
-    var a = "local";
-    print a;
-}
-scope("abc");

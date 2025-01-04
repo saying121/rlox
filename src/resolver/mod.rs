@@ -14,6 +14,7 @@ pub struct Resolver<'i> {
     pub scopes: Vec<HashMap<String, bool>>,
     current_fun: FunctionType,
     current_class: ClassType,
+    had_err: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -45,6 +46,7 @@ impl<'i> Resolver<'i> {
             scopes: Vec::new(),
             current_fun: FunctionType::None,
             current_class: ClassType::Class,
+            had_err: false,
         }
     }
 
@@ -58,14 +60,13 @@ impl<'i> Resolver<'i> {
     }
 
     pub fn resolve(&mut self, statements: &[Stmts]) -> bool {
-        let mut had_error = false;
         for stmt in statements {
             if let Err(e) = self.resolve_stmt(stmt) {
                 tracing::error!("{e}");
-                had_error = true;
+                self.had_err = true;
             }
         }
-        had_error
+        self.had_err
     }
 
     fn resolve_stmt(&mut self, stmt: &Stmts) -> Result<()> {
