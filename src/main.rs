@@ -14,7 +14,9 @@ fn main() -> anyhow::Result<()> {
     }
     else if let Some(fp) = cli.file_path {
         let lox = Lox::default();
-        lox.run_file(&fp)?;
+        if let Err(e) = lox.run_file(&fp) {
+            tracing::error!("{}", e);
+        }
     }
 
     Ok(())

@@ -9,7 +9,7 @@ use crate::{expr::LiteralType, tokens::Token};
 pub enum EnvError {
     #[error("Not define: {0}")]
     UndefinedVar(Token),
-    #[error("No var: {distance}: {name}")]
+    #[error("No var: `{name}`, distance: {distance}")]
     NoVar { distance: usize, name: String },
     #[error("Distance not enough depth: {0}")]
     Distance(usize),
