@@ -46,7 +46,7 @@ pub enum InterError {
     // TODO: maybe use Result<Resturn, Error>
     #[error("Fn return value: {0}")]
     Return(crate::r#return::FnReturn),
-    #[error("Fn return value: {0}")]
+    #[error(transparent)]
     Env(#[from] crate::env::EnvError),
     #[error("Undefined property: {0}")]
     NoProperty(Token),
@@ -369,7 +369,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
                 fun.call(self, args)?
             },
             Callables::Clock(clock_function) => clock_function.call(self, vec![])?,
-            Callables::Class(lox_class) => lox_class.call(self, vec![])?,
+            Callables::Class(lox_class) => lox_class.call(self, args)?,
             Callables::Instance(lox_instance) => todo!(),
         };
         Ok(res)

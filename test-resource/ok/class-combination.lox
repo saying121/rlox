@@ -1,0 +1,21 @@
+class Person {
+  fun init(a, cat) {
+    print "init";
+    print a;
+    this.a = a;
+    this.cat = cat;
+    print "init greet";
+  }
+}
+
+class Cat {
+  fun greet() {
+    print "Meow";
+  }
+}
+
+var cat = Cat();
+cat.greet();
+
+var person = Person(1, cat);
+person.cat.greet();
