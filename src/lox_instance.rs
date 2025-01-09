@@ -36,11 +36,11 @@ impl LoxInstance {
         }
     }
     pub fn get(&self, name: &Token) -> Option<LiteralType> {
-        if let m @ Some(_) = self.fields.get(name.inner().lexeme()) {
+        if let m @ Some(_) = self.fields.get(name.lexeme()) {
             return m.cloned();
         }
 
-        let method: Option<LoxFunction> = self.klass.find_method(name.inner().lexeme());
+        let method: Option<LoxFunction> = self.klass.find_method(name.lexeme());
 
         method.map(|m| {
             let fun = m.bind(Rc::new(RefCell::new(self.to_owned())));

@@ -87,22 +87,22 @@ impl<'i> Resolver<'i> {
             // Without local scope it will look global
             return Ok(());
         };
-        if last.contains_key(name.inner().lexeme()) {
+        if last.contains_key(name.lexeme()) {
             return Err(ParserError::DoubleVar(name.clone()));
         }
-        last.insert(name.inner().lexeme().to_owned(), false);
+        last.insert(name.lexeme().to_owned(), false);
         Ok(())
     }
 
     fn define(&mut self, name: &crate::token::Token) {
         if let Some(last) = self.scopes.last_mut() {
-            last.insert(name.inner().lexeme().to_owned(), true);
+            last.insert(name.lexeme().to_owned(), true);
         }
     }
 
     fn resolve_local(&mut self, expr: &Exprs, name: &crate::token::Token) {
         for (i, ele) in self.scopes.iter().enumerate() {
-            if ele.contains_key(name.inner().lexeme()) {
+            if ele.contains_key(name.lexeme()) {
                 self.interpreter.resolve(expr, self.scopes.len() - 1 - i);
                 return;
             }
@@ -286,7 +286,7 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
         };
 
         for method in stmt.methods() {
-            let declaration = if method.name.inner().lexeme().eq("init") {
+            let declaration = if method.name.lexeme().eq("init") {
                 FunctionType::Initializer
             }
             else {

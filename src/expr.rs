@@ -398,6 +398,6 @@ impl Variable {
     }
 
     pub fn name_str(&self) -> &str {
-        self.name.inner().lexeme()
+        self.name.lexeme()
     }
 }

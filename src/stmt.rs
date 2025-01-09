@@ -126,7 +126,7 @@ impl Var {
     }
 
     pub fn var_name(&self) -> &str {
-        self.name.inner().lexeme()
+        self.name.lexeme()
     }
 
     pub const fn name(&self) -> &Token {

@@ -58,7 +58,7 @@ impl LoxCallable for LoxFunction {
     fn call(&self, inter: &mut Interpreter, args: Vec<LiteralType>) -> Result<LiteralType> {
         let env = Environment::with_enclosing(Rc::clone(&self.closure));
         for (tk, val) in self.declaration.params.iter().zip(args.iter()) {
-            env.define(tk.inner().lexeme().to_owned(), val.clone());
+            env.define(tk.lexeme().to_owned(), val.clone());
         }
         match inter.execute_block(&self.declaration.body, env) {
             Ok(()) => {},
@@ -86,7 +86,7 @@ impl LoxCallable for LoxFunction {
 
 impl std::fmt::Display for LoxFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        format!("<fn {}>", self.declaration.name.inner().lexeme()).fmt(f)
+        format!("<fn {}>", self.declaration.name.lexeme()).fmt(f)
     }
 }
 

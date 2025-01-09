@@ -137,10 +137,7 @@ impl Interpreter {
     fn look_up_variable(&self, name: &Token, expr: &Exprs) -> Result<LiteralType> {
         let distance = self.locals.get(expr);
         if let Some(distance) = distance {
-            let var = self
-                .environment
-                .borrow()
-                .get_at(*distance, name.inner().lexeme())?;
+            let var = self.environment.borrow().get_at(*distance, name.lexeme())?;
             Ok(var)
         }
         else {
@@ -213,7 +210,7 @@ impl StmtVisitor<Result<()>> for Interpreter {
     fn visit_function_stmt(&mut self, stmt: &Function) -> Result<()> {
         let fun = LoxFunction::new(stmt.clone(), Rc::clone(&self.environment), false);
         self.environment.borrow_mut().define(
-            stmt.name.inner().lexeme().to_owned(),
+            stmt.name.lexeme().to_owned(),
             LiteralType::Callable(Callables::Fun(fun)),
         );
 
@@ -243,16 +240,16 @@ impl StmtVisitor<Result<()>> for Interpreter {
 
         self.environment
             .borrow()
-            .define(stmt.name().inner().lexeme().to_owned(), LiteralType::Nil);
+            .define(stmt.name().lexeme().to_owned(), LiteralType::Nil);
 
         let mut methods = HashMap::with_capacity(stmt.methods().len());
         for method in stmt.methods() {
             let function = LoxFunction::new(
                 method.clone(),
                 Rc::clone(&self.environment),
-                method.name.inner().lexeme().eq("init"),
+                method.name.lexeme().eq("init"),
             );
-            methods.insert(method.name.inner().lexeme().to_owned(), function);
+            methods.insert(method.name.lexeme().to_owned(), function);
         }
 
         let klass = LoxClass::new(

@@ -56,7 +56,7 @@ impl Environment {
     }
 
     pub fn get(&self, name: &Token) -> Option<LiteralType> {
-        if let v @ Some(_) = self.values.borrow().get(name.inner().lexeme()).cloned() {
+        if let v @ Some(_) = self.values.borrow().get(name.lexeme()).cloned() {
             return v;
         }
         if let Some(enclosing) = &self.enclosing {
@@ -70,7 +70,7 @@ impl Environment {
     }
 
     pub fn assign(&self, name: &Token, value: LiteralType) -> Result<()> {
-        let k = name.inner().lexeme();
+        let k = name.lexeme();
         if self.values.borrow().contains_key(k) {
             self.values.borrow_mut().insert(k.to_owned(), value);
             return Ok(());
@@ -116,7 +116,7 @@ impl Environment {
             .borrow()
             .values
             .borrow_mut()
-            .insert(name.inner().lexeme().to_owned(), value);
+            .insert(name.lexeme().to_owned(), value);
         Ok(())
     }
 }

@@ -36,7 +36,7 @@ impl ExprVisitor<String> for AstPrinter {
 
     fn visit_binary_expr(&mut self, expr: &crate::expr::Binary) -> String {
         let exprs = [expr.left(), expr.right()];
-        self.parenthesize(expr.operator().inner().lexeme(), exprs)
+        self.parenthesize(expr.operator().lexeme(), exprs)
     }
 
     fn visit_call_expr(&mut self, expr: &crate::expr::Call) -> String {
@@ -72,7 +72,7 @@ impl ExprVisitor<String> for AstPrinter {
     }
 
     fn visit_unary_expr(&mut self, expr: &crate::expr::Unary) -> String {
-        self.parenthesize(expr.operator().inner().lexeme(), [expr.right()])
+        self.parenthesize(expr.operator().lexeme(), [expr.right()])
     }
 
     fn visit_variable_expr(&mut self, expr: &crate::expr::Variable) -> String {
