@@ -52,6 +52,8 @@ pub enum InterError {
     NoProperty(Token),
     #[error("Only instances have properties: {0}")]
     NotInstance(Token),
+    #[error("Superclass must be a class: {0}")]
+    Superclass(Token),
 }
 
 pub type Result<T> = core::result::Result<T, InterError>;
@@ -228,6 +230,17 @@ impl StmtVisitor<Result<()>> for Interpreter {
     }
 
     fn visit_class_stmt(&mut self, stmt: &Class) -> Result<()> {
+        let mut superclass = None;
+        if let Some(supclass) = stmt.superclass() {
+            let res = self.evaluate(&Exprs::Variable(supclass.clone()))?;
+            if let LiteralType::Callable(Callables::Class(lox_class)) = res {
+                superclass = Some(lox_class);
+            }
+            else {
+                return Err(InterError::Superclass(supclass.name().clone()));
+            }
+        }
+
         self.environment
             .borrow()
             .define(stmt.name().inner().lexeme().to_owned(), LiteralType::Nil);
@@ -242,7 +255,11 @@ impl StmtVisitor<Result<()>> for Interpreter {
             methods.insert(method.name.inner().lexeme().to_owned(), function);
         }
 
-        let klass = LoxClass::new(stmt.name().inner().lexeme().to_owned(), methods);
+        let klass = LoxClass::new(
+            stmt.name().lexeme().to_owned(),
+            superclass.map(Box::new),
+            methods,
+        );
 
         self.environment
             .borrow()

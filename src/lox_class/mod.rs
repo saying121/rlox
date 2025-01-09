@@ -18,6 +18,7 @@ use crate::{
 pub struct LoxClass {
     name: String,
     methods: HashMap<String, LoxFunction>,
+    superclass: Option<Box<LoxClass>>,
 }
 
 impl std::hash::Hash for LoxClass {
@@ -52,8 +53,16 @@ impl Display for LoxClass {
 }
 
 impl LoxClass {
-    pub const fn new(name: String, methods: HashMap<String, LoxFunction>) -> Self {
-        Self { name, methods }
+    pub const fn new(
+        name: String,
+        superclass: Option<Box<Self>>,
+        methods: HashMap<String, LoxFunction>,
+    ) -> Self {
+        Self {
+            name,
+            methods,
+            superclass,
+        }
     }
 
     pub fn find_method(&self, name: &str) -> Option<LoxFunction> {

@@ -49,6 +49,10 @@ pub enum ParserError {
     Parameters(Token),
     #[error("Expect Class name: {0}")]
     Class(Token),
+    #[error("Expect superclass name: {0}")]
+    Superclass(Token),
+    #[error("A Class can't inherit from itself: {0}")]
+    RecurseClass(Token),
     #[error("Can't read local variable in its own initializer: {0}")]
     Initialization(Token),
     #[error("There is no scope")]
@@ -628,6 +632,20 @@ where
             Some(other) => return Err(ParserError::Class(other)),
             None => return Err(ParserError::Eof("Expect class name".to_owned())),
         };
+
+        let mut superclass = None;
+
+        if let Some(Token::Less { .. }) = self.peeks.peek() {
+            self.peeks.next();
+            // TODO: use `consume_identifier`
+            let tk = match self.peeks.next() {
+                Some(tk @ Token::Identifier { .. }) => tk,
+                Some(other) => return Err(ParserError::Superclass(other)),
+                None => return Err(ParserError::Eof("Expect superclass name".to_owned())),
+            };
+            superclass = Some(Variable::new(tk));
+        }
+
         self.consume_left_brace()?;
 
         let mut methods = Vec::new();
@@ -646,7 +664,7 @@ where
 
         self.consume_rignt_brace()?;
 
-        Ok(Stmts::Class(Class::new(name, methods)))
+        Ok(Stmts::Class(Class::new(name, superclass, methods)))
     }
 }
 

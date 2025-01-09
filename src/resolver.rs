@@ -77,6 +77,10 @@ impl<'i> Resolver<'i> {
         expr.accept(self)
     }
 
+    fn resolve_expr_variable(&mut self, expr: &Variable) -> Result<()> {
+        expr.accept(self)
+    }
+
     fn declare(&mut self, name: &crate::token::Token) -> Result<()> {
         let Some(last) = self.scopes.last_mut()
         else {
@@ -124,6 +128,7 @@ impl<'i> Resolver<'i> {
 impl crate::expr::ExprVisitor<Result<()>> for Resolver<'_> {
     fn visit_assign_expr(&mut self, expr: &Assign) -> Result<()> {
         self.resolve_expr(expr.value())?;
+        // PERF: avoid `.clone()` add `self.resolve_local_assign` method
         self.resolve_local(&Exprs::Assign(expr.clone()), expr.name());
         Ok(())
     }
@@ -264,6 +269,13 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
 
         self.declare(stmt.name())?;
         self.define(stmt.name());
+
+        if let Some(superclass) = stmt.superclass() {
+            if stmt.name().lexeme() == superclass.name().lexeme() {
+                return Err(ParserError::RecurseClass(superclass.name().clone()));
+            }
+            self.resolve_expr_variable(superclass)?;
+        }
 
         self.begin_scope();
         unsafe {

@@ -19,17 +19,17 @@
 program        → declaration* EOF ;
 
 declaration    → classDecl
-               | funDecl
-               | varDecl
-               | statement ;
+                 | funDecl
+                 | varDecl
+                 | statement ;
 
 statement      → exprStmt
-               | forStmt
-               | ifStmt
-               | printStmt
-               | returnStmt
-               | whileStmt
-               | block ;
+                 | forStmt
+                 | ifStmt
+                 | printStmt
+                 | returnStmt
+                 | whileStmt
+                 | block ;
 
 returnStmt     → "return" expression? ";" ;
 
@@ -42,7 +42,7 @@ forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
 whileStmt      → "while" "(" expression ")" statement ( breakStmt ) ;
 
 ifStmt         → "if" "(" expression ")" statement
-               ( "else" statement )? ;
+                 ( "else" statement )? ;
 
 block          → "{" declaration* "}" ;
 
@@ -53,7 +53,7 @@ printStmt      → "print" expression ";" ;
 expression     → assignment ;
 
 assignment     → ( call "." )? IDENTIFIER "=" assignment
-               | logic_or ;
+                 | logic_or ;
 
 logic_or       → logic_and ( "or" logic_and )* ;
 
@@ -74,8 +74,8 @@ call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
 
 primary        → NUMBER | STRING | "true" | "false" | "nil"
-               | "(" expression ")"
-               | IDENTIFIER;
+                 | "(" expression ")"
+                 | IDENTIFIER;
 
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
@@ -85,7 +85,8 @@ function       → IDENTIFIER "(" parameters? ")" block ;
 
 parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 
-classDecl      → "class" IDENTIFIER "{" funDecl* "}" ;
+classDecl      → "class" IDENTIFIER ( "<" IDENTIFIER )?
+                 "{" funDecl* "}" ;
 ```
 
 ## Desugaring

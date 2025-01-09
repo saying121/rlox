@@ -1,4 +1,7 @@
-use crate::{expr::Exprs, token::Token};
+use crate::{
+    expr::{Exprs, Variable},
+    token::Token,
+};
 
 pub trait Stmt {
     fn accept<R>(&self, visitor: &mut dyn StmtVisitor<R>) -> R;
@@ -9,12 +12,21 @@ pub trait Stmt {
 #[derive(PartialEq, Eq, Hash)]
 pub struct Class {
     name: Token,
+    superclass: Option<Variable>,
     methods: Vec<Function>, // Stmts::Function
 }
 
 impl Class {
-    pub const fn new(name: Token, methods: Vec<Function>) -> Self {
-        Self { name, methods }
+    pub fn new<S: Into<Option<Variable>>>(
+        name: Token,
+        superclass: S,
+        methods: Vec<Function>,
+    ) -> Self {
+        Self {
+            name,
+            superclass: superclass.into(),
+            methods,
+        }
     }
 
     pub const fn name(&self) -> &Token {
@@ -23,6 +35,10 @@ impl Class {
 
     pub fn methods(&self) -> &[Function] {
         &self.methods
+    }
+
+    pub const fn superclass(&self) -> Option<&Variable> {
+        self.superclass.as_ref()
     }
 }
 
