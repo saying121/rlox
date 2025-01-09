@@ -403,7 +403,6 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
             },
             Callables::Clock(clock_function) => clock_function.call(self, vec![])?,
             Callables::Class(lox_class) => lox_class.call(self, args)?,
-            Callables::Instance(lox_instance) => todo!(),
         };
         Ok(res)
     }
@@ -411,7 +410,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     fn visit_get_expr(&mut self, expr: &Get) -> Result<LiteralType> {
         let object = self.evaluate(expr.object())?;
         match object {
-            LiteralType::Callable(Callables::Instance(instance)) => instance
+            LiteralType::LoxInstance(instance) => instance
                 .borrow()
                 .get(expr.name())
                 .map_or_else(|| Err(InterError::NoProperty(expr.name().clone())), Ok),
@@ -448,7 +447,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     fn visit_set_expr(&mut self, expr: &Set) -> Result<LiteralType> {
         let object = self.evaluate(expr.object())?;
         match object {
-            LiteralType::Callable(Callables::Instance(instance)) => {
+            LiteralType::LoxInstance(instance) => {
                 let value = self.evaluate(expr.value())?;
                 instance
                     .borrow_mut()
@@ -472,7 +471,7 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
         };
 
         let lox_instance = self.environment.borrow().get_at(distance - 1, "this")?;
-        let LiteralType::Callable(Callables::Instance(lox_instance)) = lox_instance
+        let LiteralType::LoxInstance(lox_instance) = lox_instance
         else {
             return Err(InterError::Superclass(expr.keyword().clone()));
         };

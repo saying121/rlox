@@ -6,7 +6,7 @@ use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 use crate::{
     expr::LiteralType,
     interpreter::Interpreter,
-    lox_callable::{CallResult, Callables, LoxCallable},
+    lox_callable::{CallResult, LoxCallable},
     lox_fun::LoxFunction,
     lox_instance::LoxInstance,
 };
@@ -36,9 +36,7 @@ impl LoxCallable for LoxClass {
         if let Some(initializer) = self.find_method("init") {
             initializer.bind(Rc::clone(&instance)).call(inter, args)?;
         }
-        Ok(LiteralType::Callable(Callables::Instance(Rc::clone(
-            &instance,
-        ))))
+        Ok(LiteralType::LoxInstance(Rc::clone(&instance)))
     }
 
     fn arity(&self) -> usize {

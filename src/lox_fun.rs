@@ -4,7 +4,7 @@ use crate::{
     env::Environment,
     expr::LiteralType,
     interpreter::{InterError, Interpreter},
-    lox_callable::{Callables, LoxCallable},
+    lox_callable::LoxCallable,
     lox_instance::LoxInstance,
     stmt::Function,
 };
@@ -42,10 +42,7 @@ impl LoxFunction {
 
     pub fn bind(&self, arg: Rc<RefCell<LoxInstance>>) -> Self {
         let env = Environment::with_enclosing(Rc::clone(&self.closure));
-        env.define(
-            "this".to_owned(),
-            LiteralType::Callable(Callables::Instance(arg)),
-        );
+        env.define("this".to_owned(), LiteralType::LoxInstance(arg));
         Self {
             declaration: self.declaration.clone(),
             closure: Rc::new(RefCell::new(env)),

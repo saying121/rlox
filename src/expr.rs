@@ -1,8 +1,8 @@
 #![allow(unfulfilled_lint_expectations, reason = "allow it")]
 
-use std::{fmt::Display, hash::Hash};
+use std::{cell::RefCell, fmt::Display, hash::Hash, rc::Rc};
 
-use crate::{lox_callable::Callables, token::Token};
+use crate::{lox_callable::Callables, lox_instance::LoxInstance, token::Token};
 
 pub trait Expr {
     fn accept<R>(&self, visitor: &mut dyn ExprVisitor<R>) -> R;
@@ -221,6 +221,7 @@ pub enum LiteralType {
     #[default]
     Nil,
     Callable(Callables),
+    LoxInstance(Rc<RefCell<LoxInstance>>),
 }
 
 impl Hash for LiteralType {
@@ -231,6 +232,7 @@ impl Hash for LiteralType {
             Self::Bool(b) => b.hash(state),
             Self::Nil => "nil".hash(state),
             Self::Callable(callables) => callables.hash(state),
+            Self::LoxInstance(instance) => instance.borrow().hash(state),
         }
     }
 }
@@ -247,6 +249,7 @@ impl Display for LiteralType {
             Bool(b) => f.write_fmt(format_args!("{b}")),
             Nil => f.write_fmt(format_args!("nil")),
             Callable(v) => v.fmt(f),
+            LoxInstance(instance) => instance.borrow().fmt(f),
         }
     }
 }
