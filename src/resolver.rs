@@ -37,6 +37,7 @@ enum ClassType {
     #[default]
     None,
     Class,
+    SubClass,
 }
 
 impl<'i> Resolver<'i> {
@@ -169,13 +170,18 @@ impl crate::expr::ExprVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_super_expr(&mut self, expr: &Super) -> Result<()> {
+        match self.current_class {
+            ClassType::None => return Err(ParserError::NotInClassSuper(expr.keyword().clone())),
+            ClassType::Class => return Err(ParserError::ClassNoSuper(expr.keyword().clone())),
+            ClassType::SubClass => {},
+        }
         self.resolve_local(&Exprs::Super(expr.clone()), expr.keyword());
         Ok(())
     }
 
     fn visit_this_expr(&mut self, expr: &This) -> Result<()> {
         if matches!(self.current_class, ClassType::None) {
-            return Err(ParserError::NotInClass(expr.keyword().clone()));
+            return Err(ParserError::NotInClassThis(expr.keyword().clone()));
         }
         self.resolve_local(&Exprs::This(expr.clone()), expr.keyword());
         Ok(())
@@ -275,6 +281,9 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
             if stmt.name().lexeme() == superclass.name().lexeme() {
                 return Err(ParserError::RecurseClass(superclass.name().clone()));
             }
+
+            self.current_class = ClassType::SubClass;
+
             self.resolve_expr_variable(superclass)?;
 
             // env for superclass

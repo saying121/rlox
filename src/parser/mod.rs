@@ -61,8 +61,12 @@ pub enum ParserError {
     DoubleVar(Token),
     #[error("Use `return` outer function: {0}")]
     NotInFn(Token),
-    #[error("Use `this` outer function: {0}")]
-    NotInClass(Token),
+    #[error("Use `this` outer class: {0}")]
+    NotInClassThis(Token),
+    #[error("Use `super` outer class: {0}")]
+    NotInClassSuper(Token),
+    #[error("Use `super` in a class with no superclass: {0}")]
+    ClassNoSuper(Token),
     #[error("Can't return a value from an initializer: {0}")]
     RtValInit(Token),
 }
