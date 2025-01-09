@@ -1,0 +1,5 @@
+var Doughnut = "Fry until golden brown.";
+
+class BostonCream < Doughnut {}
+
+BostonCream().cook();

@@ -66,6 +66,12 @@ impl LoxClass {
     }
 
     pub fn find_method(&self, name: &str) -> Option<LoxFunction> {
-        self.methods.get(name).cloned()
+        if let m @ Some(_) = self.methods.get(name) {
+            return m.cloned();
+        }
+
+        self.superclass
+            .as_ref()
+            .and_then(|sup| sup.find_method(name))
     }
 }
