@@ -479,6 +479,12 @@ where
                 Token::String { mut inner } => Ok(Exprs::Literal(Literal::new(
                     LiteralType::String(inner.lexeme_take()),
                 ))),
+                sup @ Token::Super { .. } => {
+                    let keyword  = sup;
+                    self.consume_dot()?;
+                    let method  = self.consume_identifier()?;
+                    Ok(Exprs::Super(Super::new(keyword,method)))
+                },
                 this @ Token::This { .. } => Ok(Exprs::This(This::new(this))),
                 tk @ Token::Identifier { .. } => Ok(Exprs::Variable(Variable::new(tk))),
                 Token::LeftParen { .. } => {
@@ -676,6 +682,13 @@ where
     fn consume_identifier(&mut self) -> Result<Token> {
         match self.peeks.next() {
             Some(t @ Token::Identifier { .. }) => Ok(t),
+            Some(other) => Err(ParserError::LeftParen(other)),
+            None => Err(ParserError::Eof("Expect `;`".to_owned())),
+        }
+    }
+    fn consume_dot(&mut self) -> Result<Token> {
+        match self.peeks.next() {
+            Some(t @ Token::Dot { .. }) => Ok(t),
             Some(other) => Err(ParserError::LeftParen(other)),
             None => Err(ParserError::Eof("Expect `;`".to_owned())),
         }
