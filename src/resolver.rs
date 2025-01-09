@@ -169,7 +169,8 @@ impl crate::expr::ExprVisitor<Result<()>> for Resolver<'_> {
     }
 
     fn visit_super_expr(&mut self, expr: &Super) -> Result<()> {
-        todo!()
+        self.resolve_local(&Exprs::Super(expr.clone()), expr.keyword());
+        Ok(())
     }
 
     fn visit_this_expr(&mut self, expr: &This) -> Result<()> {
@@ -275,9 +276,20 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
                 return Err(ParserError::RecurseClass(superclass.name().clone()));
             }
             self.resolve_expr_variable(superclass)?;
+
+            // env for superclass
+            self.begin_scope();
+
+            unsafe {
+                self.scopes
+                    .last_mut()
+                    .unwrap_unchecked()
+                    .insert("super".to_owned(), true)
+            };
         }
 
         self.begin_scope();
+
         unsafe {
             self.scopes
                 .last_mut()
@@ -296,6 +308,10 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
         }
 
         self.end_scope();
+
+        if stmt.superclass().is_some() {
+            self.end_scope();
+        }
 
         self.current_class = enclosing_class;
 

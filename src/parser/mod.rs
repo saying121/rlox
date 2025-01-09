@@ -480,10 +480,10 @@ where
                     LiteralType::String(inner.lexeme_take()),
                 ))),
                 sup @ Token::Super { .. } => {
-                    let keyword  = sup;
+                    let keyword = sup;
                     self.consume_dot()?;
-                    let method  = self.consume_identifier()?;
-                    Ok(Exprs::Super(Super::new(keyword,method)))
+                    let method = self.consume_identifier()?;
+                    Ok(Exprs::Super(Super::new(keyword, method)))
                 },
                 this @ Token::This { .. } => Ok(Exprs::This(This::new(this))),
                 tk @ Token::Identifier { .. } => Ok(Exprs::Variable(Variable::new(tk))),

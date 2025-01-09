@@ -238,9 +238,21 @@ impl StmtVisitor<Result<()>> for Interpreter {
             }
         }
 
+        let super_is_some = superclass.is_some();
+
         self.environment
             .borrow()
             .define(stmt.name().lexeme().to_owned(), LiteralType::Nil);
+
+        if let Some(superclass) = superclass.clone() {
+            self.environment = Rc::new(RefCell::new(Environment::with_enclosing(Rc::clone(
+                &self.environment,
+            ))));
+            self.environment.borrow_mut().define(
+                "super".to_owned(),
+                LiteralType::Callable(Callables::Class(superclass)),
+            );
+        }
 
         let mut methods = HashMap::with_capacity(stmt.methods().len());
         for method in stmt.methods() {
@@ -257,6 +269,13 @@ impl StmtVisitor<Result<()>> for Interpreter {
             superclass.map(Box::new),
             methods,
         );
+
+        if super_is_some {
+            // use superclass env
+            let enclosing =
+                unsafe { Rc::clone(self.environment.borrow().enclosing().unwrap_unchecked()) };
+            self.environment = enclosing;
+        }
 
         self.environment
             .borrow()
@@ -441,7 +460,28 @@ impl ExprVisitor<Result<LiteralType>> for Interpreter {
     }
 
     fn visit_super_expr(&mut self, expr: &Super) -> Result<LiteralType> {
-        todo!()
+        let distance = *unsafe {
+            self.locals
+                .get(&Exprs::Super(expr.clone()))
+                .unwrap_unchecked()
+        };
+        let superclass = self.environment.borrow().get_at(distance, "super")?;
+        let LiteralType::Callable(Callables::Class(superclass)) = superclass
+        else {
+            return Err(InterError::Superclass(expr.keyword().clone()));
+        };
+
+        let lox_instance = self.environment.borrow().get_at(distance - 1, "this")?;
+        let LiteralType::Callable(Callables::Instance(lox_instance)) = lox_instance
+        else {
+            return Err(InterError::Superclass(expr.keyword().clone()));
+        };
+        let Some(method) = superclass.find_method(expr.method().lexeme())
+        else {
+            return Err(InterError::NoProperty(expr.method().clone()));
+        };
+        let fun = method.bind(lox_instance);
+        Ok(LiteralType::Callable(Callables::Fun(fun)))
     }
 
     fn visit_this_expr(&mut self, expr: &This) -> Result<LiteralType> {

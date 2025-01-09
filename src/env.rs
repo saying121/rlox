@@ -119,4 +119,8 @@ impl Environment {
             .insert(name.lexeme().to_owned(), value);
         Ok(())
     }
+
+    pub const fn enclosing(&self) -> Option<&Rc<RefCell<Self>>> {
+        self.enclosing.as_ref()
+    }
 }
