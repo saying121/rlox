@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
-use crate::{expr::LiteralType, lox_class::LoxClass, lox_fun::LoxFunction, tokens::Token};
+use crate::{expr::LiteralType, lox_class::LoxClass, lox_fun::LoxFunction, token::Token};
 
 #[derive(Clone)]
 #[derive(Debug)]

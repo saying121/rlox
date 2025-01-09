@@ -4,7 +4,7 @@ use super::Interpreter;
 use crate::{
     expr::{Binary, Exprs, Literal, LiteralType, Unary},
     lox::Lox,
-    tokens::{Token, TokenInner},
+    token::{Token, TokenInner},
 };
 
 #[test]

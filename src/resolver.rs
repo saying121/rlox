@@ -77,7 +77,7 @@ impl<'i> Resolver<'i> {
         expr.accept(self)
     }
 
-    fn declare(&mut self, name: &crate::tokens::Token) -> Result<()> {
+    fn declare(&mut self, name: &crate::token::Token) -> Result<()> {
         let Some(last) = self.scopes.last_mut()
         else {
             // Without local scope it will look global
@@ -90,13 +90,13 @@ impl<'i> Resolver<'i> {
         Ok(())
     }
 
-    fn define(&mut self, name: &crate::tokens::Token) {
+    fn define(&mut self, name: &crate::token::Token) {
         if let Some(last) = self.scopes.last_mut() {
             last.insert(name.inner().lexeme().to_owned(), true);
         }
     }
 
-    fn resolve_local(&mut self, expr: &Exprs, name: &crate::tokens::Token) {
+    fn resolve_local(&mut self, expr: &Exprs, name: &crate::token::Token) {
         for (i, ele) in self.scopes.iter().enumerate() {
             if ele.contains_key(name.inner().lexeme()) {
                 self.interpreter.resolve(expr, self.scopes.len() - 1 - i);

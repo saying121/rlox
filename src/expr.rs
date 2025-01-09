@@ -2,7 +2,7 @@
 
 use std::{fmt::Display, hash::Hash};
 
-use crate::{lox_callable::Callables, tokens::Token};
+use crate::{lox_callable::Callables, token::Token};
 
 pub trait Expr {
     fn accept<R>(&self, visitor: &mut dyn ExprVisitor<R>) -> R;

@@ -9,7 +9,7 @@ use thiserror::Error;
 use crate::{
     expr::*,
     stmt::{Block, Break, Class, Expression, Function, If, Print, Return, Stmts, Var, While},
-    tokens::Token,
+    token::Token,
 };
 
 #[derive(Clone)]

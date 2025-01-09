@@ -7,7 +7,7 @@ use crate::{
     expr::{Binary, Exprs, Literal, LiteralType, Unary},
     scan::scanner,
     stmt::{Print, Stmts, Var},
-    tokens::{Token, TokenInner},
+    token::{Token, TokenInner},
 };
 
 #[test]

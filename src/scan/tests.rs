@@ -4,7 +4,7 @@ use pretty_assertions::assert_eq;
 
 use crate::{
     scan::scanner::Scanner,
-    tokens::{Token, TokenInner},
+    token::{Token, TokenInner},
 };
 
 #[test]

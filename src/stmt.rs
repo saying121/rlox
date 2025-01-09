@@ -1,4 +1,4 @@
-use crate::{expr::Exprs, tokens::Token};
+use crate::{expr::Exprs, token::Token};
 
 pub trait Stmt {
     fn accept<R>(&self, visitor: &mut dyn StmtVisitor<R>) -> R;

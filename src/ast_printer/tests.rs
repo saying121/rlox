@@ -3,7 +3,7 @@ use std::rc::Rc;
 use super::*;
 use crate::{
     expr::{Binary, Grouping, Literal, Unary},
-    tokens::{Token, TokenInner},
+    token::{Token, TokenInner},
 };
 
 #[test]

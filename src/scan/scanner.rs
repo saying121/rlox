@@ -3,7 +3,7 @@ use std::{rc::Rc, str::CharIndices};
 
 use itertools::PeekNth;
 
-use crate::tokens::{Token, TokenInner};
+use crate::token::{Token, TokenInner};
 
 // #[derive(Clone)]
 #[derive(Debug)]

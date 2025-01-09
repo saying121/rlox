@@ -16,4 +16,4 @@ pub mod resolver;
 pub mod r#return;
 pub mod scan;
 pub mod stmt;
-pub mod tokens;
+pub mod token;

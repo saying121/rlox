@@ -11,7 +11,7 @@ use crate::{
     lox_fun::{ClockFunction, LoxFunction},
     r#return::FnReturn,
     stmt::*,
-    tokens::{Token, TokenInner},
+    token::{Token, TokenInner},
 };
 
 #[derive(Clone)]

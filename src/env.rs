@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, hash::Hash, rc::Rc};
 
-use crate::{expr::LiteralType, tokens::Token};
+use crate::{expr::LiteralType, token::Token};
 
 #[derive(Clone)]
 #[derive(Debug)]
