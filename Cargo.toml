@@ -11,10 +11,10 @@ exclude = [".github", "sample/"]
 
 [workspace.dependencies]
 clap = "^4"
-rustyline = "^14"
+rustyline = "^15"
 anyhow = "^1"
 thiserror = "^2"
-itertools = "^0.13"
+itertools = "^0.14"
 paste = "^1"
 tracing = "^0.1"
 tracing-subscriber = "0.3"
