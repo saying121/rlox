@@ -6,7 +6,7 @@ repository = "https://github.com/saying121/rlox"
 
 [workspace]
 members = ["crates/*"]
-resolver = "2"
+resolver = "3"
 exclude = [".github", "sample/"]
 
 [workspace.dependencies]
