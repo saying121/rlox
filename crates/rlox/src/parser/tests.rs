@@ -26,7 +26,8 @@ fn test_equal() {
                 inner: TokenInner::new(Rc::clone(&source), "==".to_owned(), 9),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
-        )),
+        ))
+        .into(),
     ))];
 
     let mut p = Parser::new(tks);
@@ -145,7 +146,8 @@ fn test_plus_minus_multi_div() {
                 inner: TokenInner::new_plus(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
-        )),
+        ))
+        .into(),
     ))];
 
     let mut p = Parser::new(tks);
@@ -168,7 +170,8 @@ fn test_plus_minus_multi_div() {
                 inner: TokenInner::new_plus(Rc::clone(&source), 10),
             },
             Exprs::Literal(Literal::new(LiteralType::String("cd".to_owned()))),
-        )),
+        ))
+        .into(),
     ))];
 
     let mut p = Parser::new(tks);
@@ -191,7 +194,8 @@ fn test_plus_minus_multi_div() {
                 inner: TokenInner::new_minus(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
-        )),
+        ))
+        .into(),
     ))];
 
     let mut p = Parser::new(tks);
@@ -214,7 +218,8 @@ fn test_plus_minus_multi_div() {
                 inner: TokenInner::new_star(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
-        )),
+        ))
+        .into(),
     ))];
 
     let mut p = Parser::new(tks);
@@ -237,7 +242,8 @@ fn test_plus_minus_multi_div() {
                 inner: TokenInner::new_slash(Rc::clone(&source), 7),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
-        )),
+        ))
+        .into(),
     ))];
 
     let mut p = Parser::new(tks);

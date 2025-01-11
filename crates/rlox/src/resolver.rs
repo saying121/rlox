@@ -216,7 +216,9 @@ impl crate::stmt::StmtVisitor<Result<()>> for Resolver<'_> {
     fn visit_var_stmt(&mut self, stmt: &Var) -> Result<()> {
         self.declare(stmt.name())?;
 
-        self.resolve_expr(stmt.initializer())?;
+        if let Some(v) = stmt.initializer() {
+            self.resolve_expr(v)?;
+        }
 
         self.define(stmt.name());
 

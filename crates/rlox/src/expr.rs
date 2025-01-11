@@ -53,7 +53,9 @@ $(
     };
 }
 
-expr_gen!(Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable);
+expr_gen!(
+    Assign, Binary, Call, Get, Grouping, Literal, Logical, Set, Super, This, Unary, Variable
+);
 
 #[derive(Debug)]
 #[derive(Clone)]

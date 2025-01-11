@@ -162,7 +162,12 @@ impl StmtVisitor<Result<()>> for Interpreter {
     }
 
     fn visit_var_stmt(&mut self, stmt: &Var) -> Result<()> {
-        let value = self.evaluate(stmt.initializer())?;
+        let value = if let Some(v) = stmt.initializer() {
+            self.evaluate(v)?
+        }
+        else {
+            LiteralType::Nil
+        };
         self.environment
             .borrow_mut()
             .define(stmt.var_name().to_owned(), value);
@@ -204,7 +209,7 @@ impl StmtVisitor<Result<()>> for Interpreter {
     }
 
     fn visit_break_stmt(&mut self, stmt: &Break) -> Result<()> {
-        Err(InterError::NeedBreak(stmt.lexeme().clone()))
+        Err(InterError::NeedBreak(stmt.token().clone()))
     }
 
     fn visit_function_stmt(&mut self, stmt: &Function) -> Result<()> {

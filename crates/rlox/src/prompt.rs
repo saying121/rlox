@@ -1,5 +1,5 @@
 use anyhow::Result;
-use rustyline::{error::ReadlineError, DefaultEditor};
+use rustyline::{DefaultEditor, error::ReadlineError};
 
 use crate::lox::Lox;
 

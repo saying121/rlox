@@ -177,7 +177,7 @@ where
             None => return Err(ParserError::Eof("Expect `;` at end".to_owned())),
         }
 
-        Ok(Stmts::Var(Var::new(ident, init_val)))
+        Ok(Stmts::Var(Var::new(ident, Some(init_val))))
     }
 
     fn statement(&mut self) -> Result<Stmts> {

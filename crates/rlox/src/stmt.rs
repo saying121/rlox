@@ -113,16 +113,16 @@ impl Print {
 #[derive(PartialEq, Eq, Hash)]
 pub struct Var {
     name: Token,
-    expr: Exprs,
+    expr: Option<Exprs>,
 }
 
 impl Var {
-    pub const fn new(name: Token, expr: Exprs) -> Self {
+    pub const fn new(name: Token, expr: Option<Exprs>) -> Self {
         Self { name, expr }
     }
 
-    pub const fn initializer(&self) -> &Exprs {
-        &self.expr
+    pub fn initializer(&self) -> Option<&Exprs> {
+        self.expr.as_ref()
     }
 
     pub fn var_name(&self) -> &str {
@@ -220,7 +220,7 @@ impl Break {
         Self { lexeme }
     }
 
-    pub const fn lexeme(&self) -> &Token {
+    pub const fn token(&self) -> &Token {
         &self.lexeme
     }
 }
@@ -269,7 +269,9 @@ impl Stmt for Stmts {
     };
 }
 
-statement_gen!(Expression, Print, Var, Block, If, While, Break, Function, Return, Class,);
+statement_gen!(
+    Expression, Print, Var, Block, If, While, Break, Function, Return, Class,
+);
 
 impl From<Stmts> for Option<Box<Stmts>> {
     fn from(val: Stmts) -> Self {
@@ -293,4 +295,4 @@ $(
     };
 }
 
-statement_expr!(Expression, Print, Var);
+statement_expr!(Expression, Print);
