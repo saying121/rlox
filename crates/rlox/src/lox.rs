@@ -2,7 +2,10 @@ use std::path::Path;
 
 use anyhow::{Result, bail};
 
-use crate::{interpreter::Interpreter, parser::Parser, resolver::Resolver, scan::scanner::Scanner};
+use crate::{
+    ast_printer::AstPrinter, interpreter::Interpreter, parser::Parser, resolver::Resolver,
+    scan::scanner::Scanner,
+};
 
 #[derive(Clone)]
 #[derive(Debug)]
@@ -25,10 +28,14 @@ impl Lox {
 
     pub fn run_file<T: AsRef<Path>>(mut self, path: T) -> Result<()> {
         let content = std::fs::read_to_string(path)?;
-        self.run(&content)
+        self.run(&content, false)
+    }
+    pub fn ast_file<T: AsRef<Path>>(mut self, path: T) -> Result<()> {
+        let content = std::fs::read_to_string(path)?;
+        self.run(&content, true)
     }
 
-    pub fn run(&mut self, source: &str) -> Result<()> {
+    pub fn run(&mut self, source: &str, ast: bool) -> Result<()> {
         let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens();
 
@@ -42,9 +49,11 @@ impl Lox {
         if had_err {
             bail!("resolver err")
         }
-
-        // let ast = AstPrinter.print(&expression);
-        // println!("{ast}");
+        if ast {
+            let ast = AstPrinter.print(&expression);
+            println!("{ast}");
+            return Ok(());
+        }
 
         match self.interpreter.interpret(&mut expression) {
             Ok(_) => Ok(()),

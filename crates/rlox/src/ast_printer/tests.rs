@@ -23,7 +23,8 @@ fn print_test() {
             crate::expr::LiteralType::Number(45.67),
         )))),
     ));
+    let stmt = Stmts::Expression(Expression::new(expression));
     let mut asp = AstPrinter;
-    let res = asp.print(&expression);
-    assert_eq!("(* (- 123) (group 45.67))", res);
+    let res = asp.print(&[stmt]);
+    assert_eq!("(; (* (- 123) (group 45.67)))", res);
 }

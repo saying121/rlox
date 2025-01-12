@@ -121,7 +121,7 @@ impl Var {
         Self { name, expr }
     }
 
-    pub fn initializer(&self) -> Option<&Exprs> {
+    pub const fn initializer(&self) -> Option<&Exprs> {
         self.expr.as_ref()
     }
 

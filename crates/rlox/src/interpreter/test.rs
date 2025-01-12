@@ -133,7 +133,7 @@ while (true) {
     break;
 }
 ",
-    )
+    false)
     .unwrap();
     lox.run(
         "
@@ -144,7 +144,7 @@ for (var i = 1; i < 5; i = i + 1) {
     }
 }
 ",
-    )
+    false)
     .unwrap();
 }
 
@@ -155,6 +155,6 @@ fn test_define_del() {
         "
 var a = 1;
 ",
-    )
+    false)
     .unwrap();
 }

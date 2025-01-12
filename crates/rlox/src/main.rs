@@ -18,6 +18,12 @@ fn main() -> anyhow::Result<()> {
             tracing::error!("{}", e);
         }
     }
+    else if let Some(fp) = cli.ast {
+        let lox = Lox::default();
+        if let Err(e) = lox.ast_file(&fp) {
+            tracing::error!("{}", e);
+        }
+    }
 
     Ok(())
 }

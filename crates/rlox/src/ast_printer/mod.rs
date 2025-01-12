@@ -12,7 +12,7 @@ use crate::{
 // #[derive(Debug)]
 pub struct AstPrinter;
 
-enum Obj<'o> {
+pub enum Obj<'o> {
     Expr(&'o Exprs),
     Stmt(&'o Stmts),
     Token(&'o Token),
@@ -21,8 +21,15 @@ enum Obj<'o> {
 }
 
 impl AstPrinter {
-    pub fn print(&mut self, expr: &Exprs) -> String {
-        expr.accept(self)
+    pub fn print(&mut self, expr: &[Stmts]) -> String {
+        let mut it = vec![];
+        for ele in expr {
+            it.push(Obj::Stmt(ele));
+        }
+        let mut builder = String::new();
+        self.transform(&mut builder, it.iter());
+        builder
+        // expr.accept(self)
         // expr.acc
     }
 
@@ -40,7 +47,7 @@ impl AstPrinter {
         res
     }
 
-    fn parenthesize2<'o, I>(&mut self, name: &str, parts: I) -> String
+    pub fn parenthesize2<'o, I>(&mut self, name: &str, parts: I) -> String
     where
         I: IntoIterator<Item = &'o Obj<'o>>,
     {
