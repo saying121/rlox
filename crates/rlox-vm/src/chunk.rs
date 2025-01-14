@@ -41,7 +41,8 @@ pub struct Chunk {
     // `count`, `capacity`, rust direct use `Vec`
     code: Vec<u8>,
     constants: ValueArray,
-    lines: Vec<usize>,
+    // (count, line)
+    lines: Vec<(usize, usize)>,
 }
 
 impl Chunk {
@@ -55,7 +56,11 @@ impl Chunk {
 
     pub fn write(&mut self, value: u8, line: usize) {
         self.code.push(value);
-        self.lines.push(line);
+        let last = self.lines.last_mut();
+        match last {
+            Some((count, line_)) if *line_ == line => *count += 1,
+            _ => self.lines.push((1, line)),
+        }
     }
 
     pub fn add_constant(&mut self, value: Value) -> usize {
@@ -65,6 +70,17 @@ impl Chunk {
 
     pub fn count(&self) -> usize {
         self.code.len()
+    }
+
+    pub fn get_line(&self, offset: usize) -> usize {
+        let mut cur = 0;
+        for &(count, cur_line) in &self.lines {
+            cur += count;
+            if offset < cur {
+                return cur_line;
+            }
+        }
+        0
     }
 }
 
@@ -80,11 +96,11 @@ impl Chunk {
 
     fn disassemble_instruction(&self, offset: usize) -> usize {
         print!("{:0>4} ", offset);
-        if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
+        if offset > 0 && self.get_line(offset) == self.get_line(offset - 1) {
             print!("   | ");
         }
         else {
-            print!("{:0>4} ", self.lines[offset]);
+            print!("{:0>4} ", self.get_line(offset));
         }
 
         match self.code[offset].into() {
