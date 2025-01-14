@@ -8,6 +8,7 @@ use crate::value::{Value, ValueArray};
 #[repr(u8)]
 pub enum OpCode {
     OpConstant,
+    // OpConstantLong,
     OpReturn,
 }
 
@@ -15,6 +16,7 @@ impl Display for OpCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::OpConstant => "OP_CONSTANT",
+            // Self::OpConstantLong => "OP_CONSTANT_LONG",
             Self::OpReturn => "OP_RETURN",
         }
         .fmt(f)
@@ -66,6 +68,11 @@ impl Chunk {
     pub fn add_constant(&mut self, value: Value) -> usize {
         self.constants.write(value);
         self.constants.0.len() - 1
+    }
+
+    // TODO
+    pub fn write_constant(&self, _value: Value, _line: usize) {
+        unimplemented!()
     }
 
     pub fn count(&self) -> usize {
