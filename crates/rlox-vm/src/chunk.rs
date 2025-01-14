@@ -1,3 +1,5 @@
+use std::{fmt::Display, mem};
+
 use crate::value::{Value, ValueArray};
 
 #[derive(Clone, Copy)]
@@ -5,7 +7,30 @@ use crate::value::{Value, ValueArray};
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum OpCode {
+    OpConstant,
     OpReturn,
+}
+
+impl Display for OpCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::OpConstant => "OP_CONSTANT",
+            Self::OpReturn => "OP_RETURN",
+        }
+        .fmt(f)
+    }
+}
+
+impl From<OpCode> for u8 {
+    fn from(val: OpCode) -> Self {
+        val as Self
+    }
+}
+
+impl From<u8> for OpCode {
+    fn from(value: u8) -> Self {
+        unsafe { mem::transmute::<u8, Self>(value) }
+    }
 }
 
 #[derive(Clone)]
@@ -14,7 +39,7 @@ pub enum OpCode {
 #[derive(PartialEq, PartialOrd)]
 pub struct Chunk {
     // `count`, `capacity`, rust direct use `Vec`
-    code: Vec<OpCode>,
+    code: Vec<u8>,
     constants: ValueArray,
 }
 
@@ -26,7 +51,7 @@ impl Chunk {
         }
     }
 
-    pub fn write(&mut self, value: OpCode) {
+    pub fn write(&mut self, value: u8) {
         self.code.push(value);
     }
 
@@ -44,20 +69,28 @@ impl Chunk {
 impl Chunk {
     pub fn disassemble(&self, name: &str) {
         println!("== {} ==", name);
-        for (offset, &instruction) in self.code.iter().enumerate() {
-            Self::disassemble_instruction(offset, instruction);
+        let mut offset = 0;
+        while offset < self.code.len() {
+            offset = self.disassemble_instruction(offset);
         }
     }
 
-    fn disassemble_instruction(offset: usize, instruction: OpCode) {
+    fn disassemble_instruction(&self, offset: usize) -> usize {
         println!("{:0>4}", offset);
 
-        match instruction {
-            OpCode::OpReturn => Self::simple_instruction("OP_RETURN"),
+        match self.code[offset].into() {
+            v @ OpCode::OpConstant => self.constant_instruction(v, offset),
+            v @ OpCode::OpReturn => {
+                println!("{v}");
+                offset + 1
+            },
         }
     }
 
-    fn simple_instruction(name: &str) {
-        println!("{}", name);
+    fn constant_instruction(&self, name: OpCode, offset: usize) -> usize {
+        let constant = self.code[offset + 1];
+        print!("{:<16} {:>4} '", name, constant);
+        println!("{}", self.constants.0[constant as usize]);
+        offset + 2
     }
 }
