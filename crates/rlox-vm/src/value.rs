@@ -1,4 +1,7 @@
-use std::fmt::Display;
+use std::{
+    fmt::Display,
+    ops::{Deref, DerefMut},
+};
 
 #[derive(Clone, Copy)]
 #[derive(Debug)]
@@ -17,6 +20,21 @@ impl Display for Value {
 #[derive(Default)]
 #[derive(PartialEq, PartialOrd)]
 pub struct ValueArray(pub Vec<Value>);
+
+impl DerefMut for ValueArray {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for ValueArray {
+    // type Target = Vec<Value>;
+    type Target = [Value];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl ValueArray {
     pub const fn new() -> Self {

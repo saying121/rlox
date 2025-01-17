@@ -89,6 +89,14 @@ impl Chunk {
         }
         0
     }
+
+    pub fn code(&self) -> &[u8] {
+        &self.code
+    }
+
+    pub const fn constants(&self) -> &ValueArray {
+        &self.constants
+    }
 }
 
 // debug
