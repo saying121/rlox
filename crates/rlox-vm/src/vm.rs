@@ -25,17 +25,20 @@ impl<'v> Vm<'v> {
         }
     }
 
-    //pub fn interpret() -> InterpretResult {
-    //    unimplemented!()
-    //}
+    // pub fn interpret() -> InterpretResult {
+    //     unimplemented!()
+    // }
 
     pub fn run(&self) -> InterpretResult {
-        let mut ip_iter = self.ip.iter();
-        while let Some(&ele) = ip_iter.next() {
+        let mut ip_iter = self.ip.iter().enumerate();
+        while let Some((offset, &ele)) = ip_iter.next() {
+            #[cfg(debug_assertions)]
+            Chunk::disassemble_instruction(self.chunk, offset);
+
             match ele.into() {
                 OpCode::OpReturn => return InterpretResult::Ok,
                 OpCode::OpConstant => {
-                    let next = *ip_iter.next().unwrap() as usize;
+                    let next = *ip_iter.next().unwrap().1 as usize;
                     let constant = self.chunk.constants()[next];
                     println!("{}", constant.0);
                     // break;

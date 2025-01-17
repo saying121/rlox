@@ -109,7 +109,7 @@ impl Chunk {
         }
     }
 
-    fn disassemble_instruction(&self, offset: usize) -> usize {
+    pub fn disassemble_instruction(&self, offset: usize) -> usize {
         print!("{:0>4} ", offset);
         if offset > 0 && self.get_line(offset) == self.get_line(offset - 1) {
             print!("   | ");
