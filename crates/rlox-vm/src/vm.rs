@@ -63,7 +63,9 @@ impl<'v> Vm<'v> {
                     return InterpretResult::Ok;
                 },
                 OpCode::OpConstant => {
-                    let next = *ip_iter.next().unwrap().1 as usize;
+                    // Safety: OpConstant next must be index
+                    let next = unsafe { ip_iter.next().unwrap_unchecked() };
+                    let next = *next.1 as usize;
                     let constant = self.chunk.constants()[next];
                     self.stack.push(constant);
                 },
