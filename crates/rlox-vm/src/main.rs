@@ -5,6 +5,8 @@ use rlox_vm::{
 };
 
 fn main() {
+    let mut vm = Vm::new();
+
     let mut chunk = Chunk::new();
     let constant = chunk.add_constant(Value(1.2));
     chunk.write(OpCode::OpConstant, 123);
@@ -27,6 +29,5 @@ fn main() {
 
     chunk.disassemble("test chunk");
 
-    let mut vm = Vm::new(&chunk);
-    vm.run();
+    vm.interpret(&chunk);
 }

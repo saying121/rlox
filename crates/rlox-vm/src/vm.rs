@@ -6,9 +6,9 @@ use crate::{
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(PartialEq, PartialOrd)]
-pub struct Vm<'v> {
-    pub chunk: &'v Chunk,
-    pub ip: &'v [u8],
+pub struct Vm {
+    // pub chunk: &'v Chunk,
+    // pub ip: &'v [u8],
     pub stack: Vec<Value>,
 }
 
@@ -21,20 +21,20 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
-impl<'v> Vm<'v> {
-    pub fn new(chunk: &'v Chunk) -> Self {
+impl Vm {
+    pub const fn new() -> Self {
         Self {
-            chunk,
-            ip: chunk.code(),
+            // chunk,
+            // ip: chunk.code(),
             stack: vec![],
         }
     }
 
-    // pub fn interpret() -> InterpretResult {
-    //     unimplemented!()
-    // }
+    pub fn interpret(&mut self, chunk: &Chunk) -> InterpretResult {
+        self.run(chunk, chunk.code())
+    }
 
-    pub fn run(&mut self) -> InterpretResult {
+    pub fn run(&mut self, chunk: &Chunk, ip: &[u8]) -> InterpretResult {
         macro_rules! binary_op {
             ($stack:expr, $op:tt) => {
                 {
@@ -45,7 +45,7 @@ impl<'v> Vm<'v> {
             };
         }
 
-        let mut ip_iter = self.ip.iter().enumerate();
+        let mut ip_iter = ip.iter().enumerate();
         while let Some((offset, &ele)) = ip_iter.next() {
             #[cfg(debug_assertions)]
             {
@@ -53,7 +53,7 @@ impl<'v> Vm<'v> {
                     print!("[{}]", ele.0);
                 }
                 println!();
-                Chunk::disassemble_instruction(self.chunk, offset);
+                Chunk::disassemble_instruction(chunk, offset);
             };
 
             match ele.into() {
@@ -66,7 +66,7 @@ impl<'v> Vm<'v> {
                     // Safety: OpConstant next must be index
                     let next = unsafe { ip_iter.next().unwrap_unchecked() };
                     let next = *next.1 as usize;
-                    let constant = self.chunk.constants()[next];
+                    let constant = chunk.constants()[next];
                     self.stack.push(constant);
                 },
                 OpCode::OpNegate => {
@@ -80,5 +80,11 @@ impl<'v> Vm<'v> {
             }
         }
         InterpretResult::Ok
+    }
+}
+
+impl Default for Vm {
+    fn default() -> Self {
+        Self::new()
     }
 }
