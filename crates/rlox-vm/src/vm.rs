@@ -38,11 +38,13 @@ impl<'v> Vm<'v> {
         let mut ip_iter = self.ip.iter().enumerate();
         while let Some((offset, &ele)) = ip_iter.next() {
             #[cfg(debug_assertions)]
-            for ele in &self.stack {
-                println!("[{}]", ele.0);
-            }
-            #[cfg(debug_assertions)]
-            Chunk::disassemble_instruction(self.chunk, offset);
+            {
+                for ele in &self.stack {
+                    print!("[{}]", ele.0);
+                }
+                println!();
+                Chunk::disassemble_instruction(self.chunk, offset);
+            };
 
             match ele.into() {
                 OpCode::OpReturn => {
@@ -54,10 +56,14 @@ impl<'v> Vm<'v> {
                     let next = *ip_iter.next().unwrap().1 as usize;
                     let constant = self.chunk.constants()[next];
                     self.stack.push(constant);
-                    break;
+                },
+                OpCode::OpNegate => {
+                    let mut value = self.stack.pop().unwrap();
+                    value.0 = -value.0;
+                    self.stack.push(value);
                 },
             }
         }
-        unimplemented!()
+        InterpretResult::Ok
     }
 }

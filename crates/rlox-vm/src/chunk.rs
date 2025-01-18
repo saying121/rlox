@@ -8,6 +8,7 @@ use crate::value::{Value, ValueArray};
 #[repr(u8)]
 pub enum OpCode {
     OpConstant,
+    OpNegate,
     // OpConstantLong,
     OpReturn,
 }
@@ -16,6 +17,7 @@ impl Display for OpCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::OpConstant => "OP_CONSTANT",
+            Self::OpNegate => "OP_NEGATE",
             // Self::OpConstantLong => "OP_CONSTANT_LONG",
             Self::OpReturn => "OP_RETURN",
         }
@@ -120,10 +122,7 @@ impl Chunk {
 
         match self.code[offset].into() {
             v @ OpCode::OpConstant => self.constant_instruction(v, offset),
-            v @ OpCode::OpReturn => {
-                println!("{v}");
-                offset + 1
-            },
+            v @ (OpCode::OpReturn | OpCode::OpNegate) => Self::simple_instruction(v, offset),
         }
     }
 
@@ -132,5 +131,10 @@ impl Chunk {
         print!("{:<16} {:>4} '", name, constant);
         println!("{}", self.constants.0[constant as usize]);
         offset + 2
+    }
+
+    fn simple_instruction(v: OpCode, offset: usize) -> usize {
+        println!("{v}");
+        offset + 1
     }
 }
