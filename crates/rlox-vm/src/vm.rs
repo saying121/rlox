@@ -30,8 +30,9 @@ impl Vm {
         }
     }
 
-    pub fn interpret(&mut self, chunk: &Chunk) -> InterpretResult {
-        self.run(chunk, chunk.code())
+    pub fn interpret(&mut self, chunk: &[u8]) -> InterpretResult {
+        // self.run(chunk, chunk.code())
+        self.run(todo!(), todo!())
     }
 
     pub fn run(&mut self, chunk: &Chunk, ip: &[u8]) -> InterpretResult {
