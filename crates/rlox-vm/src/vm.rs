@@ -70,9 +70,8 @@ impl<'v> Vm<'v> {
                     self.stack.push(constant);
                 },
                 OpCode::OpNegate => {
-                    let mut value = self.stack.pop().unwrap();
+                    let value = self.stack.last_mut().unwrap();
                     value.0 = -value.0;
-                    self.stack.push(value);
                 },
                 OpCode::OpAdd => binary_op!(self.stack, +),
                 OpCode::OpSubtract => binary_op!(self.stack, -),
