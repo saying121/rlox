@@ -35,6 +35,16 @@ impl<'v> Vm<'v> {
     // }
 
     pub fn run(&mut self) -> InterpretResult {
+        macro_rules! binary_op {
+            ($stack:expr, $op:tt) => {
+                {
+                    let b = $stack.pop().unwrap().0;
+                    let a = $stack.pop().unwrap().0;
+                    self.stack.push(Value(a $op b));
+                }
+            };
+        }
+
         let mut ip_iter = self.ip.iter().enumerate();
         while let Some((offset, &ele)) = ip_iter.next() {
             #[cfg(debug_assertions)]
@@ -62,6 +72,10 @@ impl<'v> Vm<'v> {
                     value.0 = -value.0;
                     self.stack.push(value);
                 },
+                OpCode::OpAdd => binary_op!(self.stack, +),
+                OpCode::OpSubtract => binary_op!(self.stack, -),
+                OpCode::OpMultiply => binary_op!(self.stack, *),
+                OpCode::OpDivide => binary_op!(self.stack, /),
             }
         }
         InterpretResult::Ok

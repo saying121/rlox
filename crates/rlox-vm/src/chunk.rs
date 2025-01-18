@@ -8,6 +8,10 @@ use crate::value::{Value, ValueArray};
 #[repr(u8)]
 pub enum OpCode {
     OpConstant,
+    OpAdd,
+    OpSubtract,
+    OpMultiply,
+    OpDivide,
     OpNegate,
     // OpConstantLong,
     OpReturn,
@@ -17,8 +21,12 @@ impl Display for OpCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::OpConstant => "OP_CONSTANT",
-            Self::OpNegate => "OP_NEGATE",
             // Self::OpConstantLong => "OP_CONSTANT_LONG",
+            Self::OpAdd => "OP_ADD",
+            Self::OpSubtract => "OP_SUBTRACT",
+            Self::OpMultiply => "OP_MULTIPLY",
+            Self::OpDivide => "OP_DIVIDE",
+            Self::OpNegate => "OP_NEGATE",
             Self::OpReturn => "OP_RETURN",
         }
         .fmt(f)
@@ -58,8 +66,8 @@ impl Chunk {
         }
     }
 
-    pub fn write(&mut self, value: u8, line: usize) {
-        self.code.push(value);
+    pub fn write<V: Into<u8>>(&mut self, value: V, line: usize) {
+        self.code.push(value.into());
         let last = self.lines.last_mut();
         match last {
             Some((count, line_)) if *line_ == line => *count += 1,
@@ -122,7 +130,12 @@ impl Chunk {
 
         match self.code[offset].into() {
             v @ OpCode::OpConstant => self.constant_instruction(v, offset),
-            v @ (OpCode::OpReturn | OpCode::OpNegate) => Self::simple_instruction(v, offset),
+            v @ (OpCode::OpReturn
+            | OpCode::OpNegate
+            | OpCode::OpAdd
+            | OpCode::OpSubtract
+            | OpCode::OpMultiply
+            | OpCode::OpDivide) => Self::simple_instruction(v, offset),
         }
     }
 
