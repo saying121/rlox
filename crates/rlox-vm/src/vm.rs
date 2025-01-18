@@ -1,4 +1,7 @@
-use crate::chunk::{Chunk, OpCode};
+use crate::{
+    chunk::{Chunk, OpCode},
+    value::Value,
+};
 
 #[derive(Clone)]
 #[derive(Debug)]
@@ -6,6 +9,7 @@ use crate::chunk::{Chunk, OpCode};
 pub struct Vm<'v> {
     pub chunk: &'v Chunk,
     pub ip: &'v [u8],
+    pub stack: Vec<Value>,
 }
 
 #[derive(Clone, Copy)]
@@ -22,6 +26,7 @@ impl<'v> Vm<'v> {
         Self {
             chunk,
             ip: chunk.code(),
+            stack: vec![],
         }
     }
 
@@ -29,19 +34,27 @@ impl<'v> Vm<'v> {
     //     unimplemented!()
     // }
 
-    pub fn run(&self) -> InterpretResult {
+    pub fn run(&mut self) -> InterpretResult {
         let mut ip_iter = self.ip.iter().enumerate();
         while let Some((offset, &ele)) = ip_iter.next() {
+            #[cfg(debug_assertions)]
+            for ele in &self.stack {
+                println!("[{}]", ele.0);
+            }
             #[cfg(debug_assertions)]
             Chunk::disassemble_instruction(self.chunk, offset);
 
             match ele.into() {
-                OpCode::OpReturn => return InterpretResult::Ok,
+                OpCode::OpReturn => {
+                    let v = self.stack.pop().unwrap();
+                    println!("{}", v.0);
+                    return InterpretResult::Ok;
+                },
                 OpCode::OpConstant => {
                     let next = *ip_iter.next().unwrap().1 as usize;
                     let constant = self.chunk.constants()[next];
-                    println!("{}", constant.0);
-                    // break;
+                    self.stack.push(constant);
+                    break;
                 },
             }
         }

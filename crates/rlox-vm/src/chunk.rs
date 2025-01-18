@@ -67,7 +67,7 @@ impl Chunk {
 
     pub fn add_constant(&mut self, value: Value) -> usize {
         self.constants.write(value);
-        self.constants.0.len() - 1
+        self.constants.len() - 1
     }
 
     // TODO
