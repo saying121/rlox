@@ -1,6 +1,5 @@
 use crate::{
-    chunk::{Chunk, OpCode},
-    value::Value,
+    chunk::{Chunk, OpCode}, complier, value::Value
 };
 
 #[derive(Clone)]
@@ -30,7 +29,8 @@ impl Vm {
         }
     }
 
-    pub fn interpret(&mut self, chunk: &[u8]) -> InterpretResult {
+    pub fn interpret(&mut self, source: &str) -> InterpretResult {
+        complier::compile(source);
         // self.run(chunk, chunk.code())
         self.run(todo!(), todo!())
     }

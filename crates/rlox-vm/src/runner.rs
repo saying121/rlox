@@ -16,7 +16,7 @@ pub fn run_prompt(vm: &mut Vm) -> crate::error::Result<()> {
             Ok(line) => {
                 rl.add_history_entry(line.as_str())
                     .with_context(|_| ReplSnafu)?;
-                vm.interpret(line.as_bytes());
+                vm.interpret(&line);
             },
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
@@ -36,7 +36,7 @@ pub fn run_prompt(vm: &mut Vm) -> crate::error::Result<()> {
 }
 
 pub fn run_file<P: AsRef<Path>>(vm: &mut Vm, path: P) -> Result<()> {
-    let source = std::fs::read(&path).with_context(|_| ReadFileSnafu {
+    let source = std::fs::read_to_string(&path).with_context(|_| ReadFileSnafu {
         path: path.as_ref().display().to_string(),
     })?;
     let result = vm.interpret(&source);

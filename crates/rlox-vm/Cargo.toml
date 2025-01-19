@@ -10,6 +10,7 @@ repository.workspace = true
 clap = { workspace = true, features = ["derive"] }
 rustyline = { workspace = true }
 snafu = { workspace = true }
+rlox = { workspace = true }
 
 [lints]
 workspace = true
