@@ -14,7 +14,7 @@ fn test_scan_missing_paren() {
         inner: TokenInner::new_left_paren(Rc::clone(&source), 0),
     }];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 }
 
 #[test]
@@ -29,7 +29,7 @@ fn test_scan_string_escape() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from("\"abcd\\\"\\\"\nefg\";");
     let correct = vec![
@@ -41,7 +41,7 @@ fn test_scan_string_escape() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from(r#""abcd\"\"efg";"#);
     let correct = vec![
@@ -53,7 +53,7 @@ fn test_scan_string_escape() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from(r#""abcd\"efg";"#);
     let correct = vec![
@@ -65,7 +65,7 @@ fn test_scan_string_escape() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from(r#""abcd\\\"efg";"#);
     let correct = vec![
@@ -77,7 +77,7 @@ fn test_scan_string_escape() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from(r#""abcd\\#efg";"#);
     let correct = vec![
@@ -89,7 +89,7 @@ fn test_scan_string_escape() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 }
 
 #[test]
@@ -113,7 +113,7 @@ fn test_scan_string() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(correct, sc.scan_tokens());
+    assert_eq!(correct, sc.scan_tokens().collect::<Vec<_>>());
 
     let source = Rc::from(r#"var a = "abcdefg";"#);
     let correct = vec![
@@ -134,7 +134,7 @@ fn test_scan_string() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from(r#"var a = "abcdefg;"#);
     let correct = vec![
@@ -152,35 +152,35 @@ fn test_scan_string() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 }
 
 #[test]
 fn test_line_col() {
     let source = "\n\n\nvar\n\n";
     let mut sc = Scanner::new(source);
-    if let Token::Var { inner } = &sc.scan_tokens()[0] {
+    if let Token::Var { inner } = &sc.scan_tokens().next().unwrap() {
         let a = inner.get_col();
         assert_eq!(a, (4, 1));
     }
 
     let source = "\n\n\n   var\n\n";
     let mut sc = Scanner::new(source);
-    if let Token::Var { inner } = &sc.scan_tokens()[0] {
+    if let Token::Var { inner } = &sc.scan_tokens().next().unwrap() {
         let a = inner.get_col();
         assert_eq!(a, (4, 4));
     }
 
     let source = "\"\"\"\n\n\n   var\n\n\"";
     let mut sc = Scanner::new(source);
-    if let Token::Var { inner } = &sc.scan_tokens()[0] {
+    if let Token::Var { inner } = &sc.scan_tokens().next().unwrap() {
         let a = inner.get_col();
         assert_eq!(a, (4, 4));
     }
 
     let source = "\n\n\n  data\n\n";
     let mut sc = Scanner::new(source);
-    if let Token::Identifier { inner } = &sc.scan_tokens()[0] {
+    if let Token::Identifier { inner } = &sc.scan_tokens().next().unwrap() {
         let a = inner.get_col();
         assert_eq!(a, (4, 3));
     }
@@ -198,7 +198,7 @@ fn test_maximal_munch() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from("class classa");
     let correct = vec![
@@ -210,7 +210,7 @@ fn test_maximal_munch() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 }
 #[test]
 fn other_char() {
@@ -237,7 +237,7 @@ fn other_char() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(correct, sc.scan_tokens());
+    assert_eq!(correct, sc.scan_tokens().collect::<Vec<_>>());
 
     let source = Rc::from("var a =#  1.8;");
     let correct = vec![
@@ -262,7 +262,7 @@ fn other_char() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(correct, sc.scan_tokens());
+    assert_eq!(correct, sc.scan_tokens().collect::<Vec<_>>());
 }
 
 #[test]
@@ -287,7 +287,7 @@ fn test_scan_number() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from("var a = 1.8.pow(1);");
     let correct = vec![
@@ -325,7 +325,7 @@ fn test_scan_number() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from("var a = 1.0;");
     let correct = vec![
@@ -347,7 +347,7 @@ fn test_scan_number() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from("var a = 19.;");
     let correct = vec![
@@ -372,7 +372,7 @@ fn test_scan_number() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 }
 
 #[test]
@@ -397,7 +397,7 @@ fn test_scan_comment() {
         // },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from("var a = 10 / 4;");
     let correct = vec![
@@ -426,7 +426,7 @@ fn test_scan_comment() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 }
 
 #[test]
@@ -449,7 +449,7 @@ fn test_scan_block_comment() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from("/* this is a comment */\nvar\ta\n=\r10");
     let offset = 24;
@@ -469,14 +469,14 @@ fn test_scan_block_comment() {
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 
     let source = Rc::from("/* this is a comment/\nvar a = 10");
     let correct = vec![Token::Invalid {
         inner: TokenInner::new(Rc::clone(&source), 32, 0),
     }];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 }
 
 #[test]
@@ -650,5 +650,5 @@ var seven = 1 >= 2;
     ];
 
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(sc.scan_tokens().collect::<Vec<_>>(), correct);
 }

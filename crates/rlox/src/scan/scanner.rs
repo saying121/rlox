@@ -20,70 +20,134 @@ impl<'s> Scanner<'s> {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Vec<Token> {
-        let mut tokens = Vec::new();
-        while let Some((idx, ch)) = self.source_chars.next() {
-            let token = match ch {
-                white if white.is_whitespace() => continue,
-                // > one char tokens
-                '(' => Token::LeftParen {
-                    inner: TokenInner::new_left_paren(self.origin(), idx),
-                },
-                ')' => Token::RightParen {
-                    inner: TokenInner::new_right_paren(self.origin(), idx),
-                },
-                '{' => Token::LeftBrace {
-                    inner: TokenInner::new_left_brace(self.origin(), idx),
-                },
-                '}' => Token::RightBrace {
-                    inner: TokenInner::new_right_brace(self.origin(), idx),
-                },
-                ',' => Token::Comma {
-                    inner: TokenInner::new_comma(self.origin(), idx),
-                },
-                '.' => Token::Dot {
-                    inner: TokenInner::new_dot(self.origin(), idx),
-                },
-                '-' => Token::Minus {
-                    inner: TokenInner::new_minus(self.origin(), idx),
-                },
-                '+' => Token::Plus {
-                    inner: TokenInner::new_plus(self.origin(), idx),
-                },
-                ';' => Token::Semicolon {
-                    inner: TokenInner::new_semicolon(self.origin(), idx),
-                },
-                '*' => Token::Star {
-                    inner: TokenInner::new_star(self.origin(), idx),
-                },
-                // > two char tokens
-                '!' => self.parse_bang(idx),
-                '=' => self.parse_equal(idx),
-                '<' => self.parse_less(idx),
-                '>' => self.parse_greater(idx),
-                '/' => {
-                    let token = self.parse_slash(idx);
-                    match token {
-                        Token::BlockComment { .. } | Token::Comment { .. } => {
-                            continue;
-                        },
-                        t => t,
-                    }
-                },
-                // > multi char tokens
-                '"' => self.parse_string(idx),
-                digit if digit.is_ascii_digit() => self.parse_number(digit, idx),
-                ident_start if ident_start.is_ascii_alphabetic() || ident_start == '_' => {
-                    self.parse_ident(idx, ident_start)
-                },
-                other => self.parse_other(other, idx),
-            };
+    pub fn scan_tokens(&mut self) -> impl Iterator<Item = Token> {
+        gen {
+            while let Some((idx, ch)) = self.source_chars.next() {
+                let token = match ch {
+                    white if white.is_whitespace() => continue,
+                    // > one char tokens
+                    '(' => Token::LeftParen {
+                        inner: TokenInner::new_left_paren(self.origin(), idx),
+                    },
+                    ')' => Token::RightParen {
+                        inner: TokenInner::new_right_paren(self.origin(), idx),
+                    },
+                    '{' => Token::LeftBrace {
+                        inner: TokenInner::new_left_brace(self.origin(), idx),
+                    },
+                    '}' => Token::RightBrace {
+                        inner: TokenInner::new_right_brace(self.origin(), idx),
+                    },
+                    ',' => Token::Comma {
+                        inner: TokenInner::new_comma(self.origin(), idx),
+                    },
+                    '.' => Token::Dot {
+                        inner: TokenInner::new_dot(self.origin(), idx),
+                    },
+                    '-' => Token::Minus {
+                        inner: TokenInner::new_minus(self.origin(), idx),
+                    },
+                    '+' => Token::Plus {
+                        inner: TokenInner::new_plus(self.origin(), idx),
+                    },
+                    ';' => Token::Semicolon {
+                        inner: TokenInner::new_semicolon(self.origin(), idx),
+                    },
+                    '*' => Token::Star {
+                        inner: TokenInner::new_star(self.origin(), idx),
+                    },
+                    // > two char tokens
+                    '!' => self.parse_bang(idx),
+                    '=' => self.parse_equal(idx),
+                    '<' => self.parse_less(idx),
+                    '>' => self.parse_greater(idx),
+                    '/' => {
+                        let token = self.parse_slash(idx);
+                        match token {
+                            Token::BlockComment { .. } | Token::Comment { .. } => {
+                                continue;
+                            },
+                            t => t,
+                        }
+                    },
+                    // > multi char tokens
+                    '"' => self.parse_string(idx),
+                    digit if digit.is_ascii_digit() => self.parse_number(digit, idx),
+                    ident_start if ident_start.is_ascii_alphabetic() || ident_start == '_' => {
+                        self.parse_ident(idx, ident_start)
+                    },
+                    other => self.parse_other(other, idx),
+                };
 
-            tokens.push(token);
+                yield token;
+            }
         }
-
-        tokens
     }
+
+    // pub fn scan_tokens(&mut self) -> Vec<Token> {
+    //     let mut tokens = Vec::new();
+    //     while let Some((idx, ch)) = self.source_chars.next() {
+    //         let token = match ch {
+    //             white if white.is_whitespace() => continue,
+    //             // > one char tokens
+    //             '(' => Token::LeftParen {
+    //                 inner: TokenInner::new_left_paren(self.origin(), idx),
+    //             },
+    //             ')' => Token::RightParen {
+    //                 inner: TokenInner::new_right_paren(self.origin(), idx),
+    //             },
+    //             '{' => Token::LeftBrace {
+    //                 inner: TokenInner::new_left_brace(self.origin(), idx),
+    //             },
+    //             '}' => Token::RightBrace {
+    //                 inner: TokenInner::new_right_brace(self.origin(), idx),
+    //             },
+    //             ',' => Token::Comma {
+    //                 inner: TokenInner::new_comma(self.origin(), idx),
+    //             },
+    //             '.' => Token::Dot {
+    //                 inner: TokenInner::new_dot(self.origin(), idx),
+    //             },
+    //             '-' => Token::Minus {
+    //                 inner: TokenInner::new_minus(self.origin(), idx),
+    //             },
+    //             '+' => Token::Plus {
+    //                 inner: TokenInner::new_plus(self.origin(), idx),
+    //             },
+    //             ';' => Token::Semicolon {
+    //                 inner: TokenInner::new_semicolon(self.origin(), idx),
+    //             },
+    //             '*' => Token::Star {
+    //                 inner: TokenInner::new_star(self.origin(), idx),
+    //             },
+    //             // > two char tokens
+    //             '!' => self.parse_bang(idx),
+    //             '=' => self.parse_equal(idx),
+    //             '<' => self.parse_less(idx),
+    //             '>' => self.parse_greater(idx),
+    //             '/' => {
+    //                 let token = self.parse_slash(idx);
+    //                 match token {
+    //                     Token::BlockComment { .. } | Token::Comment { .. } => {
+    //                         continue;
+    //                     },
+    //                     t => t,
+    //                 }
+    //             },
+    //             // > multi char tokens
+    //             '"' => self.parse_string(idx),
+    //             digit if digit.is_ascii_digit() => self.parse_number(digit, idx),
+    //             ident_start if ident_start.is_ascii_alphabetic() || ident_start == '_' => {
+    //                 self.parse_ident(idx, ident_start)
+    //             },
+    //             other => self.parse_other(other, idx),
+    //         };
+    //
+    //         tokens.push(token);
+    //     }
+    //
+    //     tokens
+    // }
 
     fn keyword_or_ident(inner: TokenInner) -> Token {
         #[expect(clippy::enum_glob_use, reason = "just in this block")]

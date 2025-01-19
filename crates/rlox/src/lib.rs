@@ -1,4 +1,4 @@
-#![feature(let_chains, try_blocks, duration_millis_float)]
+#![feature(let_chains, try_blocks, duration_millis_float, coroutines, gen_blocks)]
 
 pub mod ast_printer;
 pub mod cli;
