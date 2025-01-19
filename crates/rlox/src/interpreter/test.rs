@@ -15,7 +15,7 @@ fn test_logic() {
 
     let exprs = Exprs::Unary(Unary::new(
         Token::Bang {
-            inner: TokenInner::new(source, "!".to_owned(), 0),
+            inner: TokenInner::new_bang(source, 0),
         },
         Exprs::Literal(Literal::new(LiteralType::Bool(true))),
     ));
@@ -28,7 +28,7 @@ fn test_logic() {
 
     let exprs = Exprs::Unary(Unary::new(
         Token::Bang {
-            inner: TokenInner::new(source, "!".to_owned(), 0),
+            inner: TokenInner::new_bang(source, 0),
         },
         Exprs::Literal(Literal::new(LiteralType::Bool(false))),
     ));
@@ -48,7 +48,7 @@ fn test_plus_minus_multi_div() {
     let exprs = Exprs::Binary(Binary::new(
         Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
         Token::Plus {
-            inner: TokenInner::new(source, "+".to_owned(), 1),
+            inner: TokenInner::new_plus(source, 1),
         },
         Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
     ));
@@ -63,7 +63,7 @@ fn test_plus_minus_multi_div() {
     let exprs = Exprs::Binary(Binary::new(
         Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
         Token::Minus {
-            inner: TokenInner::new(source, "-".to_owned(), 1),
+            inner: TokenInner::new_minus(source, 1),
         },
         Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
     ));
@@ -75,7 +75,7 @@ fn test_plus_minus_multi_div() {
     let exprs = Exprs::Binary(Binary::new(
         Exprs::Literal(Literal::new(LiteralType::Number(8.0))),
         Token::Star {
-            inner: TokenInner::new(source, "*".to_owned(), 1),
+            inner: TokenInner::new_star(source, 1),
         },
         Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
     ));
@@ -88,7 +88,7 @@ fn test_plus_minus_multi_div() {
     let exprs = Exprs::Binary(Binary::new(
         Exprs::Literal(Literal::new(LiteralType::Number(2.0))),
         Token::Slash {
-            inner: TokenInner::new(source, "/".to_owned(), 1),
+            inner: TokenInner::new_slash(source, 1),
         },
         Exprs::Literal(Literal::new(LiteralType::Number(3.0))),
     ));
@@ -133,7 +133,8 @@ while (true) {
     break;
 }
 ",
-    false)
+        false,
+    )
     .unwrap();
     lox.run(
         "
@@ -144,7 +145,8 @@ for (var i = 1; i < 5; i = i + 1) {
     }
 }
 ",
-    false)
+        false,
+    )
     .unwrap();
 }
 
@@ -155,6 +157,7 @@ fn test_define_del() {
         "
 var a = 1;
 ",
-    false)
+        false,
+    )
     .unwrap();
 }

@@ -1,6 +1,6 @@
 #![allow(unfulfilled_lint_expectations, reason = "allow it")]
 
-use std::{fmt::Display, mem, rc::Rc};
+use std::{fmt::Display, rc::Rc};
 
 #[derive(Clone)]
 #[derive(Debug)]
@@ -8,208 +8,126 @@ use std::{fmt::Display, mem, rc::Rc};
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TokenInner {
     origin: Rc<str>,
-    lexeme: String,
-    len: usize,
+    lexeme: Rc<str>,
     /// start char offset
     offset: usize,
 }
 
 impl TokenInner {
-    pub fn new_print(origin: Rc<str>, offset: usize) -> Self {
+    pub fn new_string(origin: Rc<str>, len: usize, offset: usize) -> Self {
+        // plus 1 trim start '"'
+        let trim = offset + 1;
+        let lexeme: Rc<str> = Rc::from(&origin[trim..trim + len]);
         Self {
             origin,
-            lexeme: "print".to_owned(),
-            len: 5,
+            lexeme,
             offset,
         }
     }
+
+    pub fn new_true(origin: Rc<str>, offset: usize) -> Self {
+        Self::new(origin, "true".len(), offset)
+    }
+
+    pub fn new_class(origin: Rc<str>, offset: usize) -> Self {
+        Self::new(origin, "class".len(), offset)
+    }
+
+    pub fn new_var(origin: Rc<str>, offset: usize) -> Self {
+        Self::new(origin, "var".len(), offset)
+    }
+
+    pub fn new_print(origin: Rc<str>, offset: usize) -> Self {
+        Self::new(origin, "print".len(), offset)
+    }
+
     pub fn new_greater_equal(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: ">=".to_owned(),
-            len: 2,
-            offset,
-        }
+        Self::new(origin, ">=".len(), offset)
     }
 
     pub fn new_greater(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: ">".to_owned(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, ">".len(), offset)
     }
 
     pub fn new_less_equal(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: "<=".to_owned(),
-            len: 2,
-            offset,
-        }
+        Self::new(origin, "<=".len(), offset)
     }
 
     pub fn new_less(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: "<".to_owned(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, "<".len(), offset)
     }
 
     pub fn new_equal_equal(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: "==".to_owned(),
-            len: 2,
-            offset,
-        }
+        Self::new(origin, "==".len(), offset)
     }
 
     pub fn new_equal(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: "=".to_owned(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, "=".len(), offset)
     }
 
     pub fn new_bang_equal(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: "!=".to_owned(),
-            len: 2,
-            offset,
-        }
+        Self::new(origin, "!=".len(), offset)
     }
 
     pub fn new_bang(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: '!'.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, '!'.len_utf8(), offset)
     }
 
     pub fn new_slash(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: '/'.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, '/'.len_utf8(), offset)
     }
 
     pub fn new_star(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: '*'.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, '*'.len_utf8(), offset)
     }
 
     pub fn new_semicolon(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: ';'.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, ';'.len_utf8(), offset)
     }
 
     pub fn new_plus(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: '+'.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, '+'.len_utf8(), offset)
     }
 
     pub fn new_minus(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: '-'.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, '-'.len_utf8(), offset)
     }
 
     pub fn new_dot(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: '.'.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, '.'.len_utf8(), offset)
     }
 
     pub fn new_comma(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: ','.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, ','.len_utf8(), offset)
     }
 
     pub fn new_left_brace(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: '{'.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, '{'.len_utf8(), offset)
     }
+
     pub fn new_right_brace(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: '}'.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, '}'.len_utf8(), offset)
     }
 
     pub fn new_left_paren(origin: Rc<str>, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme: '('.to_string(),
-            len: 1,
-            offset,
-        }
+        Self::new(origin, '('.len_utf8(), offset)
     }
 
     pub fn new_right_paren(origin: Rc<str>, offset: usize) -> Self {
+        Self::new(origin, ')'.len_utf8(), offset)
+    }
+
+    pub fn new(origin: Rc<str>, len: usize, offset: usize) -> Self {
+        let lexeme: Rc<str> = Rc::from(&origin[offset..offset + len]);
         Self {
             origin,
-            lexeme: ')'.to_string(),
-            len: 1,
+            lexeme,
             offset,
         }
     }
 
-    pub fn new(origin: Rc<str>, lexeme: String, offset: usize) -> Self {
-        let len = lexeme.len();
-        Self {
-            origin,
-            lexeme,
-            len,
-            offset,
-        }
-    }
-
-    pub const fn new_invalid(origin: Rc<str>, lexeme: String, len: usize, offset: usize) -> Self {
-        Self {
-            origin,
-            lexeme,
-            len,
-            offset,
-        }
+    pub fn new_invalid(origin: Rc<str>, len: usize, offset: usize) -> Self {
+        Self::new(origin, len, offset)
     }
 
     pub fn get_col(&self) -> (usize, usize) {
@@ -231,8 +149,8 @@ impl TokenInner {
         &self.lexeme
     }
 
-    pub fn lexeme_take(&mut self) -> String {
-        mem::take(&mut self.lexeme)
+    pub fn lexeme_owned(&self) -> String {
+        self.lexeme().to_owned()
     }
 }
 
@@ -371,7 +289,7 @@ impl Display for TokenInner {
 }
 
 macro_rules! token_enums_match {
-    ($($arm:ident), *) => {
+    ($($arm:ident,) *) => {
 
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -444,6 +362,7 @@ token_enums_match!(
     LessEqual,
     Identifier,
     String,
+    Number,
     And,
     Class,
     Else,
@@ -465,7 +384,6 @@ token_enums_match!(
     BlockComment,
     Invalid,
     Break,
-    Number
 );
 
 impl Token {

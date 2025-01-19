@@ -18,12 +18,12 @@ fn test_equal() {
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
             Token::EqualEqual {
-                inner: TokenInner::new(Rc::clone(&source), "==".to_owned(), 9),
+                inner: TokenInner::new_equal_equal(Rc::clone(&source), 9),
             },
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
         ))
@@ -138,7 +138,7 @@ fn test_plus_minus_multi_div() {
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
@@ -162,7 +162,7 @@ fn test_plus_minus_multi_div() {
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::String("ab".to_owned()))),
@@ -186,7 +186,7 @@ fn test_plus_minus_multi_div() {
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
@@ -210,7 +210,7 @@ fn test_plus_minus_multi_div() {
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
@@ -234,7 +234,7 @@ fn test_plus_minus_multi_div() {
 
     let right = vec![Stmts::Var(Var::new(
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Exprs::Binary(Binary::new(
             Exprs::Literal(Literal::new(LiteralType::Number(1.0))),
@@ -256,7 +256,7 @@ fn test_paren() {
     let source: Rc<str> = Rc::from("(");
 
     let tks = vec![Token::LeftParen {
-        inner: TokenInner::new(Rc::clone(&source), "(".to_owned(), 0),
+        inner: TokenInner::new_left_paren(Rc::clone(&source), 0),
     }];
 
     let mut p = Parser::new(tks);

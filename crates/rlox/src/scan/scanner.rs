@@ -164,8 +164,8 @@ impl<'s> Scanner<'s> {
                     .source_chars
                     .by_ref()
                     .take_while(|&(_, c)| c != '\n')
-                    .map(|(_, c)| c)
-                    .collect();
+                    .map(|(_, c)| c.len_utf8())
+                    .sum();
                 Token::Comment {
                     inner: TokenInner::new(self.origin(), comment, idx),
                 }
@@ -187,12 +187,12 @@ impl<'s> Scanner<'s> {
                             count += 1;
                         }
 
-                        let b_comment: String = self
+                        let b_comment = self
                             .source_chars
                             .by_ref()
                             .take(count)
-                            .map(|(_, c)| c)
-                            .collect();
+                            .map(|(_, c)| c.len_utf8())
+                            .sum();
 
                         // consume the next two characters regardless, even not ('*','/')
                         self.source_chars.next();
@@ -205,12 +205,7 @@ impl<'s> Scanner<'s> {
                         }
                         else {
                             Token::Invalid {
-                                inner: TokenInner::new_invalid(
-                                    self.origin(),
-                                    "Invalid block comment, not end with `*/`".to_owned(),
-                                    self.source.len() - idx,
-                                    idx,
-                                ),
+                                inner: TokenInner::new(self.origin(), self.source.len() - idx, idx),
                             }
                         }
                     },
@@ -224,14 +219,14 @@ impl<'s> Scanner<'s> {
 
     /// `"..."`, `"...`, `"...\"...\\\n..."`
     fn parse_string(&mut self, idx: usize) -> Token {
-        let mut res_str = String::new();
+        let mut res_len = 0;
 
         let mut last_matched = '\0';
         let mut need_escape = false;
         let mut str_end = false;
 
         loop {
-            let string: String = self
+            let string: usize = self
                 .source_chars
                 .by_ref()
                 .take_while(|&(_, c)| {
@@ -253,10 +248,10 @@ impl<'s> Scanner<'s> {
                         true
                     }
                 })
-                .map(|(_, c)| c)
-                .collect();
+                .map(|(_, c)| c.len_utf8())
+                .sum();
 
-            res_str.push_str(&string);
+            res_len += string;
             if last_matched == '"' && str_end || self.source_chars.peek().is_none() {
                 break;
             }
@@ -264,23 +259,17 @@ impl<'s> Scanner<'s> {
 
         match last_matched {
             '"' => Token::String {
-                inner: TokenInner::new(self.origin(), res_str, idx),
+                inner: TokenInner::new_string(self.origin(), res_len, idx),
             },
             // When does not end with '"' that may indicate EOF
             _ => Token::Invalid {
-                inner: TokenInner::new_invalid(
-                    self.origin(),
-                    r#"Invalid string token, not end with `"`"#.to_owned(),
-                    self.source.len() - idx,
-                    idx,
-                ),
+                inner: TokenInner::new(self.origin(), self.source.len() - idx, idx),
             },
         }
     }
 
     fn parse_number(&mut self, first: char, idx: usize) -> Token {
-        let mut its = Vec::with_capacity(4);
-        its.push(first.to_string());
+        let mut its_len = first.len_utf8();
 
         let mut count = 0;
         while let Some(&(_, ch)) = self.source_chars.peek_nth(count)
@@ -289,12 +278,13 @@ impl<'s> Scanner<'s> {
             count += 1;
         }
 
-        let dig_integer = self
+        let dig_integer: usize = self
             .source_chars
             .by_ref()
             .take(count)
-            .map(|(_, c)| c)
-            .collect();
+            .map(|(_, c)| c.len_utf8())
+            .sum();
+        its_len += dig_integer;
 
         // `take_while_ref` inner clone full iterator, so expensive
         // let dig_integer = sour_chars
@@ -302,15 +292,12 @@ impl<'s> Scanner<'s> {
         //     .map(|(_, c)| c)
         //     .collect();
 
-        its.push(dig_integer);
-
         if let Some(&(_, next)) = self.source_chars.peek_nth(0)
             && let Some(&(_, next_next)) = self.source_chars.peek_nth(1)
             && next == '.'
             && next_next.is_ascii_digit()
         {
-            let (_, dot) = unsafe { self.source_chars.next().unwrap_unchecked() };
-            its.push(dot.to_string());
+            let (_, _dot) = unsafe { self.source_chars.next().unwrap_unchecked() };
 
             let mut count = 0;
 
@@ -320,41 +307,47 @@ impl<'s> Scanner<'s> {
                 count += 1;
             }
 
-            let decimal = self
+            let decimal: usize = self
                 .source_chars
                 .by_ref()
                 .take(count)
-                .map(|(_, c)| c)
-                .collect();
-            its.push(decimal);
+                .map(|(_, c)| c.len_utf8())
+                .sum();
+            its_len += decimal;
+            its_len += '.'.len_utf8();
         }
 
-        let lexeme = its.join("");
+        let inner = TokenInner::new(self.origin(), its_len, idx);
+
         Token::Number {
-            double: lexeme.parse().expect("parse double failed"),
-            inner: TokenInner::new(self.origin(), lexeme, idx),
+            // Safety: the previous scan must have output a float
+            double: unsafe { inner.lexeme().parse().unwrap_unchecked() },
+            inner,
         }
     }
 
     fn parse_ident(&mut self, idx: usize, ident_start: char) -> Token {
+        let mut len = ident_start.len_utf8();
         let mut count = 0;
         while let Some(&(_, c)) = self.source_chars.peek_nth(count)
             && (c.is_ascii_alphanumeric() || c == '_')
         {
             count += 1;
         }
-        let lexeme: String = self
+        let lexeme_len: usize = self
             .source_chars
             .by_ref()
             .take(count)
-            .map(|(_, c)| c)
-            .collect();
-        let inner = TokenInner::new(self.origin(), format!("{ident_start}{lexeme}"), idx);
+            .map(|(_, c)| c.len_utf8())
+            .sum();
+        len += lexeme_len;
+        let inner = TokenInner::new(self.origin(), len, idx);
 
         Self::keyword_or_ident(inner)
     }
 
     fn parse_other(&mut self, other: char, idx: usize) -> Token {
+        let mut len = other.len_utf8();
         let mut count = 0;
         while let Some(&(_, c)) = self.source_chars.peek_nth(count) {
             if c.is_ascii_alphanumeric() || c.is_whitespace() {
@@ -362,19 +355,15 @@ impl<'s> Scanner<'s> {
             }
             count += 1;
         }
-        let ot: String = self
+        let ot: usize = self
             .source_chars
             .by_ref()
             .take(count)
-            .map(|(_, c)| c)
-            .collect();
+            .map(|(_, c)| c.len_utf8())
+            .sum();
+        len += ot;
         Token::Invalid {
-            inner: TokenInner::new_invalid(
-                self.origin(),
-                format!("Unknown: {}{}", other, ot),
-                count + 1, // add the `other` len
-                idx,
-            ),
+            inner: TokenInner::new(self.origin(), len, idx),
         }
     }
 

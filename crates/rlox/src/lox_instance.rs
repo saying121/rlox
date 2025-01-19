@@ -49,6 +49,6 @@ impl LoxInstance {
     }
 
     pub fn set(&mut self, name: Token, value: LiteralType) {
-        self.fields.insert(name.into_inner().lexeme_take(), value);
+        self.fields.insert(name.into_inner().lexeme_owned(), value);
     }
 }

@@ -11,7 +11,7 @@ use crate::{
 fn test_scan_missing_paren() {
     let source = Rc::from("(");
     let correct = vec![Token::LeftParen {
-        inner: TokenInner::new(Rc::clone(&source), "(".to_owned(), 0),
+        inner: TokenInner::new_left_paren(Rc::clone(&source), 0),
     }];
     let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
@@ -22,10 +22,10 @@ fn test_scan_string_escape() {
     let source = Rc::from("\"abcd\\\"\\\"\n\t\refg\";");
     let correct = vec![
         Token::String {
-            inner: TokenInner::new(Rc::clone(&source), "abcd\"\"\n\t\refg".to_owned(), 0),
+            inner: TokenInner::new_string(Rc::clone(&source), "abcd\"\"\n\t\refg".len(), 0),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 16),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 16),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -34,10 +34,10 @@ fn test_scan_string_escape() {
     let source = Rc::from("\"abcd\\\"\\\"\nefg\";");
     let correct = vec![
         Token::String {
-            inner: TokenInner::new(Rc::clone(&source), "abcd\"\"\nefg".to_owned(), 0),
+            inner: TokenInner::new_string(Rc::clone(&source), "abcd\"\"\nefg".len(), 0),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 14),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 14),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -46,10 +46,10 @@ fn test_scan_string_escape() {
     let source = Rc::from(r#""abcd\"\"efg";"#);
     let correct = vec![
         Token::String {
-            inner: TokenInner::new(Rc::clone(&source), r#"abcd""efg"#.to_owned(), 0),
+            inner: TokenInner::new_string(Rc::clone(&source), r#"abcd""efg"#.len(), 0),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 13),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 13),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -58,10 +58,10 @@ fn test_scan_string_escape() {
     let source = Rc::from(r#""abcd\"efg";"#);
     let correct = vec![
         Token::String {
-            inner: TokenInner::new(Rc::clone(&source), r#"abcd"efg"#.to_owned(), 0),
+            inner: TokenInner::new_string(Rc::clone(&source), r#"abcd"efg"#.len(), 0),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 11),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 11),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -70,10 +70,10 @@ fn test_scan_string_escape() {
     let source = Rc::from(r#""abcd\\\"efg";"#);
     let correct = vec![
         Token::String {
-            inner: TokenInner::new(Rc::clone(&source), r#"abcd\"efg"#.to_owned(), 0),
+            inner: TokenInner::new_string(Rc::clone(&source), r#"abcd\"efg"#.len(), 0),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 13),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 13),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -82,10 +82,10 @@ fn test_scan_string_escape() {
     let source = Rc::from(r#""abcd\\#efg";"#);
     let correct = vec![
         Token::String {
-            inner: TokenInner::new(Rc::clone(&source), r#"abcd\#efg"#.to_owned(), 0),
+            inner: TokenInner::new_string(Rc::clone(&source), r#"abcd\#efg"#.len(), 0),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 12),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 12),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -97,40 +97,40 @@ fn test_scan_string() {
     let source = Rc::from(r#"var a = "ab()cdefg";"#);
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::String {
-            inner: TokenInner::new(Rc::clone(&source), "ab()cdefg".to_owned(), 8),
+            inner: TokenInner::new_string(Rc::clone(&source), "ab()cdefg".len(), 8),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 19),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 19),
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(correct, sc.scan_tokens());
 
     let source = Rc::from(r#"var a = "abcdefg";"#);
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::String {
-            inner: TokenInner::new(Rc::clone(&source), "abcdefg".to_owned(), 8),
+            inner: TokenInner::new_string(Rc::clone(&source), "abcdefg".len(), 8),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 17),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 17),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -139,21 +139,16 @@ fn test_scan_string() {
     let source = Rc::from(r#"var a = "abcdefg;"#);
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::Invalid {
-            inner: TokenInner::new_invalid(
-                Rc::clone(&source),
-                r#"Invalid string token, not end with `"`"#.to_owned(),
-                9,
-                8,
-            ),
+            inner: TokenInner::new(Rc::clone(&source), 9, 8),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -196,10 +191,10 @@ fn test_maximal_munch() {
     let source = Rc::from("var vara");
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "vara".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "vara".len(), 4),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -208,10 +203,10 @@ fn test_maximal_munch() {
     let source = Rc::from("class classa");
     let correct = vec![
         Token::Class {
-            inner: TokenInner::new(Rc::clone(&source), "class".to_owned(), 0),
+            inner: TokenInner::new_class(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "classa".to_owned(), 6),
+            inner: TokenInner::new(Rc::clone(&source), "classa".len(), 6),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -222,52 +217,52 @@ fn other_char() {
     let source = Rc::from("var a =## 1.8;");
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::Invalid {
-            inner: TokenInner::new_invalid(Rc::clone(&source), "Unknown: ##".to_owned(), 2, 7),
+            inner: TokenInner::new(Rc::clone(&source), 2, 7),
         },
         Token::Number {
             double: 1.8,
-            inner: TokenInner::new(Rc::clone(&source), "1.8".to_owned(), 10),
+            inner: TokenInner::new(Rc::clone(&source), "1.8".len(), 10),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 13),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 13),
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(correct, sc.scan_tokens());
 
     let source = Rc::from("var a =#  1.8;");
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::Invalid {
-            inner: TokenInner::new_invalid(Rc::clone(&source), "Unknown: #".to_owned(), 1, 7),
+            inner: TokenInner::new(Rc::clone(&source), 1, 7),
         },
         Token::Number {
             double: 1.8,
-            inner: TokenInner::new(Rc::clone(&source), "1.8".to_owned(), 10),
+            inner: TokenInner::new(Rc::clone(&source), "1.8".len(), 10),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 13),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 13),
         },
     ];
     let mut sc = Scanner::new(&source);
-    assert_eq!(sc.scan_tokens(), correct);
+    assert_eq!(correct, sc.scan_tokens());
 }
 
 #[test]
@@ -275,20 +270,20 @@ fn test_scan_number() {
     let source = Rc::from("var a = 1.8;");
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::Number {
             double: 1.8,
-            inner: TokenInner::new(Rc::clone(&source), "1.8".to_owned(), 8),
+            inner: TokenInner::new(Rc::clone(&source), "1.8".len(), 8),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 11),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 11),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -297,36 +292,36 @@ fn test_scan_number() {
     let source = Rc::from("var a = 1.8.pow(1);");
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::Number {
             double: 1.8,
-            inner: TokenInner::new(Rc::clone(&source), "1.8".to_owned(), 8),
+            inner: TokenInner::new(Rc::clone(&source), "1.8".len(), 8),
         },
         Token::Dot {
-            inner: TokenInner::new(Rc::clone(&source), ".".to_owned(), 11),
+            inner: TokenInner::new_dot(Rc::clone(&source), 11),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "pow".to_owned(), 12),
+            inner: TokenInner::new(Rc::clone(&source), "pow".len(), 12),
         },
         Token::LeftParen {
-            inner: TokenInner::new(Rc::clone(&source), "(".to_owned(), 15),
+            inner: TokenInner::new_left_paren(Rc::clone(&source), 15),
         },
         Token::Number {
             double: 1.,
-            inner: TokenInner::new(Rc::clone(&source), "1".to_owned(), 16),
+            inner: TokenInner::new(Rc::clone(&source), "1".len(), 16),
         },
         Token::RightParen {
-            inner: TokenInner::new(Rc::clone(&source), ")".to_owned(), 17),
+            inner: TokenInner::new_right_paren(Rc::clone(&source), 17),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 18),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 18),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -335,20 +330,20 @@ fn test_scan_number() {
     let source = Rc::from("var a = 1.0;");
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::Number {
             double: 1.0,
-            inner: TokenInner::new(Rc::clone(&source), "1.0".to_owned(), 8),
+            inner: TokenInner::new(Rc::clone(&source), "1.0".len(), 8),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 11),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 11),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -357,23 +352,23 @@ fn test_scan_number() {
     let source = Rc::from("var a = 19.;");
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::Number {
             double: 19.0,
-            inner: TokenInner::new(Rc::clone(&source), "19".to_owned(), 8),
+            inner: TokenInner::new(Rc::clone(&source), "19".len(), 8),
         },
         Token::Dot {
-            inner: TokenInner::new(Rc::clone(&source), ".".to_owned(), 10),
+            inner: TokenInner::new_dot(Rc::clone(&source), 10),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 11),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 11),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -385,17 +380,17 @@ fn test_scan_comment() {
     let source = Rc::from("// this is a comment\nvar a = 10");
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 21),
+            inner: TokenInner::new_var(Rc::clone(&source), 21),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4 + 21),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4 + 21),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6 + 21),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6 + 21),
         },
         Token::Number {
             double: 10.0,
-            inner: TokenInner::new(Rc::clone(&source), "10".to_owned(), 8 + 21),
+            inner: TokenInner::new(Rc::clone(&source), "10".len(), 8 + 21),
         },
         // MyTokenType::Semicolon {
         //     inner: TokenInner::new(";".to_owned(), 11),
@@ -407,27 +402,27 @@ fn test_scan_comment() {
     let source = Rc::from("var a = 10 / 4;");
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6),
         },
         Token::Number {
             double: 10.0,
-            inner: TokenInner::new(Rc::clone(&source), "10".to_owned(), 8),
+            inner: TokenInner::new(Rc::clone(&source), "10".len(), 8),
         },
         Token::Slash {
-            inner: TokenInner::new(Rc::clone(&source), "/".to_owned(), 11),
+            inner: TokenInner::new_slash(Rc::clone(&source), 11),
         },
         Token::Number {
             double: 4.0,
-            inner: TokenInner::new(Rc::clone(&source), "4".to_owned(), 13),
+            inner: TokenInner::new(Rc::clone(&source), "4".len(), 13),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 14),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 14),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -440,17 +435,17 @@ fn test_scan_block_comment() {
     let offset = 23;
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), offset),
+            inner: TokenInner::new_var(Rc::clone(&source), offset),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4 + offset),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4 + offset),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6 + offset),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6 + offset),
         },
         Token::Number {
             double: 10.0,
-            inner: TokenInner::new(Rc::clone(&source), "10".to_owned(), 8 + offset),
+            inner: TokenInner::new(Rc::clone(&source), "10".len(), 8 + offset),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -460,17 +455,17 @@ fn test_scan_block_comment() {
     let offset = 24;
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), offset),
+            inner: TokenInner::new_var(Rc::clone(&source), offset),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 4 + offset),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 4 + offset),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 6 + offset),
+            inner: TokenInner::new_equal(Rc::clone(&source), 6 + offset),
         },
         Token::Number {
             double: 10.0,
-            inner: TokenInner::new(Rc::clone(&source), "10".to_owned(), 8 + offset),
+            inner: TokenInner::new(Rc::clone(&source), "10".len(), 8 + offset),
         },
     ];
     let mut sc = Scanner::new(&source);
@@ -478,12 +473,7 @@ fn test_scan_block_comment() {
 
     let source = Rc::from("/* this is a comment/\nvar a = 10");
     let correct = vec![Token::Invalid {
-        inner: TokenInner::new_invalid(
-            Rc::clone(&source),
-            "Invalid block comment, not end with `*/`".to_owned(),
-            32,
-            0,
-        ),
+        inner: TokenInner::new(Rc::clone(&source), 32, 0),
     }];
     let mut sc = Scanner::new(&source);
     assert_eq!(sc.scan_tokens(), correct);
@@ -504,158 +494,158 @@ var seven = 1 >= 2;
     );
     let correct = vec![
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 0),
+            inner: TokenInner::new_var(Rc::clone(&source), 0),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "one".to_owned(), 4),
+            inner: TokenInner::new(Rc::clone(&source), "one".len(), 4),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 8),
+            inner: TokenInner::new_equal(Rc::clone(&source), 8),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "a".to_owned(), 10),
+            inner: TokenInner::new(Rc::clone(&source), "a".len(), 10),
         },
         Token::BangEqual {
-            inner: TokenInner::new(Rc::clone(&source), "!=".to_owned(), 12),
+            inner: TokenInner::new_bang_equal(Rc::clone(&source), 12),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "b".to_owned(), 15),
+            inner: TokenInner::new(Rc::clone(&source), "b".len(), 15),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 16),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 16),
         },
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 18),
+            inner: TokenInner::new_var(Rc::clone(&source), 18),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "two".to_owned(), 22),
+            inner: TokenInner::new(Rc::clone(&source), "two".len(), 22),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 26),
+            inner: TokenInner::new_equal(Rc::clone(&source), 26),
         },
         Token::Bang {
-            inner: TokenInner::new(Rc::clone(&source), "!".to_owned(), 28),
+            inner: TokenInner::new_bang(Rc::clone(&source), 28),
         },
         Token::True {
-            inner: TokenInner::new(Rc::clone(&source), "true".to_owned(), 30),
+            inner: TokenInner::new_true(Rc::clone(&source), 30),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 34),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 34),
         },
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 36),
+            inner: TokenInner::new_var(Rc::clone(&source), 36),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "three".to_owned(), 40),
+            inner: TokenInner::new(Rc::clone(&source), "three".len(), 40),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 46),
+            inner: TokenInner::new_equal(Rc::clone(&source), 46),
         },
         Token::Number {
             double: 1.0,
-            inner: TokenInner::new(Rc::clone(&source), "1".to_owned(), 48),
+            inner: TokenInner::new(Rc::clone(&source), "1".len(), 48),
         },
         Token::EqualEqual {
-            inner: TokenInner::new(Rc::clone(&source), "==".to_owned(), 50),
+            inner: TokenInner::new_equal_equal(Rc::clone(&source), 50),
         },
         Token::Number {
             double: 2.0,
-            inner: TokenInner::new(Rc::clone(&source), "2".to_owned(), 53),
+            inner: TokenInner::new(Rc::clone(&source), "2".len(), 53),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 54),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 54),
         },
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 56),
+            inner: TokenInner::new_var(Rc::clone(&source), 56),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "four".to_owned(), 60),
+            inner: TokenInner::new(Rc::clone(&source), "four".len(), 60),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 65),
+            inner: TokenInner::new_equal(Rc::clone(&source), 65),
         },
         Token::Number {
             double: 1.0,
-            inner: TokenInner::new(Rc::clone(&source), "1".to_owned(), 67),
+            inner: TokenInner::new(Rc::clone(&source), "1".len(), 67),
         },
         Token::Less {
-            inner: TokenInner::new(Rc::clone(&source), "<".to_owned(), 69),
+            inner: TokenInner::new_less(Rc::clone(&source), 69),
         },
         Token::Number {
             double: 2.0,
-            inner: TokenInner::new(Rc::clone(&source), "2".to_owned(), 71),
+            inner: TokenInner::new(Rc::clone(&source), "2".len(), 71),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 72),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 72),
         },
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 74),
+            inner: TokenInner::new_var(Rc::clone(&source), 74),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "five".to_owned(), 78),
+            inner: TokenInner::new(Rc::clone(&source), "five".len(), 78),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 83),
+            inner: TokenInner::new_equal(Rc::clone(&source), 83),
         },
         Token::Number {
             double: 1.0,
-            inner: TokenInner::new(Rc::clone(&source), "1".to_owned(), 85),
+            inner: TokenInner::new(Rc::clone(&source), "1".len(), 85),
         },
         Token::LessEqual {
-            inner: TokenInner::new(Rc::clone(&source), "<=".to_owned(), 87),
+            inner: TokenInner::new_less_equal(Rc::clone(&source), 87),
         },
         Token::Number {
             double: 2.0,
-            inner: TokenInner::new(Rc::clone(&source), "2".to_owned(), 90),
+            inner: TokenInner::new(Rc::clone(&source), "2".len(), 90),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 91),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 91),
         },
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 93),
+            inner: TokenInner::new_var(Rc::clone(&source), 93),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "six".to_owned(), 97),
+            inner: TokenInner::new(Rc::clone(&source), "six".len(), 97),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 101),
+            inner: TokenInner::new_equal(Rc::clone(&source), 101),
         },
         Token::Number {
             double: 1.0,
-            inner: TokenInner::new(Rc::clone(&source), "1".to_owned(), 103),
+            inner: TokenInner::new(Rc::clone(&source), "1".len(), 103),
         },
         Token::Greater {
-            inner: TokenInner::new(Rc::clone(&source), ">".to_owned(), 105),
+            inner: TokenInner::new_greater(Rc::clone(&source), 105),
         },
         Token::Number {
             double: 2.0,
-            inner: TokenInner::new(Rc::clone(&source), "2".to_owned(), 107),
+            inner: TokenInner::new(Rc::clone(&source), "2".len(), 107),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 108),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 108),
         },
         Token::Var {
-            inner: TokenInner::new(Rc::clone(&source), "var".to_owned(), 110),
+            inner: TokenInner::new_var(Rc::clone(&source), 110),
         },
         Token::Identifier {
-            inner: TokenInner::new(Rc::clone(&source), "seven".to_owned(), 114),
+            inner: TokenInner::new(Rc::clone(&source), "seven".len(), 114),
         },
         Token::Equal {
-            inner: TokenInner::new(Rc::clone(&source), "=".to_owned(), 120),
+            inner: TokenInner::new_equal(Rc::clone(&source), 120),
         },
         Token::Number {
             double: 1.0,
-            inner: TokenInner::new(Rc::clone(&source), "1".to_owned(), 122),
+            inner: TokenInner::new(Rc::clone(&source), "1".len(), 122),
         },
         Token::GreaterEqual {
-            inner: TokenInner::new(Rc::clone(&source), ">=".to_owned(), 124),
+            inner: TokenInner::new_greater_equal(Rc::clone(&source), 124),
         },
         Token::Number {
             double: 2.0,
-            inner: TokenInner::new(Rc::clone(&source), "2".to_owned(), 127),
+            inner: TokenInner::new(Rc::clone(&source), "2".len(), 127),
         },
         Token::Semicolon {
-            inner: TokenInner::new(Rc::clone(&source), ";".to_owned(), 128),
+            inner: TokenInner::new_semicolon(Rc::clone(&source), 128),
         },
     ];
 

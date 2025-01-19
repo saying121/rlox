@@ -8,16 +8,16 @@ use crate::{
 
 #[test]
 fn print_test() {
-    let source = Rc::from("");
+    let source = Rc::from("-123 * 45.67;");
     let expression: Exprs = Exprs::Binary(Binary::new(
         Exprs::Unary(Unary::new(
             Token::Minus {
-                inner: TokenInner::new(Rc::clone(&source), '-'.to_string(), 1),
+                inner: TokenInner::new_minus(Rc::clone(&source), 0),
             },
             Exprs::Literal(Literal::new(crate::expr::LiteralType::Number(123.))),
         )),
         Token::Star {
-            inner: TokenInner::new(Rc::clone(&source), '*'.to_string(), 1),
+            inner: TokenInner::new_star(Rc::clone(&source), 5),
         },
         Exprs::Grouping(Grouping::new(Exprs::Literal(Literal::new(
             crate::expr::LiteralType::Number(45.67),

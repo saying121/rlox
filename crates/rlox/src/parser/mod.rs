@@ -480,9 +480,9 @@ where
                 Token::Number { double, .. } => {
                     Ok(Exprs::Literal(Literal::new(LiteralType::Number(double))))
                 },
-                Token::String { mut inner } => Ok(Exprs::Literal(Literal::new(
-                    LiteralType::String(inner.lexeme_take()),
-                ))),
+                Token::String { inner } => Ok(Exprs::Literal(Literal::new(LiteralType::String(
+                    inner.lexeme_owned(),
+                )))),
                 sup @ Token::Super { .. } => {
                     let keyword = sup;
                     self.consume_dot()?;
