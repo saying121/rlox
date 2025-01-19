@@ -1,6 +1,8 @@
+use rlox::scan::scanner::Scanner;
+
 use crate::{
     chunk::{Chunk, OpCode},
-    complier::Compiler,
+    complier::Parser,
     error::{self, Result},
     value::Value,
 };
@@ -20,8 +22,10 @@ impl Vm {
 
     pub fn interpret(&mut self, source: &str) -> Result<()> {
         let chunk = Chunk::new();
-        Compiler::compile(source, &chunk)?;
-        // self.run(chunk, chunk.code())
+
+        let mut scanner = Scanner::new(source);
+        let p = Parser::new(scanner.scan_tokens());
+        p.compile(&chunk)?;
         self.run(&chunk, chunk.code())
     }
 
