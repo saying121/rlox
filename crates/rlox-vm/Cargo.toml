@@ -12,6 +12,7 @@ rustyline = { workspace = true }
 snafu = { workspace = true }
 rlox = { workspace = true }
 itertools = { workspace = true }
+tracing = { workspace = true }
 
 [lints]
 workspace = true
