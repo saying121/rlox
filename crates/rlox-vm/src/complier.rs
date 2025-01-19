@@ -1,7 +1,13 @@
 use rlox::scan::scanner::Scanner;
 
-pub fn compile(source: &str) {
+use crate::chunk::Chunk;
+use crate::error::Result;
+
+pub fn compile(source: &str, chunk: &Chunk) -> Result<()> {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
-    unimplemented!()
+    for token in tokens {
+
+    }
+    Ok(())
 }

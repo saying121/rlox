@@ -1,41 +1,31 @@
 use crate::{
-    chunk::{Chunk, OpCode}, complier, value::Value
+    chunk::{Chunk, OpCode},
+    complier,
+    error::{self, Result},
+    value::Value,
 };
 
 #[derive(Clone)]
 #[derive(Debug)]
+#[derive(Default)]
 #[derive(PartialEq, PartialOrd)]
 pub struct Vm {
-    // pub chunk: &'v Chunk,
-    // pub ip: &'v [u8],
     pub stack: Vec<Value>,
-}
-
-#[derive(Clone, Copy)]
-#[derive(Debug)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-pub enum InterpretResult {
-    Ok,
-    CompileError,
-    RuntimeError,
 }
 
 impl Vm {
     pub const fn new() -> Self {
-        Self {
-            // chunk,
-            // ip: chunk.code(),
-            stack: vec![],
-        }
+        Self { stack: vec![] }
     }
 
-    pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        complier::compile(source);
+    pub fn interpret(&mut self, source: &str) -> Result<()> {
+        let chunk = Chunk::new();
+        complier::compile(source, &chunk)?;
         // self.run(chunk, chunk.code())
-        self.run(todo!(), todo!())
+        self.run(&chunk, chunk.code())
     }
 
-    pub fn run(&mut self, chunk: &Chunk, ip: &[u8]) -> InterpretResult {
+    pub fn run(&mut self, chunk: &Chunk, ip: &[u8]) -> Result<()> {
         macro_rules! binary_op {
             ($stack:expr, $op:tt) => {
                 {
@@ -59,9 +49,12 @@ impl Vm {
 
             match ele.into() {
                 OpCode::OpReturn => {
-                    let v = self.stack.pop().unwrap();
+                    let Some(v) = self.stack.pop()
+                    else {
+                        return error::ReturnEmptyStackSnafu.fail();
+                    };
                     println!("{}", v.0);
-                    return InterpretResult::Ok;
+                    return Ok(());
                 },
                 OpCode::OpConstant => {
                     // Safety: OpConstant next must be index
@@ -71,7 +64,10 @@ impl Vm {
                     self.stack.push(constant);
                 },
                 OpCode::OpNegate => {
-                    let value = self.stack.last_mut().unwrap();
+                    let Some(value) = self.stack.last_mut()
+                    else {
+                        return error::NegateEmptyStackSnafu.fail();
+                    };
                     value.0 = -value.0;
                 },
                 OpCode::OpAdd => binary_op!(self.stack, +),
@@ -80,12 +76,6 @@ impl Vm {
                 OpCode::OpDivide => binary_op!(self.stack, /),
             }
         }
-        InterpretResult::Ok
-    }
-}
-
-impl Default for Vm {
-    fn default() -> Self {
-        Self::new()
+        Ok(())
     }
 }

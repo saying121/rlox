@@ -4,11 +4,11 @@ use rustyline::{DefaultEditor, error::ReadlineError};
 use snafu::ResultExt;
 
 use crate::{
-    error::{ReadFileSnafu, ReplSnafu, Result},
-    vm::{InterpretResult, Vm},
+    error::{LoxError, ReadFileSnafu, ReplSnafu, Result},
+    vm::Vm,
 };
 
-pub fn run_prompt(vm: &mut Vm) -> crate::error::Result<()> {
+pub fn run_prompt(vm: &mut Vm) -> Result<()> {
     let mut rl = DefaultEditor::new().with_context(|_| ReplSnafu)?;
     loop {
         let readline = rl.readline(">> ");
@@ -16,7 +16,7 @@ pub fn run_prompt(vm: &mut Vm) -> crate::error::Result<()> {
             Ok(line) => {
                 rl.add_history_entry(line.as_str())
                     .with_context(|_| ReplSnafu)?;
-                vm.interpret(&line);
+                vm.interpret(&line)?;
             },
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
@@ -41,9 +41,8 @@ pub fn run_file<P: AsRef<Path>>(vm: &mut Vm, path: P) -> Result<()> {
     })?;
     let result = vm.interpret(&source);
     match result {
-        InterpretResult::Ok => (),
-        InterpretResult::CompileError => exit(65),
-        InterpretResult::RuntimeError => exit(70),
+        Err(LoxError::CompileError { .. }) => exit(65),
+        Err(LoxError::RuntimeError { .. }) => exit(70),
+        v => v,
     }
-    Ok(())
 }
