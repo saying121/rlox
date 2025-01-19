@@ -1,6 +1,6 @@
 use crate::{
     chunk::{Chunk, OpCode},
-    complier,
+    complier::Compiler,
     error::{self, Result},
     value::Value,
 };
@@ -20,7 +20,7 @@ impl Vm {
 
     pub fn interpret(&mut self, source: &str) -> Result<()> {
         let chunk = Chunk::new();
-        complier::compile(source, &chunk)?;
+        Compiler::compile(source, &chunk)?;
         // self.run(chunk, chunk.code())
         self.run(&chunk, chunk.code())
     }
