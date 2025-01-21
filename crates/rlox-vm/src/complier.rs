@@ -1,9 +1,13 @@
 use std::hint::unreachable_unchecked;
 
 use itertools::PeekNth;
-use rlox::{scan::scanner::Scanner, token::Token};
+use rlox::token::Token;
 
-use crate::{chunk::Chunk, error, error::Result};
+use crate::{
+    chunk::{Chunk, OpCode},
+    error,
+    error::Result,
+};
 
 #[derive(Clone)]
 #[derive(Debug)]
@@ -35,7 +39,8 @@ where
             panic_mode: false,
         }
     }
-    pub fn compile(&self, chunk: &Chunk) -> Result<()> {
+    pub fn compile(&self, cur_chunk: &mut Chunk) -> Result<()> {
+        self.end_compiler(cur_chunk);
         if self.had_error {
             return error::CompileSnafu.fail();
         }
@@ -79,6 +84,24 @@ where
             self.advance();
             return;
         }
+    }
+
+    fn emit_byte(&self, byte: u8, cur_chunk: &mut Chunk) {
+        let (row, col) = unsafe { self.previous.as_ref().unwrap_unchecked().inner().get_xy() };
+        cur_chunk.write(byte, row);
+    }
+
+    fn end_compiler(&self, cur_chunk: &mut Chunk) {
+        self.emit_return(cur_chunk);
+    }
+
+    fn emit_return(&self, cur_chunk: &mut Chunk) {
+        self.emit_byte(OpCode::OpReturn.into(), cur_chunk);
+    }
+
+    fn emit_bytes(&self, cur_chunk: &mut Chunk, byte1: u8, byte2: u8) {
+        self.emit_byte(byte1, cur_chunk);
+        self.emit_byte(byte2, cur_chunk);
     }
 
     fn error_at_current(&mut self) {

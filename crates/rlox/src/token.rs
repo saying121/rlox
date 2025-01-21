@@ -130,7 +130,7 @@ impl TokenInner {
         Self::new(origin, len, offset)
     }
 
-    pub fn get_col(&self) -> (usize, usize) {
+    pub fn get_xy(&self) -> (usize, usize) {
         let mut line = 1;
         let mut col = 1;
         for (_, ch) in self.origin.char_indices().take(self.offset) {
@@ -280,7 +280,7 @@ impl Eq for Token {}
 
 impl Display for TokenInner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (line, col) = self.get_col();
+        let (line, col) = self.get_xy();
         f.write_fmt(format_args!(
             "[Line: {line}, Column: {col}], code: `{}`",
             self.lexeme

@@ -160,28 +160,28 @@ fn test_line_col() {
     let source = "\n\n\nvar\n\n";
     let mut sc = Scanner::new(source);
     if let Token::Var { inner } = &sc.scan_tokens().next().unwrap() {
-        let a = inner.get_col();
+        let a = inner.get_xy();
         assert_eq!(a, (4, 1));
     }
 
     let source = "\n\n\n   var\n\n";
     let mut sc = Scanner::new(source);
     if let Token::Var { inner } = &sc.scan_tokens().next().unwrap() {
-        let a = inner.get_col();
+        let a = inner.get_xy();
         assert_eq!(a, (4, 4));
     }
 
     let source = "\"\"\"\n\n\n   var\n\n\"";
     let mut sc = Scanner::new(source);
     if let Token::Var { inner } = &sc.scan_tokens().next().unwrap() {
-        let a = inner.get_col();
+        let a = inner.get_xy();
         assert_eq!(a, (4, 4));
     }
 
     let source = "\n\n\n  data\n\n";
     let mut sc = Scanner::new(source);
     if let Token::Identifier { inner } = &sc.scan_tokens().next().unwrap() {
-        let a = inner.get_col();
+        let a = inner.get_xy();
         assert_eq!(a, (4, 3));
     }
 }
