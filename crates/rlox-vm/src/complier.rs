@@ -5,8 +5,8 @@ use rlox::token::Token;
 
 use crate::{
     chunk::{Chunk, OpCode},
-    error,
-    error::Result,
+    error::{self, Result},
+    value::Value,
 };
 
 #[derive(Clone)]
@@ -86,8 +86,39 @@ where
         }
     }
 
-    fn emit_byte(&self, byte: u8, cur_chunk: &mut Chunk) {
-        let (row, col) = unsafe { self.previous.as_ref().unwrap_unchecked().inner().get_xy() };
+    fn expression(&self) {
+        unimplemented!()
+    }
+
+    fn number(&self, cur_chunk: &mut Chunk) {
+        let value: f64 = unsafe {
+            self.previous
+                .as_ref()
+                .unwrap_unchecked()
+                .inner()
+                .lexeme()
+                .parse()
+                .unwrap_unchecked()
+        };
+        self.emit_constant(Value(value), cur_chunk);
+    }
+
+    fn emit_constant(&self, value: Value, cur_chunk: &mut Chunk) -> Result<()> {
+        let byte2 = Self::make_constant(value, cur_chunk)?;
+        self.emit_bytes(cur_chunk, OpCode::OpConstant, byte2);
+        Ok(())
+    }
+
+    fn make_constant(value: Value, cur_chunk: &mut Chunk) -> Result<u8> {
+        let constant = cur_chunk.add_constant(value);
+        if constant > u8::MAX.into() {
+            return error::TooManyConstsSnafu.fail();
+        }
+        Ok(constant as u8)
+    }
+
+    fn emit_byte<B: Into<u8>>(&self, byte: B, cur_chunk: &mut Chunk) {
+        let (row, _col) = unsafe { self.previous.as_ref().unwrap_unchecked().inner().get_xy() };
         cur_chunk.write(byte, row);
     }
 
@@ -96,10 +127,14 @@ where
     }
 
     fn emit_return(&self, cur_chunk: &mut Chunk) {
-        self.emit_byte(OpCode::OpReturn.into(), cur_chunk);
+        self.emit_byte(OpCode::OpReturn, cur_chunk);
     }
 
-    fn emit_bytes(&self, cur_chunk: &mut Chunk, byte1: u8, byte2: u8) {
+    fn emit_bytes<B1, B2>(&self, cur_chunk: &mut Chunk, byte1: B1, byte2: B2)
+    where
+        B1: Into<u8>,
+        B2: Into<u8>,
+    {
         self.emit_byte(byte1, cur_chunk);
         self.emit_byte(byte2, cur_chunk);
     }
