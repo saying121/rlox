@@ -78,14 +78,6 @@ where
         }
     }
 
-    // TODO
-    fn consume(&mut self, msg: &str) {
-        if matches!(self.current, Some(Token::LeftParen { .. })) {
-            self.advance();
-            return;
-        }
-    }
-
     fn expression(&self) {
         unimplemented!()
     }
@@ -124,6 +116,12 @@ where
 
     fn end_compiler(&self, cur_chunk: &mut Chunk) {
         self.emit_return(cur_chunk);
+    }
+
+    fn grouping(&mut self) -> Result<()> {
+        self.consume_left_paren();
+        self.expression();
+        self.consume_right_paren()
     }
 
     fn emit_return(&self, cur_chunk: &mut Chunk) {
@@ -182,6 +180,42 @@ where
                 _ => {},
             };
             self.advance();
+        }
+    }
+}
+
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    fn consume_left_paren(&mut self) -> Result<()> {
+        match self.peeks.next() {
+            Some(Token::LeftParen { .. }) => Ok(()),
+            Some(t) => error::NotMatchSnafu {
+                msg: "Expect '(' after expression",
+                token: Some(t),
+            }
+            .fail(),
+            None => error::NotMatchSnafu {
+                msg: "Expect ')' after expression",
+                token: None,
+            }
+            .fail(),
+        }
+    }
+    fn consume_right_paren(&mut self) -> Result<()> {
+        match self.peeks.next() {
+            Some(Token::RightParen { .. }) => Ok(()),
+            Some(t) => error::NotMatchSnafu {
+                msg: "Expect ')' after expression",
+                token: Some(t),
+            }
+            .fail(),
+            None => error::NotMatchSnafu {
+                msg: "Expect ')' after expression",
+                token: None,
+            }
+            .fail(),
         }
     }
 }

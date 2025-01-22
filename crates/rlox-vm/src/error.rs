@@ -1,3 +1,4 @@
+use rlox::token::Token;
 use snafu::{Location, Snafu};
 
 #[derive(Debug)]
@@ -41,6 +42,13 @@ pub enum LoxError {
     },
     #[snafu(display("Too many consts"))]
     TooManyConsts {
+        #[snafu(implicit)]
+        localtion: Location,
+    },
+    #[snafu(display("{msg}"))]
+    NotMatch {
+        msg: &'static str,
+        token: Option<Token>,
         #[snafu(implicit)]
         localtion: Location,
     },
