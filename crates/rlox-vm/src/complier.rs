@@ -1,7 +1,7 @@
 use std::hint::unreachable_unchecked;
 
 use itertools::PeekNth;
-use rlox::token::Token;
+use rlox::token::{self, Token};
 
 use crate::{
     chunk::{Chunk, OpCode},
@@ -123,6 +123,19 @@ where
             _ => unreachable!(),
         }
         Ok(())
+    }
+
+    fn binary(&self, cur_chunk: &mut Chunk) {
+        let op_type = unsafe { self.previous.as_ref().unwrap_unchecked() };
+        // let rule  = get_rule();
+        // self.parse_precedence(rule+1);
+        match op_type {
+            Token::Plus { .. } => self.emit_byte(OpCode::OpAdd, cur_chunk),
+            Token::Minus { .. } => self.emit_byte(OpCode::OpSubtract, cur_chunk),
+            Token::Star { .. } => self.emit_byte(OpCode::OpMultiply, cur_chunk),
+            Token::Slash { .. } => self.emit_byte(OpCode::OpDivide, cur_chunk),
+            _ => unsafe { unreachable_unchecked() },
+        }
     }
 
     fn parse_precedence(&self, precedence: Precedence) {
