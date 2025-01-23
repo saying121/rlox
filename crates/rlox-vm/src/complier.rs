@@ -69,29 +69,10 @@ where
 
         loop {
             self.current = self.peeks.next();
-            if !matches!(self.current, None | Some(Token::Invalid { .. })) {
+            if !matches!(self.current, Some(Token::Invalid { .. })) {
                 break;
             }
             self.error_at_current();
-            // match &self.current {
-            //     Some(Token::Invalid { inner }) => {
-            //         if self.panic_mode {
-            //             return;
-            //         }
-            //         self.panic_mode = true;
-            //         self.had_error = true;
-            //         tracing::error!("error: {}", inner);
-            //     },
-            //     None => {
-            //         if self.panic_mode {
-            //             return;
-            //         }
-            //         self.panic_mode = true;
-            //         self.had_error = true;
-            //         tracing::error!(" at end");
-            //     },
-            //     _ => break,
-            // }
         }
     }
 
