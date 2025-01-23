@@ -22,6 +22,23 @@ where
     panic_mode: bool,
 }
 
+#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+enum Precedence {
+    None,
+    Assignment,
+    Or,
+    And,
+    Equality,
+    Comparison,
+    Term,
+    Factor,
+    Unary,
+    Call,
+    Primary,
+}
+
 impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
@@ -79,7 +96,7 @@ where
     }
 
     fn expression(&self) {
-        unimplemented!()
+        self.parse_precedence(Precedence::Assignment);
     }
 
     fn number(&self, cur_chunk: &mut Chunk) {
@@ -93,6 +110,23 @@ where
                 .unwrap_unchecked()
         };
         self.emit_constant(Value(value), cur_chunk);
+    }
+
+    fn unary(&mut self, cur_chunk: &mut Chunk) -> Result<()> {
+        let operator_type = self.previous.as_ref().expect("missing previous");
+        self.parse_precedence(Precedence::Unary);
+        // self.expression();
+        match operator_type {
+            Token::Minus { .. } => {
+                self.emit_byte(OpCode::OpNegate, cur_chunk);
+            },
+            _ => unreachable!(),
+        }
+        Ok(())
+    }
+
+    fn parse_precedence(&self, precedence: Precedence) {
+        unimplemented!()
     }
 
     fn emit_constant(&self, value: Value, cur_chunk: &mut Chunk) -> Result<()> {
@@ -119,7 +153,7 @@ where
     }
 
     fn grouping(&mut self) -> Result<()> {
-        self.consume_left_paren();
+        // self.consume_left_paren();
         self.expression();
         self.consume_right_paren()
     }

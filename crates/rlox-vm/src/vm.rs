@@ -21,11 +21,11 @@ impl Vm {
     }
 
     pub fn interpret(&mut self, source: &str) -> Result<()> {
-        let chunk = Chunk::new();
+        let mut chunk = Chunk::new();
 
         let mut scanner = Scanner::new(source);
         let p = Parser::new(scanner.scan_tokens());
-        p.compile(&chunk)?;
+        p.compile(&mut chunk)?;
         self.run(&chunk, chunk.code())
     }
 
