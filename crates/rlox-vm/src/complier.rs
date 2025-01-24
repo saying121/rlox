@@ -1,7 +1,7 @@
 use std::hint::unreachable_unchecked;
 
 use itertools::PeekNth;
-use rlox::token::{self, Token};
+use rlox::token::Token;
 
 use crate::{
     chunk::{Chunk, OpCode},
@@ -18,8 +18,18 @@ where
     peeks: PeekNth<I>,
     previous: Option<Token>,
     current: Option<Token>,
+    cur_chunk: Option<Chunk>,
     had_error: bool,
     panic_mode: bool,
+}
+
+pub struct ParseRule<I>
+where
+    I: Iterator<Item = Token>,
+{
+    prefix: Option<for<'a> fn(&'a mut Parser<I>) -> Result<()>>,
+    infix: Option<for<'a> fn(&'a mut Parser<I>) -> Result<()>>,
+    precedence: Precedence,
 }
 
 #[derive(Clone, Copy)]
@@ -38,6 +48,241 @@ enum Precedence {
     Call,
     Primary,
 }
+impl From<u8> for Precedence {
+    fn from(value: u8) -> Self {
+        unsafe { std::mem::transmute::<u8, Self>(value) }
+    }
+}
+
+impl From<Precedence> for u8 {
+    fn from(val: Precedence) -> Self {
+        val as Self
+    }
+}
+
+#[expect(clippy::match_same_arms, reason = "align")]
+fn get_rule<I>(typ: &Token) -> ParseRule<I>
+where
+    I: Iterator<Item = Token>,
+{
+    match typ {
+        Token::LeftParen { .. } => ParseRule {
+            prefix: Some(Parser::grouping),
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::RightParen { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::LeftBrace { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::RightBrace { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Comma { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Dot { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Minus { .. } => ParseRule {
+            prefix: Some(Parser::unary),
+            infix: Some(Parser::binary),
+            precedence: Precedence::Term,
+        },
+        Token::Plus { .. } => ParseRule {
+            prefix: None,
+            infix: Some(Parser::binary),
+            precedence: Precedence::Term,
+        },
+        Token::Semicolon { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Slash { .. } => ParseRule {
+            prefix: None,
+            infix: Some(Parser::binary),
+            precedence: Precedence::Factor,
+        },
+        Token::Star { .. } => ParseRule {
+            prefix: None,
+            infix: Some(Parser::binary),
+            precedence: Precedence::Factor,
+        },
+        Token::Bang { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::BangEqual { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Equal { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::EqualEqual { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Greater { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::GreaterEqual { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Less { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::LessEqual { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Identifier { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::String { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Number { .. } => ParseRule {
+            prefix: Some(Parser::number),
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::And { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Class { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Else { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Fun { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::For { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::If { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Nil { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Or { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Print { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Return { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Super { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::This { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::True { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::False { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Var { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::While { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Eof { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Comment { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::BlockComment { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Break { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+        Token::Invalid { .. } => ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        },
+    }
+}
 
 impl<I> Parser<I>
 where
@@ -54,10 +299,12 @@ where
             current: None,
             had_error: false,
             panic_mode: false,
+            cur_chunk: None,
         }
     }
-    pub fn compile(&self, cur_chunk: &mut Chunk) -> Result<()> {
-        self.end_compiler(cur_chunk);
+    pub fn compile(&mut self, cur_chunk: Chunk) -> Result<()> {
+        self.cur_chunk = Some(cur_chunk);
+        self.end_compiler();
         if self.had_error {
             return error::CompileSnafu.fail();
         }
@@ -80,7 +327,7 @@ where
         self.parse_precedence(Precedence::Assignment);
     }
 
-    fn number(&self, cur_chunk: &mut Chunk) {
+    fn number(&mut self) -> Result<()> {
         let value: f64 = unsafe {
             self.previous
                 .as_ref()
@@ -90,60 +337,62 @@ where
                 .parse()
                 .unwrap_unchecked()
         };
-        self.emit_constant(Value(value), cur_chunk);
+        self.emit_constant(Value(value));
+        Ok(())
     }
 
-    fn unary(&mut self, cur_chunk: &mut Chunk) -> Result<()> {
+    fn unary(&mut self) -> Result<()> {
         let operator_type = self.previous.as_ref().expect("missing previous");
         self.parse_precedence(Precedence::Unary);
         // self.expression();
         match operator_type {
             Token::Minus { .. } => {
-                self.emit_byte(OpCode::OpNegate, cur_chunk);
+                self.emit_byte(OpCode::OpNegate);
             },
             _ => unreachable!(),
         }
         Ok(())
     }
 
-    fn binary(&self, cur_chunk: &mut Chunk) {
+    fn binary(&mut self) -> Result<()> {
         let op_type = unsafe { self.previous.as_ref().unwrap_unchecked() };
-        // let rule  = get_rule();
+        let rule: ParseRule<I> = get_rule(op_type);
         // self.parse_precedence(rule+1);
         match op_type {
-            Token::Plus { .. } => self.emit_byte(OpCode::OpAdd, cur_chunk),
-            Token::Minus { .. } => self.emit_byte(OpCode::OpSubtract, cur_chunk),
-            Token::Star { .. } => self.emit_byte(OpCode::OpMultiply, cur_chunk),
-            Token::Slash { .. } => self.emit_byte(OpCode::OpDivide, cur_chunk),
+            Token::Plus { .. } => self.emit_byte(OpCode::OpAdd),
+            Token::Minus { .. } => self.emit_byte(OpCode::OpSubtract),
+            Token::Star { .. } => self.emit_byte(OpCode::OpMultiply),
+            Token::Slash { .. } => self.emit_byte(OpCode::OpDivide),
             _ => unsafe { unreachable_unchecked() },
         }
+        Ok(())
     }
 
     fn parse_precedence(&self, precedence: Precedence) {
         unimplemented!()
     }
 
-    fn emit_constant(&self, value: Value, cur_chunk: &mut Chunk) -> Result<()> {
-        let byte2 = Self::make_constant(value, cur_chunk)?;
-        self.emit_bytes(cur_chunk, OpCode::OpConstant, byte2);
+    fn emit_constant(&mut self, value: Value) -> Result<()> {
+        let byte2 = self.make_constant(value)?;
+        self.emit_bytes(OpCode::OpConstant, byte2);
         Ok(())
     }
 
-    fn make_constant(value: Value, cur_chunk: &mut Chunk) -> Result<u8> {
-        let constant = cur_chunk.add_constant(value);
+    fn make_constant(&mut self, value: Value) -> Result<u8> {
+        let constant = self.cur_chunk().add_constant(value);
         if constant > u8::MAX.into() {
             return error::TooManyConstsSnafu.fail();
         }
         Ok(constant as u8)
     }
 
-    fn emit_byte<B: Into<u8>>(&self, byte: B, cur_chunk: &mut Chunk) {
+    fn emit_byte<B: Into<u8>>(&mut self, byte: B) {
         let (row, _col) = unsafe { self.previous.as_ref().unwrap_unchecked().inner().get_xy() };
-        cur_chunk.write(byte, row);
+        self.cur_chunk().write(byte, row);
     }
 
-    fn end_compiler(&self, cur_chunk: &mut Chunk) {
-        self.emit_return(cur_chunk);
+    fn end_compiler(&mut self) {
+        self.emit_return();
     }
 
     fn grouping(&mut self) -> Result<()> {
@@ -152,17 +401,21 @@ where
         self.consume_right_paren()
     }
 
-    fn emit_return(&self, cur_chunk: &mut Chunk) {
-        self.emit_byte(OpCode::OpReturn, cur_chunk);
+    fn cur_chunk(&mut self) -> &mut Chunk {
+        self.cur_chunk.as_mut().unwrap()
     }
 
-    fn emit_bytes<B1, B2>(&self, cur_chunk: &mut Chunk, byte1: B1, byte2: B2)
+    fn emit_return(&mut self) {
+        self.emit_byte(OpCode::OpReturn);
+    }
+
+    fn emit_bytes<B1, B2>(&mut self, byte1: B1, byte2: B2)
     where
         B1: Into<u8>,
         B2: Into<u8>,
     {
-        self.emit_byte(byte1, cur_chunk);
-        self.emit_byte(byte2, cur_chunk);
+        self.emit_byte(byte1);
+        self.emit_byte(byte2);
     }
 
     fn error_at_current(&mut self) {
