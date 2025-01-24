@@ -70,6 +70,11 @@ where
 
     fn end_compiler(&mut self) {
         self.emit_return();
+
+        #[cfg(debug_assertions)]
+        if !self.had_error {
+            self.cur_chunk.disassemble("code");
+        }
     }
 
     fn emit_return(&mut self) {
