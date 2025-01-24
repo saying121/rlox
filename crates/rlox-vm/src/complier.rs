@@ -1,4 +1,4 @@
-use std::hint::unreachable_unchecked;
+use std::{convert::Into, hint::unreachable_unchecked};
 
 use itertools::PeekNth;
 use rlox::token::Token;
@@ -333,8 +333,16 @@ where
         Ok(prev)
     }
 
-    fn expression(&self) {
-        self.parse_precedence(Precedence::Assignment);
+    fn current(&self) -> Result<&Token> {
+        let Some(prev) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+        Ok(prev)
+    }
+
+    fn expression(&mut self) -> Result<()> {
+        self.parse_precedence(Precedence::Assignment)
     }
 
     fn number(&mut self) -> Result<()> {
@@ -346,8 +354,8 @@ where
     }
 
     fn unary(&mut self) -> Result<()> {
-        let operator_type = self.previous()?;
-        self.parse_precedence(Precedence::Unary);
+        let operator_type = self.previous()?.clone();
+        self.parse_precedence(Precedence::Unary)?;
         // self.expression();
         match operator_type {
             Token::Minus { .. } => {
@@ -359,9 +367,9 @@ where
     }
 
     fn binary(&mut self) -> Result<()> {
-        let op_type = self.previous()?;
-        let rule: ParseRule<I> = get_rule(op_type);
-        // self.parse_precedence(rule+1);
+        let op_type = self.previous()?.clone();
+        let rule: ParseRule<I> = get_rule(&op_type);
+        self.parse_precedence((Into::<u8>::into(rule.precedence) + 1_u8).into())?;
         match op_type {
             Token::Plus { .. } => self.emit_byte(OpCode::OpAdd),
             Token::Minus { .. } => self.emit_byte(OpCode::OpSubtract),
@@ -372,8 +380,20 @@ where
         Ok(())
     }
 
-    fn parse_precedence(&self, precedence: Precedence) {
-        unimplemented!()
+    fn parse_precedence(&mut self, precedence: Precedence) -> Result<()> {
+        self.advance();
+        let prefix_fule = get_rule(self.previous()?).prefix;
+        prefix_fule.map_or_else(|| error::NotExpressionSnafu.fail(), |p| p(self))?;
+
+        while precedence <= get_rule::<I>(self.current()?).precedence {
+            self.advance();
+            let Some(infix_rule) = get_rule(self.previous()?).infix
+            else {
+                return error::MissingInfixSnafu.fail();
+            };
+            infix_rule(self)?;
+        }
+        Ok(())
     }
 
     fn emit_constant(&mut self, value: Value) -> Result<()> {
@@ -401,12 +421,12 @@ where
 
     fn grouping(&mut self) -> Result<()> {
         // self.consume_left_paren();
-        self.expression();
+        self.expression()?;
         self.consume_right_paren()
     }
 
     fn cur_chunk(&mut self) -> &mut Chunk {
-        self.cur_chunk.as_mut().unwrap()
+        self.cur_chunk.as_mut().expect("Not input chunk")
     }
 
     fn emit_return(&mut self) {

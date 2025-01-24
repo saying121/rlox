@@ -52,8 +52,23 @@ pub enum LoxError {
         #[snafu(implicit)]
         localtion: Location,
     },
-    #[snafu(display("Missing Previous"))]
+    #[snafu(display("Missing previous"))]
     MissingPrev {
+        #[snafu(implicit)]
+        localtion: Location,
+    },
+    #[snafu(display("Missing current"))]
+    MissingCur {
+        #[snafu(implicit)]
+        localtion: Location,
+    },
+    #[snafu(display("Missing infix parse fn"))]
+    MissingInfix {
+        #[snafu(implicit)]
+        localtion: Location,
+    },
+    #[snafu(display("Expect expression"))]
+    NotExpression {
         #[snafu(implicit)]
         localtion: Location,
     },
