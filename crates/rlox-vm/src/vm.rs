@@ -24,8 +24,8 @@ impl Vm {
         let mut chunk = Chunk::new();
 
         let mut scanner = Scanner::new(source);
-        let p = Parser::new(scanner.scan_tokens());
-        p.compile(&mut chunk)?;
+        let mut p = Parser::new(scanner.scan_tokens());
+        let chunk = p.compile(chunk)?;
         self.run(&chunk, chunk.code())
     }
 

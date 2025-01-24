@@ -23,19 +23,21 @@ where
     panic_mode: bool,
 }
 
+type ParseFn<I> = for<'a> fn(&'a mut Parser<I>) -> Result<()>;
+
 pub struct ParseRule<I>
 where
     I: Iterator<Item = Token>,
 {
-    prefix: Option<for<'a> fn(&'a mut Parser<I>) -> Result<()>>,
-    infix: Option<for<'a> fn(&'a mut Parser<I>) -> Result<()>>,
+    prefix: Option<ParseFn<I>>,
+    infix: Option<ParseFn<I>>,
     precedence: Precedence,
 }
 
 #[derive(Clone, Copy)]
 #[derive(Debug)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
-enum Precedence {
+pub enum Precedence {
     None,
     Assignment,
     Or,
@@ -61,7 +63,7 @@ impl From<Precedence> for u8 {
 }
 
 #[expect(clippy::match_same_arms, reason = "align")]
-fn get_rule<I>(typ: &Token) -> ParseRule<I>
+pub fn get_rule<I>(typ: &Token) -> ParseRule<I>
 where
     I: Iterator<Item = Token>,
 {
@@ -302,13 +304,13 @@ where
             cur_chunk: None,
         }
     }
-    pub fn compile(&mut self, cur_chunk: Chunk) -> Result<()> {
+    pub fn compile(&mut self, cur_chunk: Chunk) -> Result<Chunk> {
         self.cur_chunk = Some(cur_chunk);
         self.end_compiler();
         if self.had_error {
             return error::CompileSnafu.fail();
         }
-        Ok(())
+        unsafe { Ok(self.cur_chunk.take().unwrap_unchecked()) }
     }
 
     fn advance(&mut self) {
@@ -323,26 +325,28 @@ where
         }
     }
 
+    fn previous(&self) -> Result<&Token> {
+        let Some(prev) = &self.previous
+        else {
+            return error::MissingPrevSnafu.fail();
+        };
+        Ok(prev)
+    }
+
     fn expression(&self) {
         self.parse_precedence(Precedence::Assignment);
     }
 
     fn number(&mut self) -> Result<()> {
-        let value: f64 = unsafe {
-            self.previous
-                .as_ref()
-                .unwrap_unchecked()
-                .inner()
-                .lexeme()
-                .parse()
-                .unwrap_unchecked()
-        };
-        self.emit_constant(Value(value));
+        let prev = self.previous()?;
+
+        let value: f64 = unsafe { prev.inner().lexeme().parse().unwrap_unchecked() };
+        self.emit_constant(Value(value))?;
         Ok(())
     }
 
     fn unary(&mut self) -> Result<()> {
-        let operator_type = self.previous.as_ref().expect("missing previous");
+        let operator_type = self.previous()?;
         self.parse_precedence(Precedence::Unary);
         // self.expression();
         match operator_type {
@@ -355,7 +359,7 @@ where
     }
 
     fn binary(&mut self) -> Result<()> {
-        let op_type = unsafe { self.previous.as_ref().unwrap_unchecked() };
+        let op_type = self.previous()?;
         let rule: ParseRule<I> = get_rule(op_type);
         // self.parse_precedence(rule+1);
         match op_type {
