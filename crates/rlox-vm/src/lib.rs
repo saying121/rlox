@@ -1,6 +1,6 @@
 pub mod chunk;
 pub mod cli;
-pub mod complier;
+pub mod compiler;
 pub mod error;
 pub mod runner;
 pub mod value;
