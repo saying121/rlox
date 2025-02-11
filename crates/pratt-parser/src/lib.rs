@@ -71,7 +71,7 @@ pub fn expr_bp(lexer: &mut Lexer, cur_min: u8) -> S {
             lhs
         }
         Token::Op(op) => {
-            let (_, r_bp) = prefix_binding_power(op);
+            let ((), r_bp) = prefix_binding_power(op);
             let rhs = expr_bp(lexer, r_bp);
             S::Cons(op, vec![rhs])
         }
@@ -84,7 +84,7 @@ pub fn expr_bp(lexer: &mut Lexer, cur_min: u8) -> S {
             Token::Op(op) => op,
             t => panic!("Bad Token: {:?}", t),
         };
-        if let Some((l_bp, _)) = postfix_binding_power(op) {
+        if let Some((l_bp, ())) = postfix_binding_power(op) {
             if l_bp < cur_min {
                 break;
             }
