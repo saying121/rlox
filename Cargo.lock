@@ -316,6 +316,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b3cff922bd51709b605d9ead9aa71031d81447142d828eb4a6eba76fe619f9b"
 
 [[package]]
+name = "pratt-parser"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "itertools",
+ "rlox",
+ "rustyline",
+ "snafu",
+ "tracing",
+]
+
+[[package]]
 name = "pretty_assertions"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -373,7 +385,7 @@ dependencies = [
 
 [[package]]
 name = "rlox"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
