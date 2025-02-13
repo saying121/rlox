@@ -36,15 +36,15 @@ where
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
     None,
-    Assignment,
-    Or,
-    And,
-    Equality,
-    Comparison,
-    Term,
-    Factor,
-    Unary,
-    Call,
+    Assignment, // =
+    Or,         // or
+    And,        // and
+    Equality,   // == !=
+    Comparison, // < > <= >=
+    Term,       // + -
+    Factor,     // * /
+    Unary,      // ! -
+    Call,       // . ()
     Primary,
 }
 impl From<u8> for Precedence {
@@ -99,7 +99,7 @@ where
         let prev = self.previous()?;
 
         let value: f64 = unsafe { prev.inner().lexeme().parse().unwrap_unchecked() };
-        self.emit_constant(Value(value))?;
+        self.emit_constant(Value::Double(value))?;
         Ok(())
     }
 
@@ -130,6 +130,16 @@ where
         Ok(())
     }
 
+    fn literal(&mut self) -> Result<()> {
+        match self.previous()? {
+            Token::False { .. } => self.emit_byte(OpCode::OpFalse),
+            Token::Nil { .. } => self.emit_byte(OpCode::OpNil),
+            Token::True { .. } => self.emit_byte(OpCode::OpTrue),
+            _ => {},
+        }
+        Ok(())
+    }
+
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<()> {
         self.advance();
         let prefix_fule = get_rule(self.previous()?).prefix;
@@ -139,7 +149,8 @@ where
             self.advance();
             let Some(infix_rule) = get_rule(self.previous()?).infix
             else {
-                return error::MissingInfixSnafu.fail();
+                break;
+                // return error::MissingInfixSnafu.fail();
             };
             infix_rule(self)?;
         }

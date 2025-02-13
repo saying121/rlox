@@ -165,7 +165,7 @@ where
             precedence: Precedence::None,
         },
         Token::Nil { .. } => ParseRule {
-            prefix: None,
+            prefix: Some(Parser::literal),
             infix: None,
             precedence: Precedence::None,
         },
@@ -195,12 +195,12 @@ where
             precedence: Precedence::None,
         },
         Token::True { .. } => ParseRule {
-            prefix: None,
+            prefix: Some(Parser::literal),
             infix: None,
             precedence: Precedence::None,
         },
         Token::False { .. } => ParseRule {
-            prefix: None,
+            prefix: Some(Parser::literal),
             infix: None,
             precedence: Precedence::None,
         },

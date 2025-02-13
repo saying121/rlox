@@ -31,11 +31,18 @@ impl Vm {
 
     pub fn run(&mut self, chunk: &Chunk, ip: &[u8]) -> Result<()> {
         macro_rules! binary_op {
-            ($stack:expr, $op:tt) => {
+            ($stack:expr, $op:tt, $offset:expr) => {
                 {
-                    let b = $stack.pop().unwrap().0;
-                    let a = $stack.pop().unwrap().0;
-                    self.stack.push(Value(a $op b));
+                    let last: Option<&[Value; 2]> = self.stack.last_chunk();
+                    match last {
+                        Some([Value::Double(a), Value::Double(b)]) => {
+                            self.stack.push(Value::Double(a $op b));
+                        },
+                        _ => return error::BinaryNotNumSnafu {
+                            line: chunk.get_line($offset),
+                        }
+                        .fail(),
+                    }
                 }
             };
         }
@@ -45,7 +52,7 @@ impl Vm {
             #[cfg(debug_assertions)]
             {
                 for ele in &self.stack {
-                    print!("[{}]", ele.0);
+                    print!("[{}]", ele);
                 }
                 println!();
                 Chunk::disassemble_instruction(chunk, offset);
@@ -57,7 +64,7 @@ impl Vm {
                     else {
                         return error::ReturnEmptyStackSnafu.fail();
                     };
-                    println!("{}", v.0);
+                    println!("{}", v);
                     return Ok(());
                 },
                 OpCode::OpConstant => {
@@ -72,12 +79,23 @@ impl Vm {
                     else {
                         return error::NegateEmptyStackSnafu.fail();
                     };
-                    value.0 = -value.0;
+                    match value {
+                        Value::Double(d) => {
+                            *d = -*d;
+                        },
+                        _ => {
+                            let line = chunk.get_line(offset);
+                            return error::NegateNotNumSnafu { line }.fail();
+                        },
+                    }
                 },
-                OpCode::OpAdd => binary_op!(self.stack, +),
-                OpCode::OpSubtract => binary_op!(self.stack, -),
-                OpCode::OpMultiply => binary_op!(self.stack, *),
-                OpCode::OpDivide => binary_op!(self.stack, /),
+                OpCode::OpNil => self.stack.push(Value::Nil),
+                OpCode::OpTrue => self.stack.push(Value::Bool(true)),
+                OpCode::OpFalse => self.stack.push(Value::Bool(false)),
+                OpCode::OpAdd => binary_op!(self.stack, +, offset),
+                OpCode::OpSubtract => binary_op!(self.stack, -, offset),
+                OpCode::OpMultiply => binary_op!(self.stack, *, offset),
+                OpCode::OpDivide => binary_op!(self.stack, /, offset),
             }
         }
         Ok(())

@@ -72,6 +72,18 @@ pub enum LoxError {
         #[snafu(implicit)]
         localtion: Location,
     },
+    #[snafu(display("Negate operand must be a number: line: {line}"))]
+    NegateNotNum {
+        line: usize,
+        #[snafu(implicit)]
+        localtion: Location,
+    },
+    #[snafu(display("+, -, *, / operand must be a number: line: {line}"))]
+    BinaryNotNum {
+        line: usize,
+        #[snafu(implicit)]
+        localtion: Location,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, LoxError>;

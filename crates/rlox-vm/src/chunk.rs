@@ -8,6 +8,9 @@ use crate::value::{Value, ValueArray};
 #[repr(u8)]
 pub enum OpCode {
     OpConstant,
+    OpNil,
+    OpTrue,
+    OpFalse,
     OpAdd,
     OpSubtract,
     OpMultiply,
@@ -21,6 +24,9 @@ impl Display for OpCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::OpConstant => "OP_CONSTANT",
+            Self::OpNil => "OP_NIL",
+            Self::OpTrue => "OP_TRUE",
+            Self::OpFalse => "OP_FALSE",
             // Self::OpConstantLong => "OP_CONSTANT_LONG",
             Self::OpAdd => "OP_ADD",
             Self::OpSubtract => "OP_SUBTRACT",
@@ -135,7 +141,10 @@ impl Chunk {
             | OpCode::OpAdd
             | OpCode::OpSubtract
             | OpCode::OpMultiply
-            | OpCode::OpDivide) => Self::simple_instruction(v, offset),
+            | OpCode::OpDivide
+            | OpCode::OpNil
+            | OpCode::OpTrue
+            | OpCode::OpFalse) => Self::simple_instruction(v, offset),
         }
     }
 
