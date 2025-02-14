@@ -11,10 +11,14 @@ pub enum OpCode {
     OpNil,
     OpTrue,
     OpFalse,
+    OpEqual,
+    OpGreater,
+    OpLess,
     OpAdd,
     OpSubtract,
     OpMultiply,
     OpDivide,
+    OpNot,
     OpNegate,
     // OpConstantLong,
     OpReturn,
@@ -27,11 +31,15 @@ impl Display for OpCode {
             Self::OpNil => "OP_NIL",
             Self::OpTrue => "OP_TRUE",
             Self::OpFalse => "OP_FALSE",
+            Self::OpEqual => "OP_EQUAL",
+            Self::OpGreater => "OP_GREATER",
+            Self::OpLess => "OP_LESS",
             // Self::OpConstantLong => "OP_CONSTANT_LONG",
             Self::OpAdd => "OP_ADD",
             Self::OpSubtract => "OP_SUBTRACT",
             Self::OpMultiply => "OP_MULTIPLY",
             Self::OpDivide => "OP_DIVIDE",
+            Self::OpNot => "OP_NOT",
             Self::OpNegate => "OP_NEGATE",
             Self::OpReturn => "OP_RETURN",
         }
@@ -144,7 +152,11 @@ impl Chunk {
             | OpCode::OpDivide
             | OpCode::OpNil
             | OpCode::OpTrue
-            | OpCode::OpFalse) => Self::simple_instruction(v, offset),
+            | OpCode::OpFalse
+            | OpCode::OpNot
+            | OpCode::OpEqual
+            | OpCode::OpGreater
+            | OpCode::OpLess) => Self::simple_instruction(v, offset),
         }
     }
 

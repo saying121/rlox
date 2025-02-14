@@ -80,14 +80,14 @@ where
             precedence: Precedence::Factor,
         },
         Token::Bang { .. } => ParseRule {
-            prefix: None,
+            prefix: Some(Parser::unary),
             infix: None,
             precedence: Precedence::None,
         },
         Token::BangEqual { .. } => ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix: Some(Parser::binary),
+            precedence: Precedence::Equality,
         },
         Token::Equal { .. } => ParseRule {
             prefix: None,
@@ -96,28 +96,28 @@ where
         },
         Token::EqualEqual { .. } => ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix: Some(Parser::binary),
+            precedence: Precedence::Equality,
         },
         Token::Greater { .. } => ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix: Some(Parser::binary),
+            precedence: Precedence::Comparison,
         },
         Token::GreaterEqual { .. } => ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix: Some(Parser::binary),
+            precedence: Precedence::Comparison,
         },
         Token::Less { .. } => ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix: Some(Parser::binary),
+            precedence: Precedence::Comparison,
         },
         Token::LessEqual { .. } => ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix: Some(Parser::binary),
+            precedence: Precedence::Comparison,
         },
         Token::Identifier { .. } => ParseRule {
             prefix: None,

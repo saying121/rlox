@@ -5,6 +5,11 @@ use snafu::{Location, Snafu};
 #[derive(Snafu)]
 #[snafu(visibility(pub))]
 pub enum LoxError {
+    #[snafu(display("Empty stack"))]
+    EmptyStack {
+        #[snafu(implicit)]
+        localtion: Location,
+    },
     #[snafu(display("Repl: {source}"))]
     Repl {
         #[snafu(source)]
@@ -37,6 +42,11 @@ pub enum LoxError {
     },
     #[snafu(display("Negate op but stack is empty"))]
     NegateEmptyStack {
+        #[snafu(implicit)]
+        localtion: Location,
+    },
+    #[snafu(display("Not op but stack is empty"))]
+    NotEmptyStack {
         #[snafu(implicit)]
         localtion: Location,
     },

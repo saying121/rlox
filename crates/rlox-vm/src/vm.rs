@@ -31,12 +31,12 @@ impl Vm {
 
     pub fn run(&mut self, chunk: &Chunk, ip: &[u8]) -> Result<()> {
         macro_rules! binary_op {
-            ($stack:expr, $op:tt, $offset:expr) => {
+            ($op:tt, $offset:expr, $type:ident) => {
                 {
                     let last: Option<&[Value; 2]> = self.stack.last_chunk();
                     match last {
                         Some([Value::Double(a), Value::Double(b)]) => {
-                            self.stack.push(Value::Double(a $op b));
+                            self.stack.push(Value::$type(a $op b));
                         },
                         _ => return error::BinaryNotNumSnafu {
                             line: chunk.get_line($offset),
@@ -74,6 +74,13 @@ impl Vm {
                     let constant = chunk.constants()[next];
                     self.stack.push(constant);
                 },
+                OpCode::OpNot => {
+                    let Some(value) = self.stack.pop()
+                    else {
+                        return error::NotEmptyStackSnafu.fail();
+                    };
+                    self.stack.push(Value::Bool(Self::is_falsey(value)));
+                },
                 OpCode::OpNegate => {
                     let Some(value) = self.stack.last_mut()
                     else {
@@ -92,12 +99,33 @@ impl Vm {
                 OpCode::OpNil => self.stack.push(Value::Nil),
                 OpCode::OpTrue => self.stack.push(Value::Bool(true)),
                 OpCode::OpFalse => self.stack.push(Value::Bool(false)),
-                OpCode::OpAdd => binary_op!(self.stack, +, offset),
-                OpCode::OpSubtract => binary_op!(self.stack, -, offset),
-                OpCode::OpMultiply => binary_op!(self.stack, *, offset),
-                OpCode::OpDivide => binary_op!(self.stack, /, offset),
+                OpCode::OpAdd => binary_op!(+, offset, Double),
+                OpCode::OpSubtract => binary_op!(-, offset, Double),
+                OpCode::OpMultiply => binary_op!(*, offset, Double),
+                OpCode::OpDivide => binary_op!(/, offset, Double),
+                OpCode::OpEqual => {
+                    let Some(b) = self.stack.pop()
+                    else {
+                        return error::EmptyStackSnafu.fail();
+                    };
+                    let Some(a) = self.stack.pop()
+                    else {
+                        return error::EmptyStackSnafu.fail();
+                    };
+                    self.stack.push(Value::Bool(a == b));
+                },
+                OpCode::OpGreater => binary_op!(>, offset, Bool),
+                OpCode::OpLess => binary_op!(<, offset, Bool),
             }
         }
         Ok(())
+    }
+
+    const fn is_falsey(value: Value) -> bool {
+        match value {
+            Value::Double(_) => false,
+            Value::Bool(b) => !b,
+            Value::Nil => true,
+        }
     }
 }

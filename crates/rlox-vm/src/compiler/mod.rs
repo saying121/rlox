@@ -91,7 +91,7 @@ where
     }
 
     fn emit_byte<B: Into<u8>>(&mut self, byte: B) {
-        let (row, _col) = unsafe { self.previous.as_ref().unwrap_unchecked().inner().get_xy() };
+        let (row, _col) = self.previous.as_ref().expect("Missing previous token").inner().get_xy();
         self.cur_chunk.write(byte, row);
     }
 
@@ -108,9 +108,8 @@ where
         self.parse_precedence(Precedence::Unary)?;
         // self.expression();
         match operator_type {
-            Token::Minus { .. } => {
-                self.emit_byte(OpCode::OpNegate);
-            },
+            Token::Minus { .. } => self.emit_byte(OpCode::OpNegate),
+            Token::Bang { .. } => self.emit_byte(OpCode::OpNot),
             _ => unreachable!(),
         }
         Ok(())
@@ -121,6 +120,12 @@ where
         let rule: ParseRule<I, Compiling> = get_rule(&op_type);
         self.parse_precedence((Into::<u8>::into(rule.precedence) + 1_u8).into())?;
         match op_type {
+            Token::BangEqual { .. } => self.emit_bytes(OpCode::OpEqual, OpCode::OpNot),
+            Token::EqualEqual { .. } => self.emit_byte(OpCode::OpEqual),
+            Token::Greater { .. } => self.emit_byte(OpCode::OpGreater),
+            Token::GreaterEqual { .. } => self.emit_bytes(OpCode::OpLess, OpCode::OpNot),
+            Token::Less { .. } => self.emit_byte(OpCode::OpLess),
+            Token::LessEqual { .. } => self.emit_bytes(OpCode::OpGreater, OpCode::OpNot),
             Token::Plus { .. } => self.emit_byte(OpCode::OpAdd),
             Token::Minus { .. } => self.emit_byte(OpCode::OpSubtract),
             Token::Star { .. } => self.emit_byte(OpCode::OpMultiply),
@@ -145,7 +150,13 @@ where
         let prefix_fule = get_rule(self.previous()?).prefix;
         prefix_fule.map_or_else(|| error::NotExpressionSnafu.fail(), |p| p(self))?;
 
-        while precedence <= get_rule::<I>(self.current()?).precedence {
+        'l: while precedence
+            <= get_rule::<I>(match &self.current {
+                Some(t) => t,
+                None => break 'l,
+            })
+            .precedence
+        {
             self.advance();
             let Some(infix_rule) = get_rule(self.previous()?).infix
             else {
@@ -204,6 +215,8 @@ where
             had_error: self.had_error,
             panic_mode: self.panic_mode,
         };
+        var.advance();
+        var.expression()?;
         var.end_compiler();
         if var.had_error {
             return error::CompileSnafu.fail();
@@ -282,40 +295,20 @@ where
         };
         Ok(prev)
     }
-    fn current(&self) -> Result<&Token> {
-        let Some(prev) = &self.current
+
+    fn consume_right_paren(&mut self) -> Result<()> {
+        let Some(tk) = &self.current
         else {
             return error::MissingCurSnafu.fail();
         };
-        Ok(prev)
-    }
-
-    fn consume_left_paren(&mut self) -> Result<()> {
-        match self.peeks.next() {
-            Some(Token::LeftParen { .. }) => Ok(()),
-            Some(t) => error::NotMatchSnafu {
-                msg: "Expect '(' after expression",
-                token: Some(t),
-            }
-            .fail(),
-            None => error::NotMatchSnafu {
+        match tk {
+            Token::RightParen { .. } => {
+                self.advance();
+                Ok(())
+            },
+            t => error::NotMatchSnafu {
                 msg: "Expect ')' after expression",
-                token: None,
-            }
-            .fail(),
-        }
-    }
-    fn consume_right_paren(&mut self) -> Result<()> {
-        match self.peeks.next() {
-            Some(Token::RightParen { .. }) => Ok(()),
-            Some(t) => error::NotMatchSnafu {
-                msg: "Expect ')' after expression",
-                token: Some(t),
-            }
-            .fail(),
-            None => error::NotMatchSnafu {
-                msg: "Expect ')' after expression",
-                token: None,
+                token: Some(t.clone()),
             }
             .fail(),
         }
