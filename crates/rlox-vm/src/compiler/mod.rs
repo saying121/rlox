@@ -99,7 +99,7 @@ where
         let prev = self.previous()?;
 
         let value: f64 = unsafe { prev.inner().lexeme().parse().unwrap_unchecked() };
-        self.emit_constant(Value::Double(value))?;
+        self.emit_constant(Value::Number(value))?;
         Ok(())
     }
 

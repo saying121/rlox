@@ -35,7 +35,7 @@ impl Vm {
                 {
                     let last: Option<&[Value; 2]> = self.stack.last_chunk();
                     match last {
-                        Some([Value::Double(a), Value::Double(b)]) => {
+                        Some([Value::Number(a), Value::Number(b)]) => {
                             self.stack.push(Value::$type(a $op b));
                         },
                         _ => return error::BinaryNotNumSnafu {
@@ -71,7 +71,7 @@ impl Vm {
                     // Safety: OpConstant next must be index
                     let next = unsafe { ip_iter.next().unwrap_unchecked() };
                     let next = *next.1 as usize;
-                    let constant = chunk.constants()[next];
+                    let constant = chunk.constants()[next].clone();
                     self.stack.push(constant);
                 },
                 OpCode::OpNot => {
@@ -79,7 +79,7 @@ impl Vm {
                     else {
                         return error::NotEmptyStackSnafu.fail();
                     };
-                    self.stack.push(Value::Bool(Self::is_falsey(value)));
+                    self.stack.push(Value::Bool(Self::is_falsey(&value)));
                 },
                 OpCode::OpNegate => {
                     let Some(value) = self.stack.last_mut()
@@ -87,7 +87,7 @@ impl Vm {
                         return error::NegateEmptyStackSnafu.fail();
                     };
                     match value {
-                        Value::Double(d) => {
+                        Value::Number(d) => {
                             *d = -*d;
                         },
                         _ => {
@@ -99,10 +99,10 @@ impl Vm {
                 OpCode::OpNil => self.stack.push(Value::Nil),
                 OpCode::OpTrue => self.stack.push(Value::Bool(true)),
                 OpCode::OpFalse => self.stack.push(Value::Bool(false)),
-                OpCode::OpAdd => binary_op!(+, offset, Double),
-                OpCode::OpSubtract => binary_op!(-, offset, Double),
-                OpCode::OpMultiply => binary_op!(*, offset, Double),
-                OpCode::OpDivide => binary_op!(/, offset, Double),
+                OpCode::OpAdd => binary_op!(+, offset, Number),
+                OpCode::OpSubtract => binary_op!(-, offset, Number),
+                OpCode::OpMultiply => binary_op!(*, offset, Number),
+                OpCode::OpDivide => binary_op!(/, offset, Number),
                 OpCode::OpEqual => {
                     let Some(b) = self.stack.pop()
                     else {
@@ -121,11 +121,11 @@ impl Vm {
         Ok(())
     }
 
-    const fn is_falsey(value: Value) -> bool {
+    fn is_falsey(value: &Value) -> bool {
         match value {
-            Value::Double(_) => false,
             Value::Bool(b) => !b,
             Value::Nil => true,
+            Value::Str(_) | Value::Number(_) => false,
         }
     }
 }
