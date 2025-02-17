@@ -125,7 +125,7 @@ impl Vm {
         match value {
             Value::Bool(b) => !b,
             Value::Nil => true,
-            Value::Str(_) | Value::Number(_) => false,
+            Value::Obj(_) | Value::Number(_) => false,
         }
     }
 }

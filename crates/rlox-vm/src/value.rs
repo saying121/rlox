@@ -3,6 +3,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use crate::object::Obj;
+
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(PartialEq, PartialOrd)]
@@ -10,7 +12,7 @@ pub enum Value {
     Number(f64),
     Bool(bool),
     Nil,
-    Str(String),
+    Obj(Obj),
 }
 
 impl Display for Value {
@@ -19,7 +21,7 @@ impl Display for Value {
             Self::Number(d) => d.fmt(f),
             Self::Bool(b) => b.fmt(f),
             Self::Nil => "nil".fmt(f),
-            Self::Str(s) => s.fmt(f),
+            Self::Obj(s) => s.fmt(f),
         }
     }
 }
