@@ -13,6 +13,7 @@ use self::{
 use crate::{
     chunk::{Chunk, OpCode},
     error::{self, Result},
+    object::Obj,
     value::Value,
 };
 
@@ -91,7 +92,12 @@ where
     }
 
     fn emit_byte<B: Into<u8>>(&mut self, byte: B) {
-        let (row, _col) = self.previous.as_ref().expect("Missing previous token").inner().get_xy();
+        let (row, _col) = self
+            .previous
+            .as_ref()
+            .expect("Missing previous token")
+            .inner()
+            .get_xy();
         self.cur_chunk.write(byte, row);
     }
 
@@ -101,6 +107,10 @@ where
         let value: f64 = unsafe { prev.inner().lexeme().parse().unwrap_unchecked() };
         self.emit_constant(Value::Number(value))?;
         Ok(())
+    }
+    fn string(&mut self) -> Result<()> {
+        let previous = self.previous()?.lexeme().to_owned();
+        self.emit_constant(Value::Obj(Obj::String(previous)))
     }
 
     fn unary(&mut self) -> Result<()> {

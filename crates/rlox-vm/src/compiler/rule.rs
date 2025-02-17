@@ -125,7 +125,7 @@ where
             precedence: Precedence::None,
         },
         Token::String { .. } => ParseRule {
-            prefix: None,
+            prefix: Some(Parser::string),
             infix: None,
             precedence: Precedence::None,
         },
