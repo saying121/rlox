@@ -4,6 +4,7 @@ use crate::{
     chunk::{Chunk, OpCode},
     compiler::Parser,
     error::{self, Result},
+    object::Obj,
     value::Value,
 };
 
@@ -99,7 +100,23 @@ impl Vm {
                 OpCode::OpNil => self.stack.push(Value::Nil),
                 OpCode::OpTrue => self.stack.push(Value::Bool(true)),
                 OpCode::OpFalse => self.stack.push(Value::Bool(false)),
-                OpCode::OpAdd => binary_op!(+, offset, Number),
+                OpCode::OpAdd => {
+                    let last: Option<&[Value; 2]> = self.stack.last_chunk();
+                    match last {
+                        Some([Value::Number(a), Value::Number(b)]) => {
+                            self.stack.push(Value::Number(a + b));
+                        },
+                        Some([Value::Obj(Obj::String(a)), Value::Obj(Obj::String(b))]) => {
+                            self.stack.push(Value::Obj(Obj::String(format!("{a}{b}"))));
+                        },
+                        _ => {
+                            return error::BinaryNotNumSnafu {
+                                line: chunk.get_line(offset),
+                            }
+                            .fail();
+                        },
+                    }
+                },
                 OpCode::OpSubtract => binary_op!(-, offset, Number),
                 OpCode::OpMultiply => binary_op!(*, offset, Number),
                 OpCode::OpDivide => binary_op!(/, offset, Number),
