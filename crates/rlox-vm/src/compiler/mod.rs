@@ -224,7 +224,11 @@ where
     }
 
     fn declaration(&mut self) -> Result<()> {
-        self.statement()
+        self.statement()?;
+        if self.panic_mode {
+            self.synchronize();
+        }
+        Ok(())
     }
 
     fn statement(&mut self) -> Result<()> {
@@ -325,9 +329,8 @@ where
     fn synchronize(&mut self) {
         self.panic_mode = false;
 
-        self.peeks.next();
         while let Some(cur) = &self.current {
-            if matches!(self.previous, Some(Token::Semicolon { .. })) {
+            if matches!(self.current, Some(Token::Semicolon { .. })) {
                 return;
             }
             match cur {
