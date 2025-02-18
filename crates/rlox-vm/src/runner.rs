@@ -51,5 +51,6 @@ pub fn run_file<P: AsRef<Path>>(vm: &mut Vm, path: P) -> Result<()> {
 fn feature() {
     let mut vm = Vm::new();
 
-    vm.interpret("!(5 - 4 > 3 * 2 == !nil)").unwrap();
+    vm.interpret("print !(5 - 4 > 3 * 2 == !nil);").unwrap();
+    vm.interpret("print 1;").unwrap();
 }

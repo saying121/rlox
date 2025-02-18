@@ -60,14 +60,7 @@ impl Vm {
             };
 
             match ele.into() {
-                OpCode::OpReturn => {
-                    let Some(v) = self.stack.pop()
-                    else {
-                        return error::ReturnEmptyStackSnafu.fail();
-                    };
-                    println!("{}", v);
-                    return Ok(());
-                },
+                OpCode::OpReturn => return Ok(()),
                 OpCode::OpConstant => {
                     // Safety: OpConstant next must be index
                     let next = unsafe { ip_iter.next().unwrap_unchecked() };
@@ -133,6 +126,13 @@ impl Vm {
                 },
                 OpCode::OpGreater => binary_op!(>, offset, Bool),
                 OpCode::OpLess => binary_op!(<, offset, Bool),
+                OpCode::OpPrint => {
+                    let Some(var) = self.stack.pop()
+                    else {
+                        return error::EmptyStackSnafu.fail();
+                    };
+                    println!("{}", var);
+                },
             }
         }
         Ok(())

@@ -102,19 +102,31 @@ where
     }
 
     fn number(&mut self) -> Result<()> {
-        let prev = self.previous()?;
+        let Some(prev) = self.previous.clone()
+        else {
+            return error::MissingPrevSnafu.fail();
+        };
+        let num = match prev {
+            Token::Number { double, .. } => double,
+            _ => unsafe { unreachable_unchecked() },
+        };
 
-        let value: f64 = unsafe { prev.inner().lexeme().parse().unwrap_unchecked() };
-        self.emit_constant(Value::Number(value))?;
+        self.emit_constant(Value::Number(num))?;
         Ok(())
     }
     fn string(&mut self) -> Result<()> {
-        let previous = self.previous()?.lexeme().to_owned();
-        self.emit_constant(Value::Obj(Obj::String(previous)))
+        let Some(previous) = &self.previous
+        else {
+            return error::MissingPrevSnafu.fail();
+        };
+        self.emit_constant(Value::Obj(Obj::String(previous.lexeme().to_owned())))
     }
 
     fn unary(&mut self) -> Result<()> {
-        let operator_type = self.previous()?.clone();
+        let Some(operator_type) = self.previous.clone()
+        else {
+            return error::MissingPrevSnafu.fail();
+        };
         self.parse_precedence(Precedence::Unary)?;
         // self.expression();
         match operator_type {
@@ -126,7 +138,10 @@ where
     }
 
     fn binary(&mut self) -> Result<()> {
-        let op_type = self.previous()?.clone();
+        let Some(op_type) = self.previous.clone()
+        else {
+            return error::MissingPrevSnafu.fail();
+        };
         let rule: ParseRule<I, Compiling> = get_rule(&op_type);
         self.parse_precedence((Into::<u8>::into(rule.precedence) + 1_u8).into())?;
         match op_type {
@@ -146,7 +161,11 @@ where
     }
 
     fn literal(&mut self) -> Result<()> {
-        match self.previous()? {
+        let Some(token) = &self.previous
+        else {
+            return error::MissingPrevSnafu.fail();
+        };
+        match token {
             Token::False { .. } => self.emit_byte(OpCode::OpFalse),
             Token::Nil { .. } => self.emit_byte(OpCode::OpNil),
             Token::True { .. } => self.emit_byte(OpCode::OpTrue),
@@ -157,7 +176,11 @@ where
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<()> {
         self.advance();
-        let prefix_fule = get_rule(self.previous()?).prefix;
+        let Some(typ) = &self.previous
+        else {
+            return error::MissingPrevSnafu.fail();
+        };
+        let prefix_fule = get_rule(typ).prefix;
         prefix_fule.map_or_else(|| error::NotExpressionSnafu.fail(), |p| p(self))?;
 
         'l: while precedence
@@ -168,7 +191,11 @@ where
             .precedence
         {
             self.advance();
-            let Some(infix_rule) = get_rule(self.previous()?).infix
+            let Some(infix_rule) = get_rule(match &self.previous {
+                Some(p) => p,
+                None => return error::MissingPrevSnafu.fail(),
+            })
+            .infix
             else {
                 break;
                 // return error::MissingInfixSnafu.fail();
@@ -194,6 +221,25 @@ where
 
     fn expression(&mut self) -> Result<()> {
         self.parse_precedence(Precedence::Assignment)
+    }
+
+    fn declaration(&mut self) -> Result<()> {
+        self.statement()
+    }
+
+    fn statement(&mut self) -> Result<()> {
+        if matches!(self.current, Some(Token::Print { .. })) {
+            self.advance();
+            self.print_statement()?;
+        }
+        Ok(())
+    }
+
+    fn print_statement(&mut self) -> Result<()> {
+        self.expression()?;
+        self.consume_semicolon()?;
+        self.emit_byte(OpCode::OpPrint);
+        Ok(())
     }
 }
 
@@ -226,7 +272,9 @@ where
             panic_mode: self.panic_mode,
         };
         var.advance();
-        var.expression()?;
+        while var.current.is_some() {
+            var.declaration()?;
+        }
         var.end_compiler();
         if var.had_error {
             return error::CompileSnafu.fail();
@@ -298,14 +346,6 @@ where
         self.had_error = true;
     }
 
-    fn previous(&self) -> Result<&Token> {
-        let Some(prev) = &self.previous
-        else {
-            return error::MissingPrevSnafu.fail();
-        };
-        Ok(prev)
-    }
-
     fn consume_right_paren(&mut self) -> Result<()> {
         let Some(tk) = &self.current
         else {
@@ -318,6 +358,24 @@ where
             },
             t => error::NotMatchSnafu {
                 msg: "Expect ')' after expression",
+                token: Some(t.clone()),
+            }
+            .fail(),
+        }
+    }
+
+    fn consume_semicolon(&mut self) -> Result<()> {
+        let Some(tk) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+        match tk {
+            Token::Semicolon { .. } => {
+                self.advance();
+                Ok(())
+            },
+            t => error::NotMatchSnafu {
+                msg: "Expect ';' after value",
                 token: Some(t.clone()),
             }
             .fail(),
