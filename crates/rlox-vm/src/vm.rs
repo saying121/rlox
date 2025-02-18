@@ -93,6 +93,11 @@ impl Vm {
                 OpCode::OpNil => self.stack.push(Value::Nil),
                 OpCode::OpTrue => self.stack.push(Value::Bool(true)),
                 OpCode::OpFalse => self.stack.push(Value::Bool(false)),
+                OpCode::OpPop => {
+                    if self.stack.pop().is_none() {
+                        return error::EmptyStackSnafu.fail();
+                    }
+                },
                 OpCode::OpAdd => {
                     let last: Option<&[Value; 2]> = self.stack.last_chunk();
                     match last {

@@ -228,9 +228,19 @@ where
     }
 
     fn statement(&mut self) -> Result<()> {
-        if matches!(self.current, Some(Token::Print { .. })) {
-            self.advance();
-            self.print_statement()?;
+        let Some(cur) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+
+        match cur {
+            Token::Print { .. } => {
+                self.advance();
+                self.print_statement()?;
+            },
+            _ => {
+                self.expression_statement()?;
+            },
         }
         Ok(())
     }
@@ -239,6 +249,13 @@ where
         self.expression()?;
         self.consume_semicolon()?;
         self.emit_byte(OpCode::OpPrint);
+        Ok(())
+    }
+
+    fn expression_statement(&mut self) -> Result<()> {
+        self.expression()?;
+        self.consume_semicolon()?;
+        self.emit_byte(OpCode::OpPop);
         Ok(())
     }
 }

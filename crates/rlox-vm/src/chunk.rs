@@ -11,6 +11,7 @@ pub enum OpCode {
     OpNil,
     OpTrue,
     OpFalse,
+    OpPop,
     OpEqual,
     OpGreater,
     OpLess,
@@ -44,6 +45,7 @@ impl Display for OpCode {
             Self::OpNegate => "OP_NEGATE",
             Self::OpReturn => "OP_RETURN",
             Self::OpPrint => "OP_PRINT",
+            Self::OpPop => "OP_POP",
         }
         .fmt(f)
     }
@@ -160,6 +162,7 @@ impl Chunk {
             | OpCode::OpGreater
             | OpCode::OpLess
             | OpCode::OpPrint
+            | OpCode::OpPop
             ) => Self::simple_instruction(v, offset),
         }
     }
