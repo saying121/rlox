@@ -224,7 +224,21 @@ where
     }
 
     fn declaration(&mut self) -> Result<()> {
-        self.statement()?;
+        let Some(cur) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+
+        match cur {
+            Token::Var { .. } => {
+                self.advance();
+                self.var_declaration()?;
+            },
+            _ => {
+                self.statement()?;
+            },
+        }
+
         if self.panic_mode {
             self.synchronize();
         }
@@ -261,6 +275,33 @@ where
         self.consume_semicolon()?;
         self.emit_byte(OpCode::OpPop);
         Ok(())
+    }
+
+    fn var_declaration(&mut self) -> Result<()> {
+        let global = self.parse_variable()?;
+        let Some(cur) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+
+        match cur {
+            Token::Equal { .. } => self.expression()?,
+            _ => self.emit_byte(OpCode::OpNil),
+        }
+        self.consume_semicolon()?;
+
+        self.define_var(global);
+        Ok(())
+    }
+
+    fn parse_variable(&mut self) -> Result<u8> {
+        self.consume_ident()?;
+        let ident = unsafe { self.previous.as_ref().unwrap_unchecked() };
+        self.make_constant(Value::Obj(Obj::String(ident.lexeme().to_owned())))
+    }
+
+    fn define_var(&mut self, global: u8) {
+        self.emit_bytes(OpCode::OpDefaineGlobal, global);
     }
 }
 
@@ -396,6 +437,24 @@ where
             },
             t => error::NotMatchSnafu {
                 msg: "Expect ';' after value",
+                token: Some(t.clone()),
+            }
+            .fail(),
+        }
+    }
+
+    fn consume_ident(&mut self) -> Result<()> {
+        let Some(tk) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+        match tk {
+            Token::Identifier { .. } => {
+                self.advance();
+                Ok(())
+            },
+            t => error::NotMatchSnafu {
+                msg: "Expect variable name",
                 token: Some(t.clone()),
             }
             .fail(),

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use rlox::scan::scanner::Scanner;
 
 use crate::{
@@ -11,14 +13,18 @@ use crate::{
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq, PartialOrd)]
+// #[derive(PartialEq, PartialOrd)]
 pub struct Vm {
     pub stack: Vec<Value>,
+    pub globals: HashMap<String, Value>,
 }
 
 impl Vm {
-    pub const fn new() -> Self {
-        Self { stack: vec![] }
+    pub fn new() -> Self {
+        Self {
+            stack: vec![],
+            globals: HashMap::new(),
+        }
     }
 
     pub fn interpret(&mut self, source: &str) -> Result<()> {
@@ -97,6 +103,22 @@ impl Vm {
                     if self.stack.pop().is_none() {
                         return error::EmptyStackSnafu.fail();
                     }
+                },
+                OpCode::OpDefaineGlobal => {
+                    let objs = chunk.constants().last();
+                    let Some(Value::Obj(Obj::String(name))) = objs
+                    else {
+                        unreachable!("Expect string")
+                    };
+                OpCode::OpDefaineGlobal => {
+                    let next = unsafe { ip_iter.next().unwrap_unchecked() };
+                    let name = chunk.get_ident_string(*next.1 as usize);
+                    let Some(v) = self.stack.pop()
+                    else {
+                        return error::EmptyStackSnafu.fail();
+                    };
+
+                    self.globals.insert(name, v);
                 },
                 OpCode::OpAdd => {
                     let last: Option<&[Value; 2]> = self.stack.last_chunk();

@@ -12,6 +12,7 @@ pub enum OpCode {
     OpTrue,
     OpFalse,
     OpPop,
+    OpDefaineGlobal,
     OpEqual,
     OpGreater,
     OpLess,
@@ -46,6 +47,7 @@ impl Display for OpCode {
             Self::OpReturn => "OP_RETURN",
             Self::OpPrint => "OP_PRINT",
             Self::OpPop => "OP_POP",
+            Self::OpDefaineGlobal => "OP_DEFAINE_GLOBAL",
         }
         .fmt(f)
     }
@@ -125,6 +127,15 @@ impl Chunk {
     pub const fn constants(&self) -> &ValueArray {
         &self.constants
     }
+
+    pub fn get_ident_string(&self, idx: usize) -> String {
+        let objs = self.constants[idx].clone();
+        let Value::Obj(Obj::String(name)) = objs
+        else {
+            unreachable!("Expect string")
+        };
+        name.to_owned()
+    }
 }
 
 // debug
@@ -148,22 +159,8 @@ impl Chunk {
 
         match self.code[offset].into() {
             v @ OpCode::OpConstant => self.constant_instruction(v, offset),
-            v @ (OpCode::OpReturn
-            | OpCode::OpNegate
-            | OpCode::OpAdd
-            | OpCode::OpSubtract
-            | OpCode::OpMultiply
-            | OpCode::OpDivide
-            | OpCode::OpNil
-            | OpCode::OpTrue
-            | OpCode::OpFalse
-            | OpCode::OpNot
-            | OpCode::OpEqual
-            | OpCode::OpGreater
-            | OpCode::OpLess
-            | OpCode::OpPrint
-            | OpCode::OpPop
-            ) => Self::simple_instruction(v, offset),
+            v @ OpCode::OpDefaineGlobal => self.constant_instruction(v, offset),
+            v => Self::simple_instruction(v, offset),
         }
     }
 
