@@ -104,12 +104,16 @@ impl Vm {
                         return error::EmptyStackSnafu.fail();
                     }
                 },
-                OpCode::OpDefaineGlobal => {
-                    let objs = chunk.constants().last();
-                    let Some(Value::Obj(Obj::String(name))) = objs
+                OpCode::OpGetGlobal => {
+                    let next = unsafe { ip_iter.next().unwrap_unchecked() };
+                    let name = chunk.get_ident_string(*next.1 as usize);
+                    let Some(val) = self.globals.get(&name)
                     else {
-                        unreachable!("Expect string")
+                        return error::UndefindVarSnafu { name }.fail();
                     };
+
+                    self.stack.push(val.to_owned());
+                },
                 OpCode::OpDefaineGlobal => {
                     let next = unsafe { ip_iter.next().unwrap_unchecked() };
                     let name = chunk.get_ident_string(*next.1 as usize);

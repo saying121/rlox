@@ -122,6 +122,21 @@ where
         self.emit_constant(Value::Obj(Obj::String(previous.lexeme().to_owned())))
     }
 
+    fn variable(&mut self) -> Result<()> {
+        let Some(name) = &self.previous
+        else {
+            return error::MissingPrevSnafu.fail();
+        };
+        let name = name.lexeme().to_owned();
+        self.named_variable(name)
+    }
+
+    fn named_variable(&mut self, name: String) -> Result<()> {
+        let arg = self.make_constant(Value::Obj(Obj::String(name)))?;
+        self.emit_bytes(OpCode::OpGetGlobal, arg);
+        Ok(())
+    }
+
     fn unary(&mut self) -> Result<()> {
         let Some(operator_type) = self.previous.clone()
         else {
@@ -285,7 +300,10 @@ where
         };
 
         match cur {
-            Token::Equal { .. } => self.expression()?,
+            Token::Equal { .. } => {
+                self.advance();
+                self.expression()?;
+            },
             _ => self.emit_byte(OpCode::OpNil),
         }
         self.consume_semicolon()?;

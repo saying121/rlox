@@ -1,6 +1,9 @@
 use std::{fmt::Display, mem};
 
-use crate::value::{Value, ValueArray};
+use crate::{
+    object::Obj,
+    value::{Value, ValueArray},
+};
 
 #[derive(Clone, Copy)]
 #[derive(Debug)]
@@ -12,6 +15,7 @@ pub enum OpCode {
     OpTrue,
     OpFalse,
     OpPop,
+    OpGetGlobal,
     OpDefaineGlobal,
     OpEqual,
     OpGreater,
@@ -48,6 +52,7 @@ impl Display for OpCode {
             Self::OpPrint => "OP_PRINT",
             Self::OpPop => "OP_POP",
             Self::OpDefaineGlobal => "OP_DEFAINE_GLOBAL",
+            Self::OpGetGlobal => "OP_GET_GLOBAL",
         }
         .fmt(f)
     }
@@ -167,7 +172,7 @@ impl Chunk {
     fn constant_instruction(&self, name: OpCode, offset: usize) -> usize {
         let constant = self.code[offset + 1];
         print!("{:<16} {:>4} '", name, constant);
-        println!("{}", self.constants.0[constant as usize]);
+        println!("{}", self.constants[constant as usize]);
         offset + 2
     }
 

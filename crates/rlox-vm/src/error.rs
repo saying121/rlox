@@ -94,6 +94,12 @@ pub enum LoxError {
         #[snafu(implicit)]
         localtion: Location,
     },
+    #[snafu(display("Undefined variable {}",name))]
+    UndefindVar {
+        name: String,
+        #[snafu(implicit)]
+        localtion: Location,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, LoxError>;

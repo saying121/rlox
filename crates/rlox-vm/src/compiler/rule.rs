@@ -120,7 +120,7 @@ where
             precedence: Precedence::Comparison,
         },
         Token::Identifier { .. } => ParseRule {
-            prefix: None,
+            prefix: Some(Parser::variable),
             infix: None,
             precedence: Precedence::None,
         },
