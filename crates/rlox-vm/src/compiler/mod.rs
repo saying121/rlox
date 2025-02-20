@@ -30,6 +30,7 @@ where
     cur_chunk: S::Data,
     had_error: bool,
     panic_mode: bool,
+    cur_compiler: Compiler,
 }
 
 #[derive(Clone, Copy)]
@@ -59,6 +60,35 @@ impl From<Precedence> for u8 {
         val as Self
     }
 }
+
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(PartialEq, Eq)]
+pub struct Local {
+    name: Token,
+    depth: usize,
+}
+
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(PartialEq, Eq)]
+pub struct Compiler {
+    locals: Vec<Local>,
+    local_count: usize,
+    scope_depth: usize,
+}
+
+impl Compiler {
+    pub const fn new() -> Self {
+        Self {
+            locals: vec![],
+            local_count: 0,
+            scope_depth: 0,
+        }
+    }
+}
+
 impl<I> Parser<I, Compiling>
 where
     I: Iterator<Item = Token>,
@@ -354,6 +384,7 @@ where
             had_error: false,
             panic_mode: false,
             cur_chunk: (),
+            cur_compiler: Compiler::new(),
         }
     }
 
@@ -365,6 +396,7 @@ where
             cur_chunk,
             had_error: self.had_error,
             panic_mode: self.panic_mode,
+            cur_compiler: self.cur_compiler,
         };
         var.advance();
         while var.current.is_some() {
