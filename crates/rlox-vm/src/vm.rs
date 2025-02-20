@@ -105,8 +105,7 @@ impl Vm {
                     }
                 },
                 OpCode::OpGetGlobal => {
-                    let next = unsafe { ip_iter.next().unwrap_unchecked() };
-                    let name = chunk.get_ident_string(*next.1 as usize);
+                    let name = read_string(chunk, &mut ip_iter);
                     let Some(val) = self.globals.get(&name)
                     else {
                         return error::UndefindVarSnafu { name }.fail();
@@ -115,8 +114,7 @@ impl Vm {
                     self.stack.push(val.to_owned());
                 },
                 OpCode::OpSetGlobal => {
-                    let next = unsafe { ip_iter.next().unwrap_unchecked() };
-                    let name = chunk.get_ident_string(*next.1 as usize);
+                    let name = read_string(chunk, &mut ip_iter);
                     let Some(v) = self.stack.last()
                     else {
                         return error::EmptyStackSnafu.fail();
@@ -127,8 +125,7 @@ impl Vm {
                     }
                 },
                 OpCode::OpDefaineGlobal => {
-                    let next = unsafe { ip_iter.next().unwrap_unchecked() };
-                    let name = chunk.get_ident_string(*next.1 as usize);
+                    let name = read_string(chunk, &mut ip_iter);
                     let Some(v) = self.stack.pop()
                     else {
                         return error::EmptyStackSnafu.fail();
@@ -188,4 +185,12 @@ impl Vm {
             Value::Obj(_) | Value::Number(_) => false,
         }
     }
+}
+
+fn read_string(
+    chunk: &Chunk,
+    ip_iter: &mut std::iter::Enumerate<std::slice::Iter<'_, u8>>,
+) -> String {
+    let next = unsafe { ip_iter.next().unwrap_unchecked() };
+    chunk.get_ident_string(*next.1 as usize)
 }
