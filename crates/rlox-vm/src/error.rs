@@ -94,9 +94,15 @@ pub enum LoxError {
         #[snafu(implicit)]
         localtion: Location,
     },
-    #[snafu(display("Undefined variable {}",name))]
+    #[snafu(display("Undefined variable {}", name))]
     UndefindVar {
         name: String,
+        #[snafu(implicit)]
+        localtion: Location,
+    },
+    #[snafu(display("Invalid assignment target: {}", token))]
+    InvalidAssignTarget {
+        token: Token,
         #[snafu(implicit)]
         localtion: Location,
     },

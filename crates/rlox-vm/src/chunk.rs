@@ -1,14 +1,16 @@
-use std::{fmt::Display, mem};
+use std::mem;
 
 use crate::{
     object::Obj,
     value::{Value, ValueArray},
 };
 
+#[derive(strum::Display)]
 #[derive(Clone, Copy)]
 #[derive(Debug)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum OpCode {
     OpConstant,
     OpNil,
@@ -16,6 +18,7 @@ pub enum OpCode {
     OpFalse,
     OpPop,
     OpGetGlobal,
+    OpSetGlobal,
     OpDefaineGlobal,
     OpEqual,
     OpGreater,
@@ -29,33 +32,6 @@ pub enum OpCode {
     OpPrint,
     // OpConstantLong,
     OpReturn,
-}
-
-impl Display for OpCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::OpConstant => "OP_CONSTANT",
-            Self::OpNil => "OP_NIL",
-            Self::OpTrue => "OP_TRUE",
-            Self::OpFalse => "OP_FALSE",
-            Self::OpEqual => "OP_EQUAL",
-            Self::OpGreater => "OP_GREATER",
-            Self::OpLess => "OP_LESS",
-            // Self::OpConstantLong => "OP_CONSTANT_LONG",
-            Self::OpAdd => "OP_ADD",
-            Self::OpSubtract => "OP_SUBTRACT",
-            Self::OpMultiply => "OP_MULTIPLY",
-            Self::OpDivide => "OP_DIVIDE",
-            Self::OpNot => "OP_NOT",
-            Self::OpNegate => "OP_NEGATE",
-            Self::OpReturn => "OP_RETURN",
-            Self::OpPrint => "OP_PRINT",
-            Self::OpPop => "OP_POP",
-            Self::OpDefaineGlobal => "OP_DEFAINE_GLOBAL",
-            Self::OpGetGlobal => "OP_GET_GLOBAL",
-        }
-        .fmt(f)
-    }
 }
 
 impl From<OpCode> for u8 {
@@ -139,7 +115,7 @@ impl Chunk {
         else {
             unreachable!("Expect string")
         };
-        name.to_owned()
+        name
     }
 }
 
@@ -163,8 +139,12 @@ impl Chunk {
         }
 
         match self.code[offset].into() {
-            v @ OpCode::OpConstant => self.constant_instruction(v, offset),
-            v @ OpCode::OpDefaineGlobal => self.constant_instruction(v, offset),
+            v @ (OpCode::OpDefaineGlobal
+            | OpCode::OpConstant
+            | OpCode::OpSetGlobal
+            | OpCode::OpGetGlobal) => {
+                self.constant_instruction(v, offset)
+            },
             v => Self::simple_instruction(v, offset),
         }
     }

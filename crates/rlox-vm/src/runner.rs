@@ -53,9 +53,31 @@ fn feature() {
 
     vm.interpret("print !(5 - 4 > 3 * 2 == !nil);").unwrap();
     vm.interpret("print 1;").unwrap();
-    vm.interpret(r#"
+    vm.interpret(
+        r#"
 var beverage = "cafe au lait";
 var breakfast = "beignets with " + beverage;
 print breakfast;
-        "#).unwrap();
+        "#,
+    )
+    .unwrap();
+    vm.interpret(
+        r#"
+var breakfast = "beignets";
+breakfast = "new val";
+
+print breakfast;
+        "#,
+    )
+    .unwrap();
+    vm.interpret(
+        r#"
+var breakfast = "beignets";
+var beverage = "cafe au lait";
+breakfast = "beignets with " + beverage;
+
+print breakfast;
+        "#,
+    )
+    .unwrap();
 }

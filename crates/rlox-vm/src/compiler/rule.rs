@@ -6,7 +6,7 @@ use super::{
 };
 use crate::error::Result;
 
-pub type ParseFn<I, S> = for<'a> fn(&'a mut Parser<I, S>) -> Result<()>;
+pub type ParseFn<I, S> = for<'a> fn(&'a mut Parser<I, S>,bool) -> Result<()>;
 
 pub struct ParseRule<I, S>
 where

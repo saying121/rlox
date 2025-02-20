@@ -114,6 +114,18 @@ impl Vm {
 
                     self.stack.push(val.to_owned());
                 },
+                OpCode::OpSetGlobal => {
+                    let next = unsafe { ip_iter.next().unwrap_unchecked() };
+                    let name = chunk.get_ident_string(*next.1 as usize);
+                    let Some(v) = self.stack.last()
+                    else {
+                        return error::EmptyStackSnafu.fail();
+                    };
+                    if self.globals.insert(name.clone(), v.clone()).is_none() {
+                        self.globals.remove(&name);
+                        return error::UndefindVarSnafu { name }.fail();
+                    }
+                },
                 OpCode::OpDefaineGlobal => {
                     let next = unsafe { ip_iter.next().unwrap_unchecked() };
                     let name = chunk.get_ident_string(*next.1 as usize);

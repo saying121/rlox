@@ -63,7 +63,7 @@ impl<I> Parser<I, Compiling>
 where
     I: Iterator<Item = Token>,
 {
-    fn grouping(&mut self) -> Result<()> {
+    fn grouping(&mut self, _: bool) -> Result<()> {
         // self.consume_left_paren();
         self.expression()?;
         self.consume_right_paren()
@@ -101,20 +101,20 @@ where
         self.cur_chunk.write(byte, row);
     }
 
-    fn number(&mut self) -> Result<()> {
+    fn number(&mut self, _: bool) -> Result<()> {
         let Some(prev) = self.previous.clone()
         else {
             return error::MissingPrevSnafu.fail();
         };
-        let num = match prev {
-            Token::Number { double, .. } => double,
-            _ => unsafe { unreachable_unchecked() },
+        let Token::Number { double: num, .. } = prev
+        else {
+            unsafe { unreachable_unchecked() }
         };
 
         self.emit_constant(Value::Number(num))?;
         Ok(())
     }
-    fn string(&mut self) -> Result<()> {
+    fn string(&mut self, _: bool) -> Result<()> {
         let Some(previous) = &self.previous
         else {
             return error::MissingPrevSnafu.fail();
@@ -122,22 +122,29 @@ where
         self.emit_constant(Value::Obj(Obj::String(previous.lexeme().to_owned())))
     }
 
-    fn variable(&mut self) -> Result<()> {
+    fn variable(&mut self, can_assign: bool) -> Result<()> {
         let Some(name) = &self.previous
         else {
             return error::MissingPrevSnafu.fail();
         };
         let name = name.lexeme().to_owned();
-        self.named_variable(name)
+        self.named_variable(name, can_assign)
     }
 
-    fn named_variable(&mut self, name: String) -> Result<()> {
+    fn named_variable(&mut self, name: String, can_assign: bool) -> Result<()> {
         let arg = self.make_constant(Value::Obj(Obj::String(name)))?;
-        self.emit_bytes(OpCode::OpGetGlobal, arg);
+        if can_assign && matches!(self.current, Some(Token::Equal { .. })) {
+            self.advance();
+            self.expression()?;
+            self.emit_bytes(OpCode::OpSetGlobal, arg);
+        }
+        else {
+            self.emit_bytes(OpCode::OpGetGlobal, arg);
+        }
         Ok(())
     }
 
-    fn unary(&mut self) -> Result<()> {
+    fn unary(&mut self, _: bool) -> Result<()> {
         let Some(operator_type) = self.previous.clone()
         else {
             return error::MissingPrevSnafu.fail();
@@ -152,7 +159,7 @@ where
         Ok(())
     }
 
-    fn binary(&mut self) -> Result<()> {
+    fn binary(&mut self, _: bool) -> Result<()> {
         let Some(op_type) = self.previous.clone()
         else {
             return error::MissingPrevSnafu.fail();
@@ -175,7 +182,7 @@ where
         Ok(())
     }
 
-    fn literal(&mut self) -> Result<()> {
+    fn literal(&mut self, _: bool) -> Result<()> {
         let Some(token) = &self.previous
         else {
             return error::MissingPrevSnafu.fail();
@@ -196,7 +203,8 @@ where
             return error::MissingPrevSnafu.fail();
         };
         let prefix_fule = get_rule(typ).prefix;
-        prefix_fule.map_or_else(|| error::NotExpressionSnafu.fail(), |p| p(self))?;
+        let can_assign = precedence <= Precedence::Assignment;
+        prefix_fule.map_or_else(|| error::NotExpressionSnafu.fail(), |t| t(self, can_assign))?;
 
         'l: while precedence
             <= get_rule::<I>(match &self.current {
@@ -215,7 +223,14 @@ where
                 break;
                 // return error::MissingInfixSnafu.fail();
             };
-            infix_rule(self)?;
+            infix_rule(self, can_assign)?;
+        }
+        if can_assign && matches!(self.current, Some(Token::Equal { .. })) {
+            self.advance();
+            return error::InvalidAssignTargetSnafu {
+                token: unsafe { self.previous.clone().unwrap_unchecked() },
+            }
+            .fail();
         }
         Ok(())
     }
