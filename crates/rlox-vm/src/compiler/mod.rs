@@ -316,11 +316,33 @@ where
                 self.advance();
                 self.print_statement()?;
             },
+            Token::LeftBrace { .. } => {
+                self.begin_scope();
+                self.block()?;
+                self.end_scope();
+            },
             _ => {
                 self.expression_statement()?;
             },
         }
         Ok(())
+    }
+
+    const fn begin_scope(&mut self) {
+        self.cur_compiler.scope_depth += 1;
+    }
+
+    const fn end_scope(&mut self) {
+        self.cur_compiler.scope_depth -= 1;
+    }
+
+    fn block(&mut self) -> Result<()> {
+        while let Some(cur_tk) = &self.current
+            && !matches!(cur_tk, Token::RightBrace { .. })
+        {
+            self.declaration()?;
+        }
+        self.consume_right_brace()
     }
 
     fn print_statement(&mut self) -> Result<()> {
@@ -520,6 +542,24 @@ where
             },
             t => error::NotMatchSnafu {
                 msg: "Expect variable name",
+                token: Some(t.clone()),
+            }
+            .fail(),
+        }
+    }
+
+    fn consume_right_brace(&mut self) -> Result<()> {
+        let Some(tk) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+        match tk {
+            Token::RightBrace { .. } => {
+                self.advance();
+                Ok(())
+            },
+            t => error::NotMatchSnafu {
+                msg: "Expect '}' after block",
                 token: Some(t.clone()),
             }
             .fail(),
