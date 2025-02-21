@@ -160,25 +160,43 @@ where
     }
 
     fn variable(&mut self, can_assign: bool) -> Result<()> {
-        let Some(name) = &self.previous
+        let Some(name) = self.previous.take()
         else {
             return error::MissingPrevSnafu.fail();
         };
-        let name = name.lexeme().to_owned();
-        self.named_variable(name, can_assign)
+        self.named_variable(&name, can_assign)
     }
 
-    fn named_variable(&mut self, name: String, can_assign: bool) -> Result<()> {
-        let arg = self.make_constant(Value::Obj(Obj::String(name)))?;
+    fn named_variable(&mut self, name: &Token, can_assign: bool) -> Result<()> {
+        let (get_op, set_op);
+        let arg = if let Some(arg) = self.resolve_local(name) {
+            get_op = OpCode::OpGetLocal;
+            set_op = OpCode::OpSetLocal;
+            arg
+        }
+        else {
+            get_op = OpCode::OpGetGlobal;
+            set_op = OpCode::OpSetGlobal;
+            self.make_constant(Value::Obj(Obj::String(name.lexeme().to_owned())))?
+        };
+
         if can_assign && matches!(self.current, Some(Token::Equal { .. })) {
             self.advance();
             self.expression()?;
-            self.emit_bytes(OpCode::OpSetGlobal, arg);
+            self.emit_bytes(set_op, arg);
         }
         else {
-            self.emit_bytes(OpCode::OpGetGlobal, arg);
+            self.emit_bytes(get_op, arg);
         }
         Ok(())
+    }
+    fn resolve_local(&self, name: &Token) -> Option<u8> {
+        for (i,ele) in self.cur_compiler.locals.iter().rev().enumerate() {
+            if ele.name.lexeme()==name.lexeme() {
+                return Some(i as u8)  ;
+            }
+        }
+        None
     }
 
     fn unary(&mut self, _: bool) -> Result<()> {
