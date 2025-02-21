@@ -75,7 +75,6 @@ pub struct Local {
 #[derive(PartialEq, Eq)]
 pub struct Compiler {
     locals: Vec<Local>,
-    local_count: usize,
     scope_depth: usize,
 }
 
@@ -83,7 +82,15 @@ impl Compiler {
     pub const fn new() -> Self {
         Self {
             locals: vec![],
-            local_count: 0,
+            // locals: vec![
+            //     Local {
+            //         name: Token::Eof {
+            //             inner: TokenInner::default()
+            //         },
+            //         depth: 0
+            //     };
+            //     u8::MAX.into()
+            // ],
             scope_depth: 0,
         }
     }
@@ -332,8 +339,14 @@ where
         self.cur_compiler.scope_depth += 1;
     }
 
-    const fn end_scope(&mut self) {
+    fn end_scope(&mut self) {
         self.cur_compiler.scope_depth -= 1;
+        while let Some(local) = self.cur_compiler.locals.last()
+            && local.depth > self.cur_compiler.scope_depth
+        {
+            self.cur_compiler.locals.pop();
+            self.emit_byte(OpCode::OpPop);
+        }
     }
 
     fn block(&mut self) -> Result<()> {
@@ -375,18 +388,60 @@ where
         }
         self.consume_semicolon()?;
 
-        self.define_var(global);
+        self.define_var_global(global);
         Ok(())
     }
 
     fn parse_variable(&mut self) -> Result<u8> {
         self.consume_ident()?;
+        self.declare_var()?;
+        if self.cur_compiler.scope_depth > 0 {
+            return Ok(0);
+        }
+
         let ident = unsafe { self.previous.as_ref().unwrap_unchecked() };
         self.make_constant(Value::Obj(Obj::String(ident.lexeme().to_owned())))
     }
 
-    fn define_var(&mut self, global: u8) {
+    fn define_var_global(&mut self, global: u8) {
+        if self.cur_compiler.scope_depth > 0 {
+            return;
+        }
         self.emit_bytes(OpCode::OpDefaineGlobal, global);
+    }
+
+    fn declare_var(&mut self) -> Result<()> {
+        if self.cur_compiler.scope_depth == 0 {
+            return Ok(());
+        }
+        let Some(name) = self.previous.clone()
+        else {
+            return error::MissingPrevSnafu.fail();
+        };
+        for local in self.cur_compiler.locals.iter().rev() {
+            if local.depth < self.cur_compiler.scope_depth {
+                break;
+            }
+
+            if name.lexeme() == local.name.lexeme() {
+                return error::DuplicateVarNameSnafu { name }.fail();
+            }
+        }
+        self.add_local(name)?;
+
+        Ok(())
+    }
+
+    fn add_local(&mut self, name: Token) -> Result<()> {
+        if self.cur_compiler.locals.len() == u8::MAX.into() {
+            return error::TooManyLocalVarSnafu.fail();
+        }
+        self.cur_compiler.locals.push(Local {
+            name,
+            depth: self.cur_compiler.scope_depth,
+        });
+
+        Ok(())
     }
 }
 

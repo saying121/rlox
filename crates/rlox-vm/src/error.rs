@@ -54,6 +54,10 @@ pub enum LoxError {
     TooManyConsts {
         #[snafu(implicit)]
         localtion: Location,
+    },#[snafu(display("Too many local variables"))]
+    TooManyLocalVar {
+        #[snafu(implicit)]
+        localtion: Location,
     },
     #[snafu(display("{msg}"))]
     NotMatch {
@@ -103,6 +107,12 @@ pub enum LoxError {
     #[snafu(display("Invalid assignment target: {}", token))]
     InvalidAssignTarget {
         token: Token,
+        #[snafu(implicit)]
+        localtion: Location,
+    },
+    #[snafu(display("Duplicate ver name: {}", name))]
+    DuplicateVarName {
+        name: Token,
         #[snafu(implicit)]
         localtion: Location,
     },
