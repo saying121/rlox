@@ -173,6 +173,15 @@ impl Vm {
                     };
                     println!("{}", var);
                 },
+                OpCode::OpGetLocal => {
+                    let slot = unsafe { ip_iter.next().unwrap_unchecked() };
+                    self.stack.push(self.stack[*slot.1 as usize].clone());
+                },
+                OpCode::OpSetLocal => {
+                    let slot = unsafe { ip_iter.next().unwrap_unchecked() };
+                    let value = unsafe { self.stack.last().unwrap_unchecked() }.clone();
+                    self.stack[*slot.1 as usize] = value;
+                },
             }
         }
         Ok(())

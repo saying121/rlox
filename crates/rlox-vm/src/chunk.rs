@@ -144,11 +144,15 @@ impl Chunk {
             v @ (OpCode::OpDefaineGlobal
             | OpCode::OpConstant
             | OpCode::OpSetGlobal
-            | OpCode::OpGetGlobal) => {
-                self.constant_instruction(v, offset)
-            },
+            | OpCode::OpGetGlobal) => self.constant_instruction(v, offset),
+            v @ (OpCode::OpGetLocal | OpCode::OpSetLocal) => self.byte_instruction(v, offset),
             v => Self::simple_instruction(v, offset),
         }
+    }
+    fn byte_instruction(&self, name: OpCode, offset: usize) -> usize {
+        let slot = self.code[offset + 1];
+        println!("{:<16} {:>4}", name, slot);
+        offset + 2
     }
 
     fn constant_instruction(&self, name: OpCode, offset: usize) -> usize {
