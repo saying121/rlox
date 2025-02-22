@@ -358,14 +358,26 @@ where
         }
         Ok(())
     }
+
     fn if_statement(&mut self) -> Result<()> {
         self.consume_left_paren()?;
         self.expression()?;
         self.consume_right_paren()?;
 
         let then_jump = self.emit_jump(OpCode::OpJumpIfFalse);
+        self.emit_byte(OpCode::OpPop);
         self.statement()?;
-        self.patch_jump(then_jump)
+        let else_jump = self.emit_jump(OpCode::OpJump);
+        self.patch_jump(then_jump)?;
+        self.emit_byte(OpCode::OpPop);
+
+        if matches!(self.current,Some(Token::Else { .. })) {
+            self.advance();
+            self.statement()?;
+        }
+        self.patch_jump(else_jump)?;
+
+        Ok(())
     }
 
     fn emit_jump(&mut self, instruct: impl Into<u8>) -> usize {

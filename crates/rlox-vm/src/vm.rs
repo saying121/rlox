@@ -190,6 +190,12 @@ impl Vm {
                         }
                     }
                 },
+                OpCode::OpJump => {
+                    let offset = Self::read_short(&mut ip_iter);
+                    for _ in 0..offset {
+                        ip_iter.next();
+                    }
+                },
             }
         }
         Ok(())
