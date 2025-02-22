@@ -66,7 +66,7 @@ impl From<Precedence> for u8 {
 #[derive(PartialEq, Eq)]
 pub struct Local {
     name: Token,
-    depth: usize,
+    depth: i32,
 }
 
 #[derive(Clone)]
@@ -169,15 +169,16 @@ where
 
     fn named_variable(&mut self, name: &Token, can_assign: bool) -> Result<()> {
         let (get_op, set_op);
-        let arg = if let Some(arg) = self.resolve_local(name) {
-            get_op = OpCode::OpGetLocal;
-            set_op = OpCode::OpSetLocal;
-            arg
-        }
-        else {
+        let arg = self.resolve_local(name)?;
+        let arg = if arg == -1 {
             get_op = OpCode::OpGetGlobal;
             set_op = OpCode::OpSetGlobal;
             self.make_constant(Value::Obj(Obj::String(name.lexeme().to_owned())))?
+        }
+        else {
+            get_op = OpCode::OpGetLocal;
+            set_op = OpCode::OpSetLocal;
+            arg as u8
         };
 
         if can_assign && matches!(self.current, Some(Token::Equal { .. })) {
@@ -190,13 +191,19 @@ where
         }
         Ok(())
     }
-    fn resolve_local(&self, name: &Token) -> Option<u8> {
-        for (i,ele) in self.cur_compiler.locals.iter().rev().enumerate() {
-            if ele.name.lexeme()==name.lexeme() {
-                return Some(i as u8)  ;
+    fn resolve_local(&self, name: &Token) -> Result<i32> {
+        for (i, ele) in self.cur_compiler.locals.iter().rev().enumerate() {
+            if ele.name.lexeme() == name.lexeme() {
+                if ele.depth == -1 {
+                    return error::OwnInitSnafu {
+                        name: ele.name.clone(),
+                    }
+                    .fail();
+                }
+                return Ok(i as i32);
             }
         }
-        None
+        Ok(-1)
     }
 
     fn unary(&mut self, _: bool) -> Result<()> {
@@ -360,7 +367,7 @@ where
     fn end_scope(&mut self) {
         self.cur_compiler.scope_depth -= 1;
         while let Some(local) = self.cur_compiler.locals.last()
-            && local.depth > self.cur_compiler.scope_depth
+            && local.depth as usize > self.cur_compiler.scope_depth
         {
             self.cur_compiler.locals.pop();
             self.emit_byte(OpCode::OpPop);
@@ -423,6 +430,7 @@ where
 
     fn define_var_global(&mut self, global: u8) {
         if self.cur_compiler.scope_depth > 0 {
+            self.mark_initialized();
             return;
         }
         self.emit_bytes(OpCode::OpDefaineGlobal, global);
@@ -437,7 +445,7 @@ where
             return error::MissingPrevSnafu.fail();
         };
         for local in self.cur_compiler.locals.iter().rev() {
-            if local.depth < self.cur_compiler.scope_depth {
+            if local.depth != -1 && (local.depth as usize) < self.cur_compiler.scope_depth {
                 break;
             }
 
@@ -454,12 +462,14 @@ where
         if self.cur_compiler.locals.len() == u8::MAX.into() {
             return error::TooManyLocalVarSnafu.fail();
         }
-        self.cur_compiler.locals.push(Local {
-            name,
-            depth: self.cur_compiler.scope_depth,
-        });
+        self.cur_compiler.locals.push(Local { name, depth: -1 });
 
         Ok(())
+    }
+
+    fn mark_initialized(&mut self) {
+        unsafe { self.cur_compiler.locals.last_mut().unwrap_unchecked() }.depth =
+            self.cur_compiler.scope_depth as i32;
     }
 }
 

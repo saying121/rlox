@@ -116,6 +116,12 @@ pub enum LoxError {
         #[snafu(implicit)]
         localtion: Location,
     },
+    #[snafu(display("Can't read local variable in its own initializer: {}", name))]
+    OwnInit {
+        name: Token,
+        #[snafu(implicit)]
+        localtion: Location,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, LoxError>;
