@@ -34,6 +34,7 @@ pub enum OpCode {
     OpPrint,
     // OpConstantLong,
     OpReturn,
+    OpJumpIfFalse,
 }
 
 impl From<OpCode> for u8 {
@@ -54,7 +55,7 @@ impl From<u8> for OpCode {
 #[derive(PartialEq, PartialOrd)]
 pub struct Chunk {
     // `count`, `capacity`, rust direct use `Vec`
-    code: Vec<u8>,
+    pub code: Vec<u8>,
     constants: ValueArray,
     // (count, line)
     lines: Vec<(usize, usize)>,

@@ -1,4 +1,4 @@
-#![feature(let_chains)]
+#![feature(let_chains, iter_next_chunk)]
 
 pub mod chunk;
 pub mod cli;

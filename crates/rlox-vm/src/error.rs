@@ -122,6 +122,11 @@ pub enum LoxError {
         #[snafu(implicit)]
         localtion: Location,
     },
+    #[snafu(display("Too much code to jump over"))]
+    TooMuchJump {
+        #[snafu(implicit)]
+        localtion: Location,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, LoxError>;

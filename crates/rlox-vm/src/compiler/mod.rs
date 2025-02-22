@@ -353,10 +353,35 @@ where
                 self.block()?;
                 self.end_scope();
             },
-            _ => {
-                self.expression_statement()?;
-            },
+            Token::If { .. } => self.if_statement()?,
+            _ => self.expression_statement()?,
         }
+        Ok(())
+    }
+    fn if_statement(&mut self) -> Result<()> {
+        self.consume_left_paren()?;
+        self.expression()?;
+        self.consume_right_paren()?;
+
+        let then_jump = self.emit_jump(OpCode::OpJumpIfFalse);
+        self.statement()?;
+        self.patch_jump(then_jump)
+    }
+
+    fn emit_jump(&mut self, instruct: impl Into<u8>) -> usize {
+        self.emit_byte(instruct);
+        self.emit_byte(0xFF);
+        self.emit_byte(0xFF);
+        self.cur_chunk.count() - 2
+    }
+
+    fn patch_jump(&mut self, offset: usize) -> Result<()> {
+        let jump = self.cur_chunk.count() - offset - 2;
+        if jump > u16::MAX.into() {
+            return error::TooMuchJumpSnafu.fail();
+        }
+        self.cur_chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
+        self.cur_chunk.code[offset + 1] = ((jump >> 8) & 0xFF) as u8;
         Ok(())
     }
 
@@ -575,6 +600,24 @@ where
             None => tracing::error!(" at end"),
         }
         self.had_error = true;
+    }
+
+    fn consume_left_paren(&mut self) -> Result<()> {
+        let Some(tk) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+        match tk {
+            Token::LeftParen { .. } => {
+                self.advance();
+                Ok(())
+            },
+            t => error::NotMatchSnafu {
+                msg: "Expect '('",
+                token: Some(t.clone()),
+            }
+            .fail(),
+        }
     }
 
     fn consume_right_paren(&mut self) -> Result<()> {

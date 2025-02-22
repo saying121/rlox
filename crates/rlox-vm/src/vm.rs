@@ -182,6 +182,14 @@ impl Vm {
                     let value = unsafe { self.stack.last().unwrap_unchecked() }.clone();
                     self.stack[*slot.1 as usize] = value;
                 },
+                OpCode::OpJumpIfFalse => {
+                    let offset = Self::read_short(&mut ip_iter);
+                    if Self::is_falsey(unsafe { self.stack.last().unwrap_unchecked() }) {
+                        for _ in 0..offset {
+                            ip_iter.next();
+                        }
+                    }
+                },
             }
         }
         Ok(())
@@ -193,6 +201,11 @@ impl Vm {
             Value::Nil => true,
             Value::Obj(_) | Value::Number(_) => false,
         }
+    }
+
+    fn read_short(ip_iter: &mut std::iter::Enumerate<std::slice::Iter<'_, u8>>) -> u16 {
+        let [(_, &hight), (_, &low)] = unsafe { ip_iter.next_chunk().unwrap_unchecked() };
+        u16::from_be_bytes([hight, low])
     }
 }
 
