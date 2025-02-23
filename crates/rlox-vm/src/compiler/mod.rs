@@ -160,7 +160,7 @@ where
     }
 
     fn variable(&mut self, can_assign: bool) -> Result<()> {
-        let Some(name) = self.previous.take()
+        let Some(name) = self.previous.clone()
         else {
             return error::MissingPrevSnafu.fail();
         };
@@ -349,13 +349,52 @@ where
                 self.print_statement()?;
             },
             Token::LeftBrace { .. } => {
+                self.advance();
                 self.begin_scope();
                 self.block()?;
                 self.end_scope();
             },
-            Token::If { .. } => self.if_statement()?,
+            Token::If { .. } => {
+                self.advance();
+                self.if_statement()?;
+            },
+            Token::While { .. } => {
+                self.advance();
+                self.while_statement()?;
+            },
             _ => self.expression_statement()?,
         }
+        Ok(())
+    }
+    fn while_statement(&mut self) -> Result<()> {
+        let loop_start = self.cur_chunk.count();
+
+        self.consume_left_paren()?;
+        self.expression()?;
+        self.consume_right_paren()?;
+
+        let exit_jump = self.emit_jump(OpCode::OpJumpIfFalse);
+        self.emit_byte(OpCode::OpPop);
+        self.statement()?;
+
+        self.emit_loop(loop_start)?;
+
+        self.patch_jump(exit_jump)?;
+        self.emit_byte(OpCode::OpPop);
+
+        Ok(())
+    }
+
+    fn emit_loop(&mut self, loop_start: usize) -> Result<()> {
+        self.emit_byte(OpCode::OpLoop);
+
+        let offset = self.cur_chunk.count() - loop_start + 2;
+        if offset > u16::MAX.into() {
+            return error::LoopLargeSnafu.fail();
+        }
+        self.emit_byte((offset >> 8) as u8);
+        self.emit_byte(offset as u8);
+
         Ok(())
     }
 
@@ -516,6 +555,7 @@ where
         self.parse_precedence(Precedence::And)?;
         self.patch_jump(end_jump)
     }
+
     fn or(&mut self, _: bool) -> Result<()> {
         let else_jump = self.emit_jump(OpCode::OpJumpIfFalse);
         let end_jump = self.emit_jump(OpCode::OpJump);

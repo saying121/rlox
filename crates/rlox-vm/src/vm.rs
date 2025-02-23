@@ -17,6 +17,7 @@ use crate::{
 pub struct Vm {
     pub stack: Vec<Value>,
     pub globals: HashMap<String, Value>,
+    pub ip: usize,
 }
 
 impl Vm {
@@ -24,6 +25,7 @@ impl Vm {
         Self {
             stack: vec![],
             globals: HashMap::new(),
+            ip: 0,
         }
     }
 
@@ -36,7 +38,7 @@ impl Vm {
         self.run(&chunk, chunk.code())
     }
 
-    pub fn run(&mut self, chunk: &Chunk, ip: &[u8]) -> Result<()> {
+    pub fn run(&mut self, chunk: &Chunk, code: &[u8]) -> Result<()> {
         macro_rules! binary_op {
             ($op:tt, $offset:expr, $type:ident) => {
                 {
@@ -54,24 +56,21 @@ impl Vm {
             };
         }
 
-        let mut ip_iter = ip.iter().enumerate();
-        while let Some((offset, &ele)) = ip_iter.next() {
+        let code_len = code.len();
+        while self.ip < code_len {
             #[cfg(debug_assertions)]
             {
                 for ele in &self.stack {
                     print!("[{}]", ele);
                 }
                 println!();
-                Chunk::disassemble_instruction(chunk, offset);
+                Chunk::disassemble_instruction(chunk, self.ip);
             };
 
-            match ele.into() {
+            match self.read_byte(code).into() {
                 OpCode::OpReturn => return Ok(()),
                 OpCode::OpConstant => {
-                    // Safety: OpConstant next must be index
-                    let next = unsafe { ip_iter.next().unwrap_unchecked() };
-                    let next = *next.1 as usize;
-                    let constant = chunk.constants()[next].clone();
+                    let constant = self.read_const(chunk);
                     self.stack.push(constant);
                 },
                 OpCode::OpNot => {
@@ -91,7 +90,7 @@ impl Vm {
                             *d = -*d;
                         },
                         _ => {
-                            let line = chunk.get_line(offset);
+                            let line = chunk.get_line(self.ip);
                             return error::NegateNotNumSnafu { line }.fail();
                         },
                     }
@@ -105,7 +104,7 @@ impl Vm {
                     }
                 },
                 OpCode::OpGetGlobal => {
-                    let name = read_string(chunk, &mut ip_iter);
+                    let name = self.read_string(chunk);
                     let Some(val) = self.globals.get(&name)
                     else {
                         return error::UndefindVarSnafu { name }.fail();
@@ -114,7 +113,7 @@ impl Vm {
                     self.stack.push(val.to_owned());
                 },
                 OpCode::OpSetGlobal => {
-                    let name = read_string(chunk, &mut ip_iter);
+                    let name = self.read_string(chunk);
                     let Some(v) = self.stack.last()
                     else {
                         return error::EmptyStackSnafu.fail();
@@ -125,7 +124,7 @@ impl Vm {
                     }
                 },
                 OpCode::OpDefaineGlobal => {
-                    let name = read_string(chunk, &mut ip_iter);
+                    let name = self.read_string(chunk);
                     let Some(v) = self.stack.pop()
                     else {
                         return error::EmptyStackSnafu.fail();
@@ -144,15 +143,15 @@ impl Vm {
                         },
                         _ => {
                             return error::BinaryNotNumSnafu {
-                                line: chunk.get_line(offset),
+                                line: chunk.get_line(self.ip),
                             }
                             .fail();
                         },
                     }
                 },
-                OpCode::OpSubtract => binary_op!(-, offset, Number),
-                OpCode::OpMultiply => binary_op!(*, offset, Number),
-                OpCode::OpDivide => binary_op!(/, offset, Number),
+                OpCode::OpSubtract => binary_op!(-, self.ip, Number),
+                OpCode::OpMultiply => binary_op!(*, self.ip, Number),
+                OpCode::OpDivide => binary_op!(/, self.ip, Number),
                 OpCode::OpEqual => {
                     let Some(b) = self.stack.pop()
                     else {
@@ -164,8 +163,8 @@ impl Vm {
                     };
                     self.stack.push(Value::Bool(a == b));
                 },
-                OpCode::OpGreater => binary_op!(>, offset, Bool),
-                OpCode::OpLess => binary_op!(<, offset, Bool),
+                OpCode::OpGreater => binary_op!(>, self.ip, Bool),
+                OpCode::OpLess => binary_op!(<, self.ip, Bool),
                 OpCode::OpPrint => {
                     let Some(var) = self.stack.pop()
                     else {
@@ -174,30 +173,31 @@ impl Vm {
                     println!("{}", var);
                 },
                 OpCode::OpGetLocal => {
-                    let slot = unsafe { ip_iter.next().unwrap_unchecked() };
-                    self.stack.push(self.stack[*slot.1 as usize].clone());
+                    let slot = self.read_byte(code);
+                    self.stack.push(self.stack[slot as usize].clone());
                 },
                 OpCode::OpSetLocal => {
-                    let slot = unsafe { ip_iter.next().unwrap_unchecked() };
+                    let slot = self.read_byte(code);
                     let value = unsafe { self.stack.last().unwrap_unchecked() }.clone();
-                    self.stack[*slot.1 as usize] = value;
+                    self.stack[slot as usize] = value;
                 },
                 OpCode::OpJumpIfFalse => {
-                    let offset = Self::read_short(&mut ip_iter);
+                    let offset = self.read_short(code);
                     if Self::is_falsey(unsafe { self.stack.last().unwrap_unchecked() }) {
-                        for _ in 0..offset {
-                            ip_iter.next();
-                        }
+                        self.ip += offset as usize;
                     }
                 },
                 OpCode::OpJump => {
-                    let offset = Self::read_short(&mut ip_iter);
-                    for _ in 0..offset {
-                        ip_iter.next();
-                    }
+                    let offset = self.read_short(code);
+                    self.ip += offset as usize;
+                },
+                OpCode::OpLoop => {
+                    let offset = self.read_short(code);
+                    self.ip -= offset as usize;
                 },
             }
         }
+
         Ok(())
     }
 
@@ -209,16 +209,28 @@ impl Vm {
         }
     }
 
-    fn read_short(ip_iter: &mut std::iter::Enumerate<std::slice::Iter<'_, u8>>) -> u16 {
-        let [(_, &hight), (_, &low)] = unsafe { ip_iter.next_chunk().unwrap_unchecked() };
-        u16::from_be_bytes([hight, low])
+    fn read_byte(&mut self, code: &[u8]) -> u8 {
+        let ip = self.ip;
+        self.ip += 1;
+        code[ip]
     }
-}
 
-fn read_string(
-    chunk: &Chunk,
-    ip_iter: &mut std::iter::Enumerate<std::slice::Iter<'_, u8>>,
-) -> String {
-    let next = unsafe { ip_iter.next().unwrap_unchecked() };
-    chunk.get_ident_string(*next.1 as usize)
+    fn read_short(&mut self, code: &[u8]) -> u16 {
+        let offset = self.ip;
+        self.ip += 2;
+        u16::from_be_bytes([code[offset + 1], code[offset + 2]])
+    }
+
+    fn read_string(&mut self, chunk: &Chunk) -> String {
+        let ip = self.ip;
+        let next = chunk.code[ip];
+        self.ip += 1;
+        chunk.get_ident_string(next as usize)
+    }
+
+    fn read_const(&mut self, chunk: &Chunk) -> Value {
+        let next = self.read_byte(&chunk.code);
+        let next = next as usize;
+        chunk.constants()[next].clone()
+    }
 }

@@ -36,6 +36,7 @@ pub enum OpCode {
     OpReturn,
     OpJumpIfFalse,
     OpJump,
+    OpLoop,
 }
 
 impl From<OpCode> for u8 {
@@ -149,10 +150,11 @@ impl Chunk {
             | OpCode::OpGetGlobal) => self.constant_instruction(v, offset),
             v @ (OpCode::OpGetLocal | OpCode::OpSetLocal) => self.byte_instruction(v, offset),
             v @ (OpCode::OpJump | OpCode::OpJumpIfFalse) => self.jump_instruction(v, 1, offset),
+            v @ OpCode::OpLoop => self.jump_instruction(v, -1, offset),
             v => Self::simple_instruction(v, offset),
         }
     }
-    fn jump_instruction(&self, name: OpCode, sign: u8, offset: usize) -> usize {
+    fn jump_instruction(&self, name: OpCode, sign: i8, offset: usize) -> usize {
         let jump = u16::from_be_bytes([self.code[offset + 1], self.code[offset + 2]]);
         println!(
             "{name} {offset:>4} -> {}",
