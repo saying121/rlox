@@ -171,8 +171,8 @@ where
         },
         Token::Or { .. } => ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix: Some(Parser::or),
+            precedence: Precedence::Or,
         },
         Token::Print { .. } => ParseRule {
             prefix: None,

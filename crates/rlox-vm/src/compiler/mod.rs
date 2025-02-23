@@ -371,7 +371,7 @@ where
         self.patch_jump(then_jump)?;
         self.emit_byte(OpCode::OpPop);
 
-        if matches!(self.current,Some(Token::Else { .. })) {
+        if matches!(self.current, Some(Token::Else { .. })) {
             self.advance();
             self.statement()?;
         }
@@ -509,11 +509,21 @@ where
             self.cur_compiler.scope_depth as i32;
     }
 
-    fn and(&mut self,_:bool) -> Result<()> {
+    fn and(&mut self, _: bool) -> Result<()> {
         let end_jump = self.emit_jump(OpCode::OpJumpIfFalse);
 
         self.emit_byte(OpCode::OpPop);
         self.parse_precedence(Precedence::And)?;
+        self.patch_jump(end_jump)
+    }
+    fn or(&mut self, _: bool) -> Result<()> {
+        let else_jump = self.emit_jump(OpCode::OpJumpIfFalse);
+        let end_jump = self.emit_jump(OpCode::OpJump);
+
+        self.patch_jump(else_jump)?;
+        self.emit_byte(OpCode::OpPop);
+
+        self.parse_precedence(Precedence::Or)?;
         self.patch_jump(end_jump)
     }
 }
