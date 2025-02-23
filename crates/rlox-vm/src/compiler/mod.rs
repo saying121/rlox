@@ -362,8 +362,63 @@ where
                 self.advance();
                 self.while_statement()?;
             },
+            Token::For { .. } => {
+                self.advance();
+                self.for_statement()?;
+            },
             _ => self.expression_statement()?,
         }
+        Ok(())
+    }
+
+    fn for_statement(&mut self) -> Result<()> {
+        self.begin_scope();
+
+        self.consume_left_paren()?;
+        let Some(cur_tk) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+
+        match cur_tk {
+            Token::Semicolon { .. } => {
+                self.advance();
+            },
+            Token::Var { .. } => {
+                self.advance();
+                self.var_declaration()?;
+            },
+            _ => {
+                self.expression_statement()?;
+            },
+        }
+
+        let loop_start = self.cur_chunk.count();
+        let mut exit_jump = None;
+        let Some(cur_tk) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+        if !matches!(cur_tk, Token::Semicolon { .. }) {
+            self.expression()?;
+            self.consume_semicolon()?;
+
+            exit_jump = Some(self.emit_jump(OpCode::OpJumpIfFalse));
+            self.emit_byte(OpCode::OpPop);
+        }
+
+        self.consume_right_paren()?;
+
+        self.statement()?;
+
+        self.emit_loop(loop_start)?;
+
+        if let Some(exit_jump) = exit_jump {
+            self.patch_jump(exit_jump)?;
+            self.emit_byte(OpCode::OpPop);
+        }
+        self.end_scope();
+
         Ok(())
     }
     fn while_statement(&mut self) -> Result<()> {
