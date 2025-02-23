@@ -393,7 +393,7 @@ where
             },
         }
 
-        let loop_start = self.cur_chunk.count();
+        let mut loop_start = self.cur_chunk.count();
         let mut exit_jump = None;
         let Some(cur_tk) = &self.current
         else {
@@ -407,7 +407,21 @@ where
             self.emit_byte(OpCode::OpPop);
         }
 
-        self.consume_right_paren()?;
+        let Some(cur_tk) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+        if !matches!(cur_tk, Token::RightParen { .. }) {
+            let body_jump = self.emit_jump(OpCode::OpJump);
+            let increment_start = self.cur_chunk.count();
+            self.expression()?;
+            self.emit_byte(OpCode::OpPop);
+            self.consume_right_paren()?;
+
+            self.emit_loop(loop_start)?;
+            loop_start = increment_start;
+            self.patch_jump(body_jump)?;
+        }
 
         self.statement()?;
 
