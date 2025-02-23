@@ -435,6 +435,7 @@ where
 
         Ok(())
     }
+
     fn while_statement(&mut self) -> Result<()> {
         let loop_start = self.cur_chunk.count();
 
