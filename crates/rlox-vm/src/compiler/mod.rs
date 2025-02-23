@@ -508,6 +508,14 @@ where
         unsafe { self.cur_compiler.locals.last_mut().unwrap_unchecked() }.depth =
             self.cur_compiler.scope_depth as i32;
     }
+
+    fn and(&mut self,_:bool) -> Result<()> {
+        let end_jump = self.emit_jump(OpCode::OpJumpIfFalse);
+
+        self.emit_byte(OpCode::OpPop);
+        self.parse_precedence(Precedence::And)?;
+        self.patch_jump(end_jump)
+    }
 }
 
 impl<I> Parser<I, Init>
