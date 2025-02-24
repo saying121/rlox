@@ -1,10 +1,10 @@
 pub mod rule;
 pub mod state;
 
-use std::{convert::Into, hint::unreachable_unchecked};
+use std::{convert::Into, hint::unreachable_unchecked, mem};
 
 use itertools::PeekNth;
-use rlox::token::Token;
+use rlox::token::{Token, TokenInner};
 
 use self::{
     rule::{ParseRule, get_rule},
@@ -24,8 +24,6 @@ where
     I: Iterator<Item = Token>,
     S: CompileState,
 {
-    function: Vec<ObjFunction>,
-    cur_fn_typ: CurFunType,
     peeks: PeekNth<I>,
     previous: Option<Token>,
     current: Option<Token>,
@@ -37,9 +35,11 @@ where
 
 #[derive(Clone, Copy)]
 #[derive(Debug)]
+#[derive(Default)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
-enum CurFunType {
+pub enum CurFunType {
     Fun,
+    #[default]
     Script,
 }
 
@@ -82,16 +82,23 @@ pub struct Local {
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq)]
 pub struct Compiler {
+    function: ObjFunction,
+    cur_fn_typ: CurFunType,
     locals: Vec<Local>,
     scope_depth: usize,
 }
 
 impl Compiler {
-    pub const fn new() -> Self {
+    pub fn new(cur_fn_typ: CurFunType) -> Self {
         Self {
-            locals: vec![],
+            locals: vec![Local {
+                name: Token::Invalid {
+                    inner: TokenInner::default(),
+                },
+                depth: 0,
+            }],
             // locals: vec![
             //     Local {
             //         name: Token::Eof {
@@ -102,6 +109,8 @@ impl Compiler {
             //     u8::MAX.into()
             // ],
             scope_depth: 0,
+            function: ObjFunction::new(),
+            cur_fn_typ,
         }
     }
 }
@@ -116,13 +125,20 @@ where
         self.consume_right_paren()
     }
 
-    fn end_compiler(&mut self) {
+    fn end_compiler(mut self) -> ObjFunction {
         self.emit_return();
-
         #[cfg(debug_assertions)]
         if !self.had_error {
-            self.cur_chunk.disassemble("code");
+            self.cur_chunk.disassemble(
+                if self.cur_compiler.function.name.is_empty() {
+                    "<script>"
+                }
+                else {
+                    &self.cur_compiler.function.name
+                },
+            );
         }
+        self.cur_compiler.function
     }
 
     fn emit_return(&mut self) {
@@ -664,13 +680,11 @@ where
             had_error: false,
             panic_mode: false,
             cur_chunk: (),
-            cur_compiler: Compiler::new(),
-            function: Vec::new(),
-            cur_fn_typ: CurFunType::Script,
+            cur_compiler: Compiler::new(CurFunType::Script),
         }
     }
 
-    pub fn compile(self, cur_chunk: Chunk) -> Result<Chunk> {
+    pub fn compile(self, cur_chunk: Chunk) -> Result<ObjFunction> {
         let mut var: Parser<I, Compiling> = Parser {
             peeks: self.peeks,
             previous: self.previous,
@@ -679,18 +693,15 @@ where
             had_error: self.had_error,
             panic_mode: self.panic_mode,
             cur_compiler: self.cur_compiler,
-            function: self.function,
-            cur_fn_typ: self.cur_fn_typ,
         };
         var.advance();
         while var.current.is_some() {
             var.declaration()?;
         }
-        var.end_compiler();
         if var.had_error {
             return error::CompileSnafu.fail();
         }
-        Ok(var.cur_chunk)
+        Ok(var.end_compiler())
     }
 }
 

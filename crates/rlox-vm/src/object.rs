@@ -28,6 +28,15 @@ pub struct ObjFunction {
     pub name: String,
 }
 
+impl Display for ObjFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.name.is_empty() {
+            write!(f, "<script>")?;
+        }
+        write!(f, "<fn {}>", self.name)
+    }
+}
+
 impl ObjFunction {
     pub const fn new() -> Self {
         Self {
