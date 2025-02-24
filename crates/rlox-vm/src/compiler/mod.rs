@@ -13,7 +13,7 @@ use self::{
 use crate::{
     chunk::{Chunk, OpCode},
     error::{self, Result},
-    object::Obj,
+    object::{Obj, ObjFunction},
     value::Value,
 };
 
@@ -24,6 +24,8 @@ where
     I: Iterator<Item = Token>,
     S: CompileState,
 {
+    function: Vec<ObjFunction>,
+    cur_fn_typ: CurFunType,
     peeks: PeekNth<I>,
     previous: Option<Token>,
     current: Option<Token>,
@@ -31,6 +33,14 @@ where
     had_error: bool,
     panic_mode: bool,
     cur_compiler: Compiler,
+}
+
+#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+enum CurFunType {
+    Fun,
+    Script,
 }
 
 #[derive(Clone, Copy)]
@@ -655,6 +665,8 @@ where
             panic_mode: false,
             cur_chunk: (),
             cur_compiler: Compiler::new(),
+            function: Vec::new(),
+            cur_fn_typ: CurFunType::Script,
         }
     }
 
@@ -667,6 +679,8 @@ where
             had_error: self.had_error,
             panic_mode: self.panic_mode,
             cur_compiler: self.cur_compiler,
+            function: self.function,
+            cur_fn_typ: self.cur_fn_typ,
         };
         var.advance();
         while var.current.is_some() {
