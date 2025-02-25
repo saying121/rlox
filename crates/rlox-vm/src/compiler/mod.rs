@@ -1,6 +1,7 @@
+#![expect(clippy::unwrap_used, reason = "shit")]
 pub mod rule;
 
-use std::{cell::RefCell, convert::Into, hint::unreachable_unchecked};
+use std::{cell::RefCell, convert::Into, hint::unreachable_unchecked, ptr::NonNull};
 
 use itertools::PeekNth;
 use rlox::token::{Token, TokenInner};
@@ -28,7 +29,7 @@ where
     current: Option<Token>,
     had_error: bool,
     panic_mode: bool,
-    cur_compiler: Compiler,
+    cur_compiler: CompilerLink,
 }
 
 #[derive(Clone, Copy)]
@@ -77,11 +78,14 @@ pub struct Local {
     depth: i32,
 }
 
+type CompilerLink = Option<NonNull<Compiler>>;
+
 #[derive(Clone)]
 #[derive(Debug)]
 #[derive(Default)]
 #[derive(PartialEq)]
 pub struct Compiler {
+    enclosing: CompilerLink,
     function: ObjFunction,
     cur_fn_typ: CurFunType,
     locals: Vec<Local>,
@@ -89,8 +93,12 @@ pub struct Compiler {
 }
 
 impl Compiler {
-    pub fn new(cur_fn_typ: CurFunType) -> Self {
-        Self {
+    pub fn new<I>(cur_fn_typ: CurFunType, parser: &mut Parser<I>) -> NonNull<Self>
+    where
+        I: std::iter::Iterator<Item = rlox::token::Token>,
+    {
+        let mut compiler = Self {
+            enclosing: parser.cur_compiler,
             locals: vec![Local {
                 name: Token::Invalid {
                     inner: TokenInner::default(),
@@ -107,9 +115,27 @@ impl Compiler {
             //     u8::MAX.into()
             // ],
             scope_depth: 0,
-            function: ObjFunction::new(),
+            function: ObjFunction {
+                arity: 0,
+                chunk: Chunk::new(),
+                name: if cur_fn_typ == CurFunType::Script {
+                    String::new()
+                }
+                else {
+                    unsafe { parser.previous.as_ref().unwrap_unchecked() }
+                        .lexeme()
+                        .to_owned()
+                },
+            },
             cur_fn_typ,
-        }
+        };
+
+        let non_null = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(compiler))) };
+        parser.cur_compiler = Some(non_null);
+        println!("init compiler");
+        debug_assert!(parser.cur_compiler.is_some());
+
+        non_null
     }
 }
 
@@ -123,22 +149,26 @@ where
         self.consume_right_paren()
     }
 
-    fn end_compiler(&self) -> ObjFunction {
+    fn end_compiler(&mut self) -> ObjFunction {
         self.emit_return();
         // #[cfg(debug_assertions)]
         if !self.had_error {
             CUR_CHUNK.with_borrow_mut(|v| {
                 v.disassemble(
-                    if self.cur_compiler.function.name.is_empty() {
+                    if self.cur_compiler().is_none()
+                        || self.cur_compiler().unwrap().function.name.is_empty()
+                    {
                         "<script>"
                     }
                     else {
-                        &self.cur_compiler.function.name
+                        &self.cur_compiler().unwrap().function.name
                     },
                 );
             });
         }
-        self.cur_compiler.function.clone()
+        let function = self.cur_compiler().unwrap().function.clone();
+        self.cur_compiler = self.cur_compiler().unwrap().enclosing;
+        function
     }
 
     fn emit_return(&self) {
@@ -220,7 +250,11 @@ where
         Ok(())
     }
     fn resolve_local(&self, name: &Token) -> Result<i32> {
-        for (i, ele) in self.cur_compiler.locals.iter().rev().enumerate() {
+        let Some(compiler) = self.cur_compiler()
+        else {
+            return Ok(-1);
+        };
+        for (i, ele) in compiler.locals.iter().rev().enumerate() {
             if ele.name.lexeme() == name.lexeme() {
                 if ele.depth == -1 {
                     return error::OwnInitSnafu {
@@ -292,6 +326,7 @@ where
         else {
             return error::MissingPrevSnafu.fail();
         };
+        dbg!(&self.previous);
         let prefix_fule = get_rule(typ).prefix;
         let can_assign = precedence <= Precedence::Assignment;
         prefix_fule.map_or_else(|| error::NotExpressionSnafu.fail(), |t| t(self, can_assign))?;
@@ -376,10 +411,28 @@ where
     }
 
     fn function(&mut self, ty: CurFunType) -> Result<()> {
-        let compiler = Compiler::new(ty);
+        let compiler = Compiler::new(ty, self);
+        println!("done function");
         self.begin_scope();
 
         self.consume_left_paren()?;
+        if !matches!(&self.current, Some(Token::RightParen { .. })) {
+            loop {
+                self.cur_compiler_mut().unwrap().function.arity += 1;
+                if self.cur_compiler().unwrap().function.arity > 255 {
+                    return error::TooMuchParamSnafu.fail();
+                }
+                let constant = self.parse_variable()?;
+                self.define_var_global(constant);
+
+                if matches!(&self.current, Some(Token::Comma { .. })) {
+                    self.advance();
+                }
+                else {
+                    break;
+                }
+            }
+        }
         self.consume_right_paren()?;
         self.consume_left_brace()?;
         self.block()?;
@@ -565,16 +618,16 @@ where
         Ok(())
     }
 
-    const fn begin_scope(&mut self) {
-        self.cur_compiler.scope_depth += 1;
+    fn begin_scope(&mut self) {
+        self.cur_compiler_mut().unwrap().scope_depth += 1;
     }
 
     fn end_scope(&mut self) {
-        self.cur_compiler.scope_depth -= 1;
-        while let Some(local) = self.cur_compiler.locals.last()
-            && local.depth as usize > self.cur_compiler.scope_depth
+        self.cur_compiler_mut().unwrap().scope_depth -= 1;
+        while let Some(local) = self.cur_compiler().unwrap().locals.last()
+            && local.depth as usize > self.cur_compiler().unwrap().scope_depth
         {
-            self.cur_compiler.locals.pop();
+            self.cur_compiler_mut().unwrap().locals.pop();
             self.emit_byte(OpCode::OpPop);
         }
     }
@@ -625,7 +678,7 @@ where
     fn parse_variable(&mut self) -> Result<u8> {
         self.consume_ident()?;
         self.declare_var()?;
-        if self.cur_compiler.scope_depth > 0 {
+        if self.cur_compiler().map_or(0, |v| v.scope_depth) > 0 {
             return Ok(0);
         }
 
@@ -634,7 +687,7 @@ where
     }
 
     fn define_var_global(&mut self, global: u8) {
-        if self.cur_compiler.scope_depth > 0 {
+        if self.cur_compiler().map_or(0, |v| v.scope_depth) > 0 {
             self.mark_initialized();
             return;
         }
@@ -642,15 +695,17 @@ where
     }
 
     fn declare_var(&mut self) -> Result<()> {
-        if self.cur_compiler.scope_depth == 0 {
+        if self.cur_compiler().map_or(0, |v| v.scope_depth) == 0 {
             return Ok(());
         }
         let Some(name) = self.previous.clone()
         else {
             return error::MissingPrevSnafu.fail();
         };
-        for local in self.cur_compiler.locals.iter().rev() {
-            if local.depth != -1 && (local.depth as usize) < self.cur_compiler.scope_depth {
+        for local in self.cur_compiler().unwrap().locals.iter().rev() {
+            if local.depth != -1
+                && (local.depth as usize) < self.cur_compiler().unwrap().scope_depth
+            {
                 break;
             }
 
@@ -664,20 +719,29 @@ where
     }
 
     fn add_local(&mut self, name: Token) -> Result<()> {
-        if self.cur_compiler.locals.len() == u8::MAX.into() {
+        if self.cur_compiler().unwrap().locals.len() == u8::MAX.into() {
             return error::TooManyLocalVarSnafu.fail();
         }
-        self.cur_compiler.locals.push(Local { name, depth: -1 });
+        self.cur_compiler_mut()
+            .unwrap()
+            .locals
+            .push(Local { name, depth: -1 });
 
         Ok(())
     }
 
     fn mark_initialized(&mut self) {
-        if self.cur_compiler.scope_depth == 0 {
+        if self.cur_compiler().map_or(0, |v| v.scope_depth) == 0 {
             return;
         }
-        unsafe { self.cur_compiler.locals.last_mut().unwrap_unchecked() }.depth =
-            self.cur_compiler.scope_depth as i32;
+        unsafe {
+            self.cur_compiler_mut()
+                .unwrap()
+                .locals
+                .last_mut()
+                .unwrap_unchecked()
+        }
+        .depth = self.cur_compiler().unwrap().scope_depth as i32;
     }
 
     fn and(&mut self, _: bool) -> Result<()> {
@@ -715,12 +779,20 @@ where
             current: None,
             had_error: false,
             panic_mode: false,
-            cur_compiler: Compiler::new(CurFunType::Script),
+            cur_compiler: None,
         }
+    }
+    fn cur_compiler(&self) -> Option<&Compiler> {
+        self.cur_compiler.map(|v| unsafe { &(*v.as_ptr()) })
+    }
+
+    fn cur_compiler_mut(&mut self) -> Option<&mut Compiler> {
+        self.cur_compiler.map(|v| unsafe { &mut (*v.as_ptr()) })
     }
 
     pub fn compile(self) -> Result<ObjFunction> {
         let mut var = self;
+        Compiler::new(CurFunType::Script, &mut var);
         var.advance();
         while var.current.is_some() {
             var.declaration()?;

@@ -132,6 +132,11 @@ pub enum LoxError {
         #[snafu(implicit)]
         localtion: Location,
     },
+    #[snafu(display("Can't have more than 255 parameters"))]
+    TooMuchParam {
+        #[snafu(implicit)]
+        localtion: Location,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, LoxError>;

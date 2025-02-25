@@ -50,6 +50,17 @@ pub fn run_file<P: AsRef<Path>>(vm: &mut Vm, path: P) -> Result<()> {
 #[test]
 fn feature() {
     let mut vm = Vm::new();
+    vm.interpret(
+        r#"
+fun areWeHavingItYet() {
+  print "Yes we are!";
+}
+
+print areWeHavingItYet;"#,
+    )
+    .unwrap();
+
+    let mut vm = Vm::new();
     vm.interpret("print !(5 - 4 > 3 * 2 == !nil);").unwrap();
 
     let mut vm = Vm::new();
