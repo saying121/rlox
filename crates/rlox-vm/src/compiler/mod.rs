@@ -123,7 +123,7 @@ where
         self.consume_right_paren()
     }
 
-    fn end_compiler(self) -> ObjFunction {
+    fn end_compiler(&self) -> ObjFunction {
         self.emit_return();
         // #[cfg(debug_assertions)]
         if !self.had_error {
@@ -138,7 +138,7 @@ where
                 );
             });
         }
-        self.cur_compiler.function
+        self.cur_compiler.function.clone()
     }
 
     fn emit_return(&self) {
@@ -350,18 +350,45 @@ where
         };
 
         match cur {
+            Token::Fun { .. } => {
+                self.advance();
+                self.fun_declaration()?;
+            },
             Token::Var { .. } => {
                 self.advance();
                 self.var_declaration()?;
             },
-            _ => {
-                self.statement()?;
-            },
+            _ => self.statement()?,
         }
 
         if self.panic_mode {
             self.synchronize();
         }
+        Ok(())
+    }
+
+    fn fun_declaration(&mut self) -> Result<()> {
+        let global = self.parse_variable()?;
+        self.mark_initialized();
+        self.function(CurFunType::Fun)?;
+        self.define_var_global(global);
+        Ok(())
+    }
+
+    fn function(&mut self, ty: CurFunType) -> Result<()> {
+        let compiler = Compiler::new(ty);
+        self.begin_scope();
+
+        self.consume_left_paren()?;
+        self.consume_right_paren()?;
+        self.consume_left_brace()?;
+        self.block()?;
+
+        let function = self.end_compiler();
+        self.emit_bytes(
+            OpCode::OpConstant,
+            Self::make_constant(Value::Obj(Obj::Fun(function)))?,
+        );
         Ok(())
     }
 
@@ -646,6 +673,9 @@ where
     }
 
     fn mark_initialized(&mut self) {
+        if self.cur_compiler.scope_depth == 0 {
+            return;
+        }
         unsafe { self.cur_compiler.locals.last_mut().unwrap_unchecked() }.depth =
             self.cur_compiler.scope_depth as i32;
     }
@@ -775,6 +805,24 @@ where
             },
             t => error::NotMatchSnafu {
                 msg: "Expect '('",
+                token: Some(t.clone()),
+            }
+            .fail(),
+        }
+    }
+
+    fn consume_left_brace(&mut self) -> Result<()> {
+        let Some(tk) = &self.current
+        else {
+            return error::MissingCurSnafu.fail();
+        };
+        match tk {
+            Token::LeftBrace { .. } => {
+                self.advance();
+                Ok(())
+            },
+            t => error::NotMatchSnafu {
+                msg: "Expect '{'",
                 token: Some(t.clone()),
             }
             .fail(),
