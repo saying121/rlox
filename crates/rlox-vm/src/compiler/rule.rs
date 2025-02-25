@@ -1,25 +1,21 @@
 use rlox::token::Token;
 
-use super::{
-    Parser, Precedence,
-    state::{CompileState, Compiling},
-};
+use super::{Parser, Precedence};
 use crate::error::Result;
 
-pub type ParseFn<I, S> = for<'a> fn(&'a mut Parser<I, S>, bool) -> Result<()>;
+pub type ParseFn<I> = for<'a> fn(&'a mut Parser<I>, bool) -> Result<()>;
 
-pub struct ParseRule<I, S>
+pub struct ParseRule<I>
 where
     I: Iterator<Item = Token>,
-    S: CompileState,
 {
-    pub prefix: Option<ParseFn<I, S>>,
-    pub infix: Option<ParseFn<I, S>>,
+    pub prefix: Option<ParseFn<I>>,
+    pub infix: Option<ParseFn<I>>,
     pub precedence: Precedence,
 }
 
 #[expect(clippy::match_same_arms, reason = "align")]
-pub fn get_rule<I>(typ: &Token) -> ParseRule<I, Compiling>
+pub fn get_rule<I>(typ: &Token) -> ParseRule<I>
 where
     I: Iterator<Item = Token>,
 {

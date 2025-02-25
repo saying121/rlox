@@ -6,7 +6,7 @@ use crate::{
     chunk::{Chunk, OpCode},
     compiler::Parser,
     error::{self, Result},
-    object::Obj,
+    object::{Obj, ObjFunction},
     value::Value,
 };
 
@@ -15,14 +15,30 @@ use crate::{
 #[derive(Default)]
 // #[derive(PartialEq, PartialOrd)]
 pub struct Vm {
+    pub frames: Vec<CallFrame>,
+    pub frame_count: usize,
     pub stack: Vec<Value>,
     pub globals: HashMap<String, Value>,
     pub ip: usize,
 }
 
+#[derive(Clone)]
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(PartialEq, PartialOrd)]
+pub struct CallFrame {
+    function: ObjFunction,
+    ip: usize,
+    ip_code: Vec<u8>,
+    slots: Vec<Value>,
+}
+
 impl Vm {
     pub fn new() -> Self {
         Self {
+            // frames: vec![CallFrame::default(); 256],
+            frames: vec![],
+            frame_count: 0,
             stack: vec![],
             globals: HashMap::new(),
             ip: 0,
@@ -30,15 +46,24 @@ impl Vm {
     }
 
     pub fn interpret(&mut self, source: &str) -> Result<()> {
-        let chunk = Chunk::new();
-
         let mut scanner = Scanner::new(source);
         let p = Parser::new(scanner.scan_tokens());
-        let chunk = p.compile(chunk)?;
-        self.run(&chunk, chunk.code())
+        let function = p.compile()?;
+        self.stack.push(Value::Obj(Obj::Fun(function.clone())));
+        self.frames.push(CallFrame {
+            function: function.clone(),
+            ip: 0,
+            slots: self.stack.clone(),
+            ip_code: function.chunk.code,
+        });
+        self.run()
     }
 
-    pub fn run(&mut self, chunk: &Chunk, code: &[u8]) -> Result<()> {
+    #[expect(clippy::unwrap_in_result, reason = "lazy")]
+    pub fn run(&mut self) -> Result<()> {
+        #[expect(clippy::unwrap_used, reason = "lazy")]
+        let mut frame = self.frames.last().unwrap().clone();
+
         macro_rules! binary_op {
             ($op:tt, $offset:expr, $type:ident) => {
                 {
@@ -48,7 +73,7 @@ impl Vm {
                             self.stack.push(Value::$type(a $op b));
                         },
                         _ => return error::BinaryNotNumSnafu {
-                            line: chunk.get_line($offset),
+                                line: frame.function.chunk.get_line(frame.ip),
                         }
                         .fail(),
                     }
@@ -56,21 +81,24 @@ impl Vm {
             };
         }
 
-        let code_len = code.len();
-        while self.ip < code_len {
-            #[cfg(debug_assertions)]
+        let code_len = frame.ip_code.len();
+        while frame.ip < code_len {
+            // #[cfg(debug_assertions)]
             {
                 for ele in &self.stack {
                     print!("[{}]", ele);
                 }
                 println!();
-                Chunk::disassemble_instruction(chunk, self.ip);
+                Chunk::disassemble_instruction(
+                    &frame.function.chunk,
+                    frame.ip - frame.function.chunk.code.len(),
+                );
             };
 
-            match self.read_byte(code).into() {
+            match frame.read_byte().into() {
                 OpCode::OpReturn => return Ok(()),
                 OpCode::OpConstant => {
-                    let constant = self.read_const(chunk);
+                    let constant = frame.read_const();
                     self.stack.push(constant);
                 },
                 OpCode::OpNot => {
@@ -90,7 +118,7 @@ impl Vm {
                             *d = -*d;
                         },
                         _ => {
-                            let line = chunk.get_line(self.ip);
+                            let line = frame.function.chunk.get_line(frame.ip);
                             return error::NegateNotNumSnafu { line }.fail();
                         },
                     }
@@ -104,7 +132,7 @@ impl Vm {
                     }
                 },
                 OpCode::OpGetGlobal => {
-                    let name = self.read_string(chunk);
+                    let name = frame.read_string();
                     let Some(val) = self.globals.get(&name)
                     else {
                         return error::UndefindVarSnafu { name }.fail();
@@ -113,7 +141,7 @@ impl Vm {
                     self.stack.push(val.to_owned());
                 },
                 OpCode::OpSetGlobal => {
-                    let name = self.read_string(chunk);
+                    let name = frame.read_string();
                     let Some(v) = self.stack.last()
                     else {
                         return error::EmptyStackSnafu.fail();
@@ -124,7 +152,7 @@ impl Vm {
                     }
                 },
                 OpCode::OpDefaineGlobal => {
-                    let name = self.read_string(chunk);
+                    let name = frame.read_string();
                     let Some(v) = self.stack.pop()
                     else {
                         return error::EmptyStackSnafu.fail();
@@ -143,7 +171,7 @@ impl Vm {
                         },
                         _ => {
                             return error::BinaryNotNumSnafu {
-                                line: chunk.get_line(self.ip),
+                                line: frame.function.chunk.get_line(frame.ip),
                             }
                             .fail();
                         },
@@ -173,27 +201,27 @@ impl Vm {
                     println!("{}", var);
                 },
                 OpCode::OpGetLocal => {
-                    let slot = self.read_byte(code);
-                    self.stack.push(self.stack[slot as usize].clone());
+                    let slot = frame.read_byte();
+                    self.stack.push(frame.slots[slot as usize].clone());
                 },
                 OpCode::OpSetLocal => {
-                    let slot = self.read_byte(code);
+                    let slot = frame.read_byte();
                     let value = unsafe { self.stack.last().unwrap_unchecked() }.clone();
-                    self.stack[slot as usize] = value;
+                    frame.slots[slot as usize] = value;
                 },
                 OpCode::OpJumpIfFalse => {
-                    let offset = self.read_short(code);
+                    let offset = frame.read_short();
                     if Self::is_falsey(unsafe { self.stack.last().unwrap_unchecked() }) {
-                        self.ip += offset as usize;
+                        frame.ip += offset as usize;
                     }
                 },
                 OpCode::OpJump => {
-                    let offset = self.read_short(code);
-                    self.ip += offset as usize;
+                    let offset = frame.read_short();
+                    frame.ip += offset as usize;
                 },
                 OpCode::OpLoop => {
-                    let offset = self.read_short(code);
-                    self.ip -= offset as usize;
+                    let offset = frame.read_short();
+                    frame.ip -= offset as usize;
                 },
             }
         }
@@ -208,29 +236,31 @@ impl Vm {
             Value::Obj(_) | Value::Number(_) => false,
         }
     }
+}
 
-    fn read_byte(&mut self, code: &[u8]) -> u8 {
+impl CallFrame {
+    fn read_byte(&mut self) -> u8 {
         let ip = self.ip;
         self.ip += 1;
-        code[ip]
+        self.ip_code[ip]
     }
 
-    fn read_short(&mut self, code: &[u8]) -> u16 {
+    fn read_short(&mut self) -> u16 {
         let offset = self.ip;
         self.ip += 2;
-        u16::from_be_bytes([code[offset + 1], code[offset + 2]])
+        u16::from_be_bytes([self.ip_code[offset + 1], self.ip_code[offset + 2]])
     }
 
-    fn read_string(&mut self, chunk: &Chunk) -> String {
+    fn read_string(&mut self) -> String {
         let ip = self.ip;
-        let next = chunk.code[ip];
+        let next = self.ip_code[ip];
         self.ip += 1;
-        chunk.get_ident_string(next as usize)
+        self.function.chunk.get_ident_string(next as usize)
     }
 
-    fn read_const(&mut self, chunk: &Chunk) -> Value {
-        let next = self.read_byte(&chunk.code);
+    fn read_const(&mut self) -> Value {
+        let next = self.read_byte();
         let next = next as usize;
-        chunk.constants()[next].clone()
+        self.function.chunk.constants()[next].clone()
     }
 }

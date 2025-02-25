@@ -1,15 +1,11 @@
 pub mod rule;
-pub mod state;
 
-use std::{convert::Into, hint::unreachable_unchecked, mem};
+use std::{cell::RefCell, convert::Into, hint::unreachable_unchecked};
 
 use itertools::PeekNth;
 use rlox::token::{Token, TokenInner};
 
-use self::{
-    rule::{ParseRule, get_rule},
-    state::{CompileState, Compiling, Init},
-};
+use self::rule::{ParseRule, get_rule};
 use crate::{
     chunk::{Chunk, OpCode},
     error::{self, Result},
@@ -17,17 +13,19 @@ use crate::{
     value::Value,
 };
 
+thread_local! {
+    pub static CUR_CHUNK: RefCell<Chunk> = const { RefCell::new(Chunk::new()) };
+}
+
 #[derive(Clone)]
 #[derive(Debug)]
-pub struct Parser<I, S>
+pub struct Parser<I>
 where
     I: Iterator<Item = Token>,
-    S: CompileState,
 {
     peeks: PeekNth<I>,
     previous: Option<Token>,
     current: Option<Token>,
-    cur_chunk: S::Data,
     had_error: bool,
     panic_mode: bool,
     cur_compiler: Compiler,
@@ -115,7 +113,7 @@ impl Compiler {
     }
 }
 
-impl<I> Parser<I, Compiling>
+impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
 {
@@ -125,27 +123,29 @@ where
         self.consume_right_paren()
     }
 
-    fn end_compiler(mut self) -> ObjFunction {
+    fn end_compiler(self) -> ObjFunction {
         self.emit_return();
-        #[cfg(debug_assertions)]
+        // #[cfg(debug_assertions)]
         if !self.had_error {
-            self.cur_chunk.disassemble(
-                if self.cur_compiler.function.name.is_empty() {
-                    "<script>"
-                }
-                else {
-                    &self.cur_compiler.function.name
-                },
-            );
+            CUR_CHUNK.with_borrow_mut(|v| {
+                v.disassemble(
+                    if self.cur_compiler.function.name.is_empty() {
+                        "<script>"
+                    }
+                    else {
+                        &self.cur_compiler.function.name
+                    },
+                );
+            });
         }
         self.cur_compiler.function
     }
 
-    fn emit_return(&mut self) {
+    fn emit_return(&self) {
         self.emit_byte(OpCode::OpReturn);
     }
 
-    fn emit_bytes<B1, B2>(&mut self, byte1: B1, byte2: B2)
+    fn emit_bytes<B1, B2>(&self, byte1: B1, byte2: B2)
     where
         B1: Into<u8>,
         B2: Into<u8>,
@@ -154,14 +154,16 @@ where
         self.emit_byte(byte2);
     }
 
-    fn emit_byte<B: Into<u8>>(&mut self, byte: B) {
+    fn emit_byte<B: Into<u8>>(&self, byte: B) {
         let (row, _col) = self
             .previous
             .as_ref()
             .expect("Missing previous token")
             .inner()
             .get_xy();
-        self.cur_chunk.write(byte, row);
+        CUR_CHUNK.with_borrow_mut(|v| {
+            v.write(byte, row);
+        });
     }
 
     fn number(&mut self, _: bool) -> Result<()> {
@@ -199,7 +201,7 @@ where
         let arg = if arg == -1 {
             get_op = OpCode::OpGetGlobal;
             set_op = OpCode::OpSetGlobal;
-            self.make_constant(Value::Obj(Obj::String(name.lexeme().to_owned())))?
+            Self::make_constant(Value::Obj(Obj::String(name.lexeme().to_owned())))?
         }
         else {
             get_op = OpCode::OpGetLocal;
@@ -252,7 +254,7 @@ where
         else {
             return error::MissingPrevSnafu.fail();
         };
-        let rule: ParseRule<I, Compiling> = get_rule(&op_type);
+        let rule: ParseRule<I> = get_rule(&op_type);
         self.parse_precedence((Into::<u8>::into(rule.precedence) + 1_u8).into())?;
         match op_type {
             Token::BangEqual { .. } => self.emit_bytes(OpCode::OpEqual, OpCode::OpNot),
@@ -323,14 +325,14 @@ where
         Ok(())
     }
 
-    fn emit_constant(&mut self, value: Value) -> Result<()> {
-        let byte2 = self.make_constant(value)?;
+    fn emit_constant(&self, value: Value) -> Result<()> {
+        let byte2 = Self::make_constant(value)?;
         self.emit_bytes(OpCode::OpConstant, byte2);
         Ok(())
     }
 
-    fn make_constant(&mut self, value: Value) -> Result<u8> {
-        let constant = self.cur_chunk.add_constant(value);
+    fn make_constant(value: Value) -> Result<u8> {
+        let constant = CUR_CHUNK.with_borrow_mut(|v| v.add_constant(value));
         if constant > u8::MAX.into() {
             return error::TooManyConstsSnafu.fail();
         }
@@ -419,7 +421,7 @@ where
             },
         }
 
-        let mut loop_start = self.cur_chunk.count();
+        let mut loop_start = CUR_CHUNK.with_borrow(Chunk::count);
         let mut exit_jump = None;
         let Some(cur_tk) = &self.current
         else {
@@ -439,14 +441,14 @@ where
         };
         if !matches!(cur_tk, Token::RightParen { .. }) {
             let body_jump = self.emit_jump(OpCode::OpJump);
-            let increment_start = self.cur_chunk.count();
+            let increment_start = CUR_CHUNK.with_borrow(Chunk::count);
             self.expression()?;
             self.emit_byte(OpCode::OpPop);
             self.consume_right_paren()?;
 
             self.emit_loop(loop_start)?;
             loop_start = increment_start;
-            self.patch_jump(body_jump)?;
+            Self::patch_jump(body_jump)?;
         }
 
         self.statement()?;
@@ -454,7 +456,7 @@ where
         self.emit_loop(loop_start)?;
 
         if let Some(exit_jump) = exit_jump {
-            self.patch_jump(exit_jump)?;
+            Self::patch_jump(exit_jump)?;
             self.emit_byte(OpCode::OpPop);
         }
         self.end_scope();
@@ -463,7 +465,7 @@ where
     }
 
     fn while_statement(&mut self) -> Result<()> {
-        let loop_start = self.cur_chunk.count();
+        let loop_start = CUR_CHUNK.with_borrow(Chunk::count);
 
         self.consume_left_paren()?;
         self.expression()?;
@@ -475,16 +477,16 @@ where
 
         self.emit_loop(loop_start)?;
 
-        self.patch_jump(exit_jump)?;
+        Self::patch_jump(exit_jump)?;
         self.emit_byte(OpCode::OpPop);
 
         Ok(())
     }
 
-    fn emit_loop(&mut self, loop_start: usize) -> Result<()> {
+    fn emit_loop(&self, loop_start: usize) -> Result<()> {
         self.emit_byte(OpCode::OpLoop);
 
-        let offset = self.cur_chunk.count() - loop_start + 2;
+        let offset = CUR_CHUNK.with_borrow(Chunk::count) - loop_start + 2;
         if offset > u16::MAX.into() {
             return error::LoopLargeSnafu.fail();
         }
@@ -503,32 +505,36 @@ where
         self.emit_byte(OpCode::OpPop);
         self.statement()?;
         let else_jump = self.emit_jump(OpCode::OpJump);
-        self.patch_jump(then_jump)?;
+        Self::patch_jump(then_jump)?;
         self.emit_byte(OpCode::OpPop);
 
         if matches!(self.current, Some(Token::Else { .. })) {
             self.advance();
             self.statement()?;
         }
-        self.patch_jump(else_jump)?;
+        Self::patch_jump(else_jump)?;
 
         Ok(())
     }
 
-    fn emit_jump(&mut self, instruct: impl Into<u8>) -> usize {
+    fn emit_jump(&self, instruct: impl Into<u8>) -> usize {
         self.emit_byte(instruct);
         self.emit_byte(0xFF);
         self.emit_byte(0xFF);
-        self.cur_chunk.count() - 2
+        CUR_CHUNK.with_borrow(|v| v.count() - 2)
     }
 
-    fn patch_jump(&mut self, offset: usize) -> Result<()> {
-        let jump = self.cur_chunk.count() - offset - 2;
+    fn patch_jump(offset: usize) -> Result<()> {
+        let jump = CUR_CHUNK.with_borrow(|v| v.count() - offset - 2);
         if jump > u16::MAX.into() {
             return error::TooMuchJumpSnafu.fail();
         }
-        self.cur_chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
-        self.cur_chunk.code[offset + 1] = ((jump >> 8) & 0xFF) as u8;
+        CUR_CHUNK.with_borrow_mut(|v| {
+            v.code[offset] = ((jump >> 8) & 0xFF) as u8;
+        });
+        CUR_CHUNK.with_borrow_mut(|v| {
+            v.code[offset + 1] = ((jump >> 8) & 0xFF) as u8;
+        });
         Ok(())
     }
 
@@ -597,7 +603,7 @@ where
         }
 
         let ident = unsafe { self.previous.as_ref().unwrap_unchecked() };
-        self.make_constant(Value::Obj(Obj::String(ident.lexeme().to_owned())))
+        Self::make_constant(Value::Obj(Obj::String(ident.lexeme().to_owned())))
     }
 
     fn define_var_global(&mut self, global: u8) {
@@ -649,22 +655,22 @@ where
 
         self.emit_byte(OpCode::OpPop);
         self.parse_precedence(Precedence::And)?;
-        self.patch_jump(end_jump)
+        Self::patch_jump(end_jump)
     }
 
     fn or(&mut self, _: bool) -> Result<()> {
         let else_jump = self.emit_jump(OpCode::OpJumpIfFalse);
         let end_jump = self.emit_jump(OpCode::OpJump);
 
-        self.patch_jump(else_jump)?;
+        Self::patch_jump(else_jump)?;
         self.emit_byte(OpCode::OpPop);
 
         self.parse_precedence(Precedence::Or)?;
-        self.patch_jump(end_jump)
+        Self::patch_jump(end_jump)
     }
 }
 
-impl<I> Parser<I, Init>
+impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
 {
@@ -679,21 +685,12 @@ where
             current: None,
             had_error: false,
             panic_mode: false,
-            cur_chunk: (),
             cur_compiler: Compiler::new(CurFunType::Script),
         }
     }
 
-    pub fn compile(self, cur_chunk: Chunk) -> Result<ObjFunction> {
-        let mut var: Parser<I, Compiling> = Parser {
-            peeks: self.peeks,
-            previous: self.previous,
-            current: self.current,
-            cur_chunk,
-            had_error: self.had_error,
-            panic_mode: self.panic_mode,
-            cur_compiler: self.cur_compiler,
-        };
+    pub fn compile(self) -> Result<ObjFunction> {
+        let mut var = self;
         var.advance();
         while var.current.is_some() {
             var.declaration()?;
@@ -705,10 +702,9 @@ where
     }
 }
 
-impl<I, S> Parser<I, S>
+impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
-    S: CompileState,
 {
     fn advance(&mut self) {
         self.previous = self.current.take();
